@@ -357,6 +357,13 @@ function readNumber(text: string, pattern: RegExp): number | undefined {
 // ── The Docker-backed runner ──────────────────────────────────────────────────
 
 export const SOLVER_IMAGE = "suitedpoker/texassolver:pinned";
+/**
+ * The artifact the repo's own .pro produces. There is no separate
+ * `console_solver` target in master — main.cpp dispatches to console mode from
+ * argv, and the binary needs an offscreen Qt platform to start without a
+ * display.
+ */
+export const SOLVER_BINARY = "TexasSolverGui";
 
 export class DockerSolverRunner implements SolverRunner {
   readonly solverCommit: string;
