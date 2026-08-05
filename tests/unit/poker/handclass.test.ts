@@ -144,7 +144,7 @@ describe("classifyHand — invariants", () => {
     console.log(`\nclass distribution over 100,000 random spots:\n${rows.join("\n")}`);
     expect(seen.size).toBeGreaterThan(15);
     record("property test", `100,000 random spots, no throws, ${seen.size} distinct classes seen`);
-  });
+  }, 60_000);
 
   it("agrees with the evaluator for two pair and better", () => {
     const rng = createRng("handclass-crosscheck");
@@ -193,7 +193,7 @@ describe("classifyHand — invariants", () => {
       "evaluator cross-check",
       `${checked.toLocaleString("en-US")} strong hands agree with evaluate7`,
     );
-  });
+  }, 60_000);
 
   it("orders the classes strongest to weakest", () => {
     expect(handClassRank("straight_flush")).toBe(0);

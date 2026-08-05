@@ -121,6 +121,7 @@ merges before continuing.
 | 2.6 | Spot generator |
 | 2.7 | Grading engine |
 | 2.8 | Scenario matrix |
+| 2.9 | Solver batch pipeline |
 
 **Owns — exclusively:**
 
@@ -129,6 +130,7 @@ src/poker/**
 src/content/solutions/**
 src/content/solver/**
 scripts/import-solutions.ts
+tools/solver/**
 tests/unit/poker/**
 ```
 

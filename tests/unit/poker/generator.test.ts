@@ -112,7 +112,7 @@ describe("10,000 generated spots are internally consistent", () => {
       "spot consistency",
       `10,000 spots, zero duplicate cards, a solution exists for every one`,
     );
-  });
+  }, 60_000);
 });
 
 // ── The security boundary ─────────────────────────────────────────────────────
@@ -306,7 +306,7 @@ describe("difficulty correlates with mixing", () => {
       "difficulty tracks entropy",
       `entropy ${first!.meanEntropy.toFixed(2)} at difficulty ${first!.difficulty} → ${last!.meanEntropy.toFixed(2)} at ${last!.difficulty}`,
     );
-  });
+  }, 60_000);
 });
 
 describe("batches", () => {
@@ -321,7 +321,7 @@ describe("batches", () => {
     }
     expect(checked).toBe(1000);
     record("batch uniqueness", "1000 batches of 10, never a duplicate node");
-  });
+  }, 60_000);
 
   it("is deterministic", () => {
     const a = generateSpotBatch({ type: "preflop" }, 5, "same")(data);

@@ -99,11 +99,12 @@ describe("seeded rng", () => {
 
   it("stays in [0, 1)", () => {
     const rng = createRng(7);
+    let outOfRange = 0;
     for (let i = 0; i < 100_000; i++) {
       const value = rng();
-      expect(value).toBeGreaterThanOrEqual(0);
-      expect(value).toBeLessThan(1);
+      if (value < 0 || value >= 1) outOfRange++;
     }
+    expect(outOfRange).toBe(0);
   });
 
   it("produces uniform integers", () => {

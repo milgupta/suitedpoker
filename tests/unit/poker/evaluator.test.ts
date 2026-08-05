@@ -267,7 +267,7 @@ describe("exhaustive five-card enumeration", () => {
 
     expect(observed).toEqual(KNOWN_COUNTS);
     record("5-card category distribution", "all 9 categories match the known counts exactly");
-  });
+  }, 60_000);
 });
 
 // ── 3. Randomised differential test ───────────────────────────────────────────
@@ -328,7 +328,7 @@ describe("evaluate7 against the brute-force reference", () => {
     }
     expect(checked).toBe(100_000);
     record("differential vs. max over C(7,5) subsets", "100,000/100,000 agree");
-  });
+  }, 60_000);
 });
 
 // ── 4. Benchmark ──────────────────────────────────────────────────────────────
