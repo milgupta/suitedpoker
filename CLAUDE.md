@@ -12,6 +12,13 @@ per session**. Start a fresh context for each one. Do not attempt several at onc
 long contexts are where file paths get invented and earlier work gets silently
 broken.
 
+## Working in parallel
+
+Several Claude Code instances may be running on this repo at once, each in its
+own git worktree on its own branch. **If you are in a worktree, read
+`PARALLEL.md` and stay inside your track's `owns` list.** Writing outside your
+lane is how three agents produce one unmergeable mess.
+
 ## How a session works
 
 1. Milan names a substage (e.g. "run 0.2").
@@ -101,10 +108,30 @@ sessions.
 | 0.1 Repo, tooling, quality gate | done |
 | marketing landing page, terms, privacy | done (ahead of 8.4, for Stripe verification) |
 | `DESIGN.md` written from reference teardowns | done |
-| 0.2 Design system and motion language | NEXT — implements `DESIGN.md` |
+| 0.2 Design system and motion language | done — implements `DESIGN.md` |
+| 0.3 Core UI component library | NEXT |
 
-Everything from 0.3 onward is untouched. Update this table when you finish a
+Everything from 0.4 onward is untouched. Update this table when you finish a
 substage.
+
+**What 0.2 left you.** Anything a later substage needs to build on:
+
+- **Tokens** are in `src/app/globals.css` and nowhere else. That is enforced —
+  `tests/unit/no-hardcoded-color.test.ts` fails the build on a colour literal
+  anywhere in `src/`, including inside a comment.
+- **Adding or changing a colour** means adding a pairing to
+  `tests/unit/contrast.test.ts`. It measures the real stylesheet, so a token
+  cannot pass its check while shipping a different value.
+- **`evColor(bbLoss)`** for the DOM, **`evColorRgb()`** for canvas and SVG. Both
+  in `src/lib/ev-color.ts`, pinned to each other by a test. Never re-derive the
+  ramp anywhere else.
+- **Motion** presets are functions of `reduced`, and the reduced branch returns
+  variants with no transform key at all. Keep that shape — it is what makes the
+  guarantee hold without every component remembering to check.
+- **`--accent` fails AA for body text** (4.37). Use `--accent-bright` for accent
+  text and links, and `--on-accent` for a label on an accent fill.
+- Tailwind's default `text-*` sizes and `rounded-2xl` still exist. They are off
+  the system — use the named scale steps.
 
 ## Environment
 

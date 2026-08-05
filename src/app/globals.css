@@ -1,28 +1,407 @@
 @import "tailwindcss";
 
 /*
- * Temporary brand tokens. Substage 0.2 replaces this with the full design
- * system (complete accent ramp, semantic grade colours, type scale, motion).
- * This exists so the marketing site can ship before that lands.
+ * ─────────────────────────────────────────────────────────────────────────────
+ * SuitedPoker design system — the implementation of DESIGN.md.
+ *
+ * This file is the ONLY place in the codebase where a literal colour, radius,
+ * or type size may appear. Everything else consumes a token. A unit test
+ * (tests/unit/no-hardcoded-color.test.ts) enforces that.
+ *
+ * Section numbers below map to DESIGN.md's sections.
+ * ─────────────────────────────────────────────────────────────────────────────
  */
+
 @theme {
-  --color-canvas: #08090b;
-  --color-surface-1: #101215;
-  --color-surface-2: #171a1f;
-  --color-border: #262b33;
-  --color-text-primary: #f5f7fa;
-  --color-text-secondary: #9ba4b0;
-  --color-text-tertiary: #626c7a;
-  --color-accent: #38bdf8;
-  --color-accent-dim: #0e7490;
+  /* ── 1. Canvas and surfaces ─────────────────────────────────────────────── */
+  --color-canvas: #07060d;
+  --color-canvas-deep: #040309;
+  --color-surface-1: #0e0d16;
+  --color-surface-2: #15141f;
+  --color-surface-3: #1d1b29;
+
+  /* ── 1. Borders — always alpha so they adapt to whatever they land on ───── */
+  --color-border: rgba(255, 255, 255, 0.09);
+  --color-border-strong: rgba(255, 255, 255, 0.14);
+  --color-border-subtle: rgba(255, 255, 255, 0.05);
+
+  /* ── 1. Text ────────────────────────────────────────────────────────────── */
+  --color-text-primary: #f4f5f8;
+  --color-text-secondary: rgba(244, 245, 248, 0.72);
+  --color-text-tertiary: rgba(244, 245, 248, 0.48);
+
+  /*
+   * ── 1. Accent ramp ────────────────────────────────────────────────────────
+   * Derived in OKLCh, gamut-clipped to sRGB, with DESIGN.md's three measured
+   * values pinned exactly: 400 = --accent-bright, 500 = --accent,
+   * 800 = --accent-deep. Do not hand-edit a stop; regenerate the ladder.
+   *
+   * Blue is INTERFACE only — ratings, progress, selection, links, focus, the
+   * primary CTA. It never grades a decision. (DESIGN.md rule 2.)
+   */
+  --color-accent-50: #ecf2fe;
+  --color-accent-100: #d6e3ff;
+  --color-accent-200: #b4ccfe;
+  --color-accent-300: #88aefe;
+  --color-accent-400: #5b8cff;
+  --color-accent-500: #2f68ff;
+  --color-accent-600: #2954de;
+  --color-accent-700: #2142bd;
+  --color-accent-800: #1a2f9e;
+  --color-accent-900: #13217a;
+  --color-accent-950: #0c1656;
+
+  /* Semantic aliases. Prefer these over raw stops. */
+  --color-accent: var(--color-accent-500); /* 4.37 on canvas — FILLS AND LARGE TEXT ONLY */
+  --color-accent-bright: var(--color-accent-400); /* 6.38 on canvas — accent text and links */
+  --color-accent-deep: var(--color-accent-800); /* gradient top stop */
+  --color-accent-glow: rgba(44, 79, 240, 0.26);
+  --color-accent-specular: #7fa4ff; /* lit-button highlight, bottom inner edge */
+
+  /*
+   * Label colour on an accent FILL, and the one place pure white is correct.
+   * --text-primary (#f4f5f8) measures 4.24 on --accent and fails AA; white
+   * measures 4.62. DESIGN.md's own figure was computed with white.
+   */
+  --color-on-accent: #ffffff;
+
+  /*
+   * ── 1. Grade ramp ─────────────────────────────────────────────────────────
+   * Green through red. Nothing decorative may borrow these — a screen stays
+   * readable precisely because blue and this ramp never overlap.
+   *
+   * Colour is never the only signal: every grade also carries an icon and a
+   * word (see GRADE_MARKS in src/lib/grade.ts).
+   */
+  --color-grade-sharp: #2bd97c;
+  --color-grade-best: #2bd97c;
+  --color-grade-solid: #7bc99b;
+  --color-grade-inaccuracy: #f0b429;
+  --color-grade-mistake: #f5813a;
+  --color-grade-blunder: #ef4b4b;
+
+  /* 12% fills, per DESIGN.md §1. Derived, so a hue change propagates. */
+  --color-grade-sharp-fill: color-mix(in srgb, var(--color-grade-sharp) 12%, transparent);
+  --color-grade-best-fill: color-mix(in srgb, var(--color-grade-best) 12%, transparent);
+  --color-grade-solid-fill: color-mix(in srgb, var(--color-grade-solid) 12%, transparent);
+  --color-grade-inaccuracy-fill: color-mix(in srgb, var(--color-grade-inaccuracy) 12%, transparent);
+  --color-grade-mistake-fill: color-mix(in srgb, var(--color-grade-mistake) 12%, transparent);
+  --color-grade-blunder-fill: color-mix(in srgb, var(--color-grade-blunder) 12%, transparent);
+
+  /* Border variants. DESIGN.md asks for one but does not fix the alpha; 30%
+   * reads as an edge against a 12% fill without becoming a second solid. */
+  --color-grade-sharp-border: color-mix(in srgb, var(--color-grade-sharp) 30%, transparent);
+  --color-grade-best-border: color-mix(in srgb, var(--color-grade-best) 30%, transparent);
+  --color-grade-solid-border: color-mix(in srgb, var(--color-grade-solid) 30%, transparent);
+  --color-grade-inaccuracy-border: color-mix(
+    in srgb,
+    var(--color-grade-inaccuracy) 30%,
+    transparent
+  );
+  --color-grade-mistake-border: color-mix(in srgb, var(--color-grade-mistake) 30%, transparent);
+  --color-grade-blunder-border: color-mix(in srgb, var(--color-grade-blunder) 30%, transparent);
+
+  /* Sharp is `best` plus a glow — the only grade that gets one. */
+  --color-grade-sharp-glow: color-mix(in srgb, var(--color-grade-sharp) 26%, transparent);
+
+  /* ── 1. Ambient violet — MARKETING AND ONBOARDING ONLY ──────────────────── */
+  --color-ambient-violet: #2d0077;
+
+  /* ── 5.1 Glass ──────────────────────────────────────────────────────────── */
+  --color-glass: #0d1016;
+
+  /* ── 2. Typography ──────────────────────────────────────────────────────── */
+  --font-sans:
+    "Inter Variable", "Inter", var(--font-geist-sans), -apple-system, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", monospace;
+
+  /*
+   * Bimodal line-height is the whole trick: display type is set SOLID
+   * (1.00–1.10), body breathes (1.33–1.50). Nothing sits in between — a 1.2
+   * heading is the single biggest tell of a template.
+   */
+  --text-display-xl: 3.5rem; /* 56 */
+  --text-display-xl--line-height: 3.5rem; /* 1.00 */
+  --text-display-xl--letter-spacing: -0.03em;
+  --text-display-xl--font-weight: 700;
+
+  --text-display-lg: 2.5rem; /* 40 */
+  --text-display-lg--line-height: 2.6875rem; /* 43 — 1.08 */
+  --text-display-lg--letter-spacing: -0.02em;
+  --text-display-lg--font-weight: 600;
+
+  --text-display-md: 1.875rem; /* 30 */
+  --text-display-md--line-height: 2.0625rem; /* 33 — 1.10 */
+  --text-display-md--letter-spacing: -0.02em;
+  --text-display-md--font-weight: 600;
+
+  --text-heading-lg: 1.375rem; /* 22 */
+  --text-heading-lg--line-height: 1.625rem; /* 26 — 1.18 */
+  --text-heading-lg--letter-spacing: -0.01em;
+  --text-heading-lg--font-weight: 600;
+
+  --text-heading-md: 1.125rem; /* 18 */
+  --text-heading-md--line-height: 1.5rem; /* 24 — 1.33 */
+  --text-heading-md--letter-spacing: 0em;
+  --text-heading-md--font-weight: 600;
+
+  --text-body-lg: 1rem; /* 16 */
+  --text-body-lg--line-height: 1.5rem; /* 24 — 1.50 */
+  --text-body-lg--letter-spacing: 0em;
+  --text-body-lg--font-weight: 400;
+
+  --text-body-md: 0.875rem; /* 14 */
+  --text-body-md--line-height: 1.25rem; /* 20 — 1.43 */
+  --text-body-md--letter-spacing: 0em;
+  --text-body-md--font-weight: 400;
+
+  --text-body-sm: 0.8125rem; /* 13 */
+  --text-body-sm--line-height: 1.1875rem; /* 19 — 1.46 */
+  --text-body-sm--letter-spacing: 0em;
+  --text-body-sm--font-weight: 400;
+
+  --text-caption: 0.75rem; /* 12 */
+  --text-caption--line-height: 1rem; /* 16 — 1.33 */
+  --text-caption--letter-spacing: 0.01em;
+  --text-caption--font-weight: 500;
+
+  --text-overline: 0.6875rem; /* 11 */
+  --text-overline--line-height: 0.875rem; /* 14 */
+  --text-overline--letter-spacing: 0.12em;
+  --text-overline--font-weight: 700;
+
+  /* ── 4. Radius ──────────────────────────────────────────────────────────── */
+  --radius-sm: 10px; /* chips, badges, playing cards */
+  --radius-md: 14px; /* inputs, seat pills */
+  --radius-lg: 18px; /* DEFAULT CARD RADIUS */
+  --radius-xl: 24px; /* modals, sheets, glass bar */
+  --radius-full: 9999px; /* every button, every pill */
+
+  /* ── 3. Containers ──────────────────────────────────────────────────────── */
+  --container-marketing: 720px;
+  --container-app: 1100px;
+
+  /* ── 7. Easings ─────────────────────────────────────────────────────────── */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-decelerate: cubic-bezier(0, 0, 0.2, 1);
+  --ease-accelerate: cubic-bezier(0.4, 0, 1, 1);
+
+  --animate-shimmer: shimmer 1400ms var(--ease-standard) infinite;
+
+  @keyframes shimmer {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(100%);
+    }
+  }
 }
 
-html {
-  color-scheme: dark;
-  scroll-behavior: smooth;
+/*
+ * Tokens that are values, not utilities. Kept out of @theme so Tailwind does
+ * not generate a utility for each — but still tokens, still declared here.
+ */
+:root {
+  /* ── 7. Durations. Nothing exceeds 400ms. ─────────────────────────────── */
+  --duration-instant: 100ms;
+  --duration-fast: 180ms;
+  --duration-base: 260ms;
+  --duration-slow: 420ms;
+
+  /* ── 3. Spacing rhythm. Each level is roughly 2x the last. ─────────────── */
+  --rhythm-heading: 12px; /* heading -> its body copy */
+  --rhythm-group: 16px; /* related elements within a group */
+  --rhythm-section: 24px; /* group -> next group */
+  --rhythm-page: 40px; /* section -> section */
+
+  --card-padding: 20px;
+  --grid-gap: 12px; /* both axes — that is what makes a grid read as one object */
+  --gutter: 16px;
+  --tap-min: 44px; /* 9. Minimum touch target. No exceptions. */
+
+  /* ── 5.3 Ambient glow recipe ────────────────────────────────────────────── */
+  --ambient-blob-blur: 120px;
+  --ambient-blob-width: 750px;
+  --ambient-blob-height: 500px;
 }
 
-body {
-  background: var(--color-canvas);
-  color: var(--color-text-primary);
+@layer base {
+  html {
+    color-scheme: dark;
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--color-canvas);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans);
+    font-size: var(--text-body-lg);
+    line-height: var(--text-body-lg--line-height);
+  }
+
+  /* 8. Tabular numerals on every number that changes. Mono is only ever used
+   * for figures here, so binding it at the family level is the safe default. */
+  code,
+  kbd,
+  samp,
+  pre,
+  .font-mono {
+    font-variant-numeric: tabular-nums;
+  }
+
+  ::selection {
+    background: var(--color-accent-800);
+    color: var(--color-text-primary);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent-bright);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    /*
+     * Backstop only. Every motion primitive drops its transforms explicitly in
+     * TypeScript (src/lib/motion.ts) rather than relying on this — a CSS rule
+     * cannot reach a transform that Framer Motion writes to element.style.
+     */
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /*
+   * ── 5.1 Glass surface ──────────────────────────────────────────────────────
+   * The effect is the 1px 12%-white hairline over a near-black fill, NOT a
+   * backdrop blur. The line reads brighter where the backdrop behind it is
+   * light and dimmer where it is dark, so it appears to shimmer along its
+   * length over a glow.
+   */
+  .glass {
+    background: var(--color-glass);
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-full);
+    padding: 4px; /* tight — it hugs its children */
+  }
+
+  /*
+   * Costs a repaint per scroll frame. Use ONLY where the bar genuinely
+   * overlaps scrolling content (the dashboard glass bar). Never on a static
+   * panel.
+   */
+  .glass-blur {
+    backdrop-filter: blur(24px);
+  }
+
+  /*
+   * ── 5.2 The lit button ────────────────────────────────────────────────────
+   * Lit from BELOW: the gradient runs dark at the top to bright at the bottom
+   * (most buttons do the reverse) and the specular highlight sits on the
+   * bottom inner edge. The coloured outer glow is what makes it read as a
+   * light source rather than a rectangle.
+   *
+   * ONE PER SCREEN — the primary action. Everything else is ghost or outline.
+   */
+  .btn-accent {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 48px;
+    padding-inline: 20px;
+    background: linear-gradient(var(--color-accent-deep) 0%, var(--color-accent) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: var(--radius-full);
+    color: var(--color-on-accent);
+    font: 600 var(--text-body-lg) / 1 var(--font-sans);
+    box-shadow:
+      inset 0 -1.5px 2px var(--color-accent-specular),
+      inset 0 0 10px var(--color-accent),
+      0 1px 2px rgba(0, 0, 0, 0.12),
+      0 6px 16px var(--color-accent-glow);
+    transition: filter var(--duration-fast) var(--ease-standard);
+  }
+
+  .btn-accent:hover {
+    filter: brightness(1.08);
+  }
+
+  /* Disabled reduces the opacity of the enabled style — NEVER a different
+   * fill, which is the mistake that makes a disabled button out-contrast an
+   * enabled one. */
+  .btn-accent:disabled,
+  .btn-accent[aria-disabled="true"] {
+    opacity: 0.4;
+    filter: none;
+    cursor: not-allowed;
+  }
+
+  /*
+   * ── 5.3 Ambient glow ──────────────────────────────────────────────────────
+   * HARD RULE: marketing, onboarding, diagnosis and paywall only. Never behind
+   * the training canvas — a large saturated field destroys the ability to read
+   * a range grid or an action bar semantically.
+   */
+  .ambient-host {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden; /* clip the blob to its section */
+  }
+
+  .ambient-blob {
+    position: absolute;
+    z-index: -1;
+    width: var(--ambient-blob-width);
+    height: var(--ambient-blob-height);
+    max-width: 100%;
+    background: radial-gradient(ellipse at center, var(--color-ambient-violet) 0%, transparent 70%);
+    filter: blur(var(--ambient-blob-blur));
+    pointer-events: none;
+  }
+
+  /*
+   * Gradient top hairline for feature cards. DESIGN.md specifies
+   * "indigo -> magenta" but defines no magenta anywhere in the system, so this
+   * runs accent -> ambient violet, which uses only measured values and stays
+   * in the family.
+   */
+  .hairline-top {
+    position: relative;
+  }
+
+  .hairline-top::before {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--color-accent-bright) 35%,
+      var(--color-ambient-violet) 75%,
+      transparent 100%
+    );
+    box-shadow: 0 8px 16px -8px var(--color-accent-glow); /* ~16px inner bloom below */
+    pointer-events: none;
+  }
+
+  /* One highlighted element per screen, max. */
+  .halo {
+    border: 1.5px solid var(--color-accent);
+    box-shadow: 0 0 24px color-mix(in srgb, var(--color-accent) 60%, transparent);
+  }
 }

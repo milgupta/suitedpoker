@@ -68,7 +68,7 @@ export default function Terms() {
         Questions about these terms: <strong>support@suitedpoker.com</strong>
       </p>
 
-      <p className="text-text-tertiary pt-6 text-xs">
+      <p className="text-text-tertiary text-caption pt-6">
         This document is a working draft and should be reviewed by a qualified attorney before
         commercial launch.
       </p>

@@ -10,3 +10,6 @@ package-lock.json
 docs/build-tracker.html
 SUITEDPOKER_BUILD_PLAN.md
 docs/COMPETITOR-*.md
+
+# local agent settings
+.claude/settings.local.json

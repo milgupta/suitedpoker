@@ -81,6 +81,32 @@ cleaner azure instead, which reads as distinct at a glance.
 | `--accent-bright` | `#5B8CFF` | 6.38 — **use for accent text and links** |
 | `--accent-deep` | `#1A2F9E` | gradient top stop |
 | `--accent-glow` | `rgba(44,79,240,0.26)` | outer glow |
+| `--accent-specular` | `#7FA4FF` | lit-button highlight |
+| `--on-accent` | `#FFFFFF` | **label colour on an accent fill** |
+
+> ⚠️ `--on-accent` is pure white and is the one place white is correct.
+> `--text-primary` (`#F4F5F8`) measures **4.24** on `--accent` and fails AA; white
+> measures 4.62. The 4.62 figure quoted below was always computed with white.
+
+#### The full ramp
+
+The four tokens above are aliases into a 50→950 ramp, derived in OKLCh and
+gamut-clipped to sRGB with the three measured values pinned exactly at 400, 500
+and 800. Regenerate the ladder rather than hand-editing a stop.
+
+| Stop | Value | On canvas | White on it |
+|---|---|---|---|
+| 50 | `#ECF2FE` | 17.96 | 1.12 |
+| 100 | `#D6E3FF` | 15.65 | 1.29 |
+| 200 | `#B4CCFE` | 12.50 | 1.61 |
+| 300 | `#88AEFE` | 9.16 | 2.20 |
+| **400** | **`#5B8CFF`** = `--accent-bright` | 6.38 | 3.16 |
+| **500** | **`#2F68FF`** = `--accent` | 4.37 | 4.62 |
+| 600 | `#2954DE` | 3.28 | 6.15 |
+| 700 | `#2142BD` | 2.48 | 8.14 |
+| **800** | **`#1A2F9E`** = `--accent-deep` | 1.87 | 10.80 |
+| 900 | `#13217A` | 1.47 | 13.76 |
+| 950 | `#0C1656` | 1.22 | 16.60 |
 
 **The accent is for data, state, and chrome.** Ratings, progress, active
 selections, links, focus rings, the primary CTA. It is never used for grading.
@@ -110,7 +136,14 @@ Each needs a solid, a 12%-alpha fill, and a border variant.
 
 **`evColor(bbLoss)`** interpolates this ramp: `best` at 0bb → `solid` at 0.5 →
 `inaccuracy` at 2 → `mistake` at 5 → `blunder` beyond. The frequency bar colors
-every segment through this one function.
+every segment through this one function. The colour saturates at **10bb** — a
+pot-sized error at 100bb depth, past which redder conveys nothing extra.
+
+It ships as a pair. `evColor()` returns a `color-mix(in oklab, …)` string for the
+DOM, so the six stop colours stay in `globals.css` and nowhere else.
+`evColorRgb()` reads those same custom properties at runtime and interpolates
+numerically, for canvas, SVG and screenshot rendering. A unit test pins the two
+to each other at every stop and between them.
 
 > ⚠️ **Color is never the only signal.** Roughly 8% of men have red-green color
 > deficiency and this audience is overwhelmingly male. Every grade carries an
@@ -145,20 +178,21 @@ Flighty ships **no custom font at all** — it's `system-ui`, which on a Mac
 resolves to SF Pro. Soar uses **TWK Lausanne** (Weltkern), a commercial Swiss
 neo-grotesque.
 
-**Decision: TWK Lausanne.** Licensed from [Weltkern](https://weltkern.com). It is the
-single largest visual differentiator in either reference and it is worth paying for.
+**Decision: Inter.** TWK Lausanne is a paid Weltkern licence we are not buying, so
+it is out of the system entirely rather than sitting in the stack as a
+first-choice family that will never resolve.
 
-Load it as a self-hosted `@font-face` (woff2, weights 400/500/600/700) — never from
-a CDN that could disappear. Until the license files are in the repo, the stack
-falls back to **Geist**, which is already installed and is the closest free
-relative of Lausanne's proportions:
+Inter is self-hosted via `@fontsource-variable/inter` — **not** `next/font/google`,
+so the build stays hermetic with no network call at build time. Geist remains
+installed as the fallback.
 
 ```
---font-sans: "TWK Lausanne", "Geist", -apple-system, "Inter", system-ui, sans-serif;
+--font-sans: "Inter Variable", "Inter", var(--font-geist-sans), -apple-system, system-ui, sans-serif;
 ```
 
-That fallback order means the site looks right today and gets better the moment
-the font files land, with no code change.
+`"Inter Variable"` is the family name the fontsource package registers and must
+come first for the self-hosted files to apply; `"Inter"` after it picks up a
+locally installed copy.
 
 Mono is **Geist Mono**, `font-variant-numeric: tabular-nums` **always** — stack
 sizes, pot sizes, EVs, ratings, and percentages must not jitter while animating.
@@ -360,9 +394,11 @@ that, iOS Safari zooms on focus).
 | `smooth` | spring, 260 / 26 |
 | `bouncy` | spring, 500 / 22 — card deals, grade badges |
 
-Nothing exceeds 400ms. Everything respects `prefers-reduced-motion` by collapsing
-to opacity-only. Staggers cap at 300ms total regardless of item count — 169 range
-cells at 10ms each is 1.7s and reads as broken.
+`slow` (420ms) is the ceiling — nothing goes beyond it, and only a deliberate
+full-screen transition should reach it at all. Everything respects
+`prefers-reduced-motion` by collapsing to opacity-only. Staggers cap at 300ms
+total regardless of item count — 169 range cells at 10ms each is 1.7s and reads
+as broken.
 
 ---
 
@@ -382,10 +418,20 @@ cells at 10ms each is 1.7s and reads as broken.
 
 ---
 
+## Settled in 0.2
+
+- **Typeface** — Inter, self-hosted. TWK Lausanne dropped, see §2.
+- **Grade-green hue** — `#2BD97C` validated and kept. It measures 10.87 on canvas
+  and 8.58 on its own 12% fill; no adjustment was needed. Every one of the 51
+  gated pairings passes, enforced by `tests/unit/contrast.test.ts`.
+- **Label on an accent fill** — pure white (`--on-accent`), not `--text-primary`,
+  which measured 4.24 and failed AA.
+
 ## Open decisions
 
-- **TWK Lausanne license** — buy it, or ship Geist. Affects nothing structurally;
-  it is one token.
-- **Exact grade-green hue** — `#2BD97C` is a starting value. Substage 0.2 validates
-  every pairing for WCAG AA and adjusts; the ratios in that report win over the
-  values here.
+- **The indigo→magenta top hairline** (§1) names two colours the system does not
+  define. It currently runs `--accent-bright` → `--ambient-violet`, which uses
+  only measured values. If a real magenta is wanted, it needs adding here first.
+- **Grade border alpha** — the ramp specifies a solid and a 12% fill but not the
+  border. It is 30%, chosen to read as an edge against the fill without becoming
+  a second solid.

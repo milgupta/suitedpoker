@@ -25,7 +25,13 @@ export default defineConfig({
           name: "components",
           environment: "jsdom",
           setupFiles: ["./vitest.setup.ts"],
-          include: ["src/components/**/*.test.tsx", "tests/components/**/*.test.tsx"],
+          include: [
+            "src/components/**/*.test.tsx",
+            "tests/components/**/*.test.tsx",
+            // Browser-API tests that are not components — anything reading
+            // computed styles or matchMedia.
+            "tests/dom/**/*.test.{ts,tsx}",
+          ],
         },
       },
     ],

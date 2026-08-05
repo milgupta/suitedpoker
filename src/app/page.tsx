@@ -57,34 +57,38 @@ const FAQ = [
 export default function Home() {
   return (
     <div className="min-h-screen">
-      <header className="mx-auto flex max-w-5xl items-center justify-between px-6 py-6">
-        <span className="text-accent font-mono text-sm font-bold tracking-widest">SUITEDPOKER</span>
+      <header className="mx-auto flex max-w-(--container-app) items-center justify-between px-6 py-6">
+        <span className="text-accent-bright text-body-md font-mono font-bold tracking-widest">
+          SUITEDPOKER
+        </span>
         <Link
           href="#pricing"
-          className="text-text-secondary hover:text-text-primary text-sm transition"
+          className="text-text-secondary hover:text-text-primary text-body-md transition"
         >
           Pricing
         </Link>
       </header>
 
       {/* Hero */}
-      <section className="mx-auto max-w-5xl px-6 pt-10 pb-20 sm:pt-20">
-        <h1 className="max-w-3xl text-5xl leading-[1.05] font-bold tracking-tight sm:text-7xl">
+      <section className="mx-auto max-w-(--container-app) px-6 pt-10 pb-20 sm:pt-20">
+        <h1 className="text-display-lg sm:text-display-xl max-w-3xl">
           Stop guessing.
           <br />
+          {/* --accent is 4.37 on canvas — AA for large text, which this is. Body-size
+              accent text must use --accent-bright instead. */}
           <span className="text-accent">Start knowing.</span>
         </h1>
-        <p className="text-text-secondary mt-6 max-w-xl text-lg">
+        <p className="text-text-secondary text-body-lg mt-6 max-w-xl">
           Learn exactly what a solver would do — explained in plain English, one hand at a time.
           Built for players who know the rules and are stuck on everything after that.
         </p>
         <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-          <span className="bg-text-primary text-canvas inline-flex items-center justify-center rounded-xl px-7 py-3.5 text-base font-semibold">
+          <span className="bg-text-primary text-canvas text-body-lg inline-flex items-center justify-center rounded-full px-7 py-3.5 font-semibold">
             Coming soon
           </span>
           <Link
             href="#how"
-            className="border-border text-text-secondary hover:border-text-tertiary hover:text-text-primary inline-flex items-center justify-center rounded-xl border px-7 py-3.5 text-base font-medium transition"
+            className="border-border text-text-secondary hover:border-text-tertiary hover:text-text-primary text-body-lg inline-flex items-center justify-center rounded-full border px-7 py-3.5 font-medium transition"
           >
             How it works
           </Link>
@@ -93,8 +97,8 @@ export default function Home() {
 
       {/* The problem */}
       <section id="how" className="border-border border-t">
-        <div className="mx-auto max-w-5xl px-6 py-20">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+        <div className="mx-auto max-w-(--container-app) px-6 py-20">
+          <h2 className="text-display-md sm:text-display-lg">
             You know the rules. You still lose.
           </h2>
           <div className="mt-10 grid gap-6 sm:grid-cols-3">
@@ -112,9 +116,9 @@ export default function Home() {
                 "The right answer exists, buried in a tool that costs a fortune and assumes a maths degree.",
               ],
             ].map(([title, body]) => (
-              <div key={title} className="border-border bg-surface-1 rounded-2xl border p-6">
+              <div key={title} className="border-border bg-surface-1 rounded-lg border p-5">
                 <h3 className="font-semibold">{title}</h3>
-                <p className="text-text-secondary mt-2 text-sm leading-relaxed">{body}</p>
+                <p className="text-text-secondary text-body-md mt-2">{body}</p>
               </div>
             ))}
           </div>
@@ -123,13 +127,13 @@ export default function Home() {
 
       {/* Features */}
       <section className="border-border border-t">
-        <div className="mx-auto max-w-5xl px-6 py-20">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">What you get</h2>
+        <div className="mx-auto max-w-(--container-app) px-6 py-20">
+          <h2 className="text-display-md sm:text-display-lg">What you get</h2>
           <div className="mt-10 grid gap-6 sm:grid-cols-2">
             {FEATURES.map((f) => (
-              <div key={f.title} className="border-border bg-surface-1 rounded-2xl border p-6">
+              <div key={f.title} className="border-border bg-surface-1 rounded-lg border p-5">
                 <h3 className="font-semibold">{f.title}</h3>
-                <p className="text-text-secondary mt-2 text-sm leading-relaxed">{f.body}</p>
+                <p className="text-text-secondary text-body-md mt-2">{f.body}</p>
               </div>
             ))}
           </div>
@@ -138,39 +142,35 @@ export default function Home() {
 
       {/* Pricing */}
       <section id="pricing" className="border-border border-t">
-        <div className="mx-auto max-w-5xl px-6 py-20">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Pricing</h2>
-          <p className="text-text-secondary mt-3">
+        <div className="mx-auto max-w-(--container-app) px-6 py-20">
+          <h2 className="text-display-md sm:text-display-lg">Pricing</h2>
+          <p className="text-text-secondary text-body-lg mt-3">
             One subscription. Everything included. Cancel any time.
           </p>
           <div className="mt-10 grid max-w-2xl gap-5 sm:grid-cols-2">
-            <div className="border-accent bg-surface-1 rounded-2xl border-2 p-6">
+            <div className="border-accent bg-surface-1 rounded-lg border-2 p-5">
               <div className="flex items-baseline justify-between">
-                <span className="text-text-secondary text-sm font-medium">Yearly</span>
-                <span className="bg-accent text-canvas rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold tracking-wider uppercase">
+                <span className="text-text-secondary text-body-md font-medium">Yearly</span>
+                <span className="bg-accent text-on-accent text-overline rounded-full px-2.5 py-0.5 font-mono uppercase">
                   Best value
                 </span>
               </div>
-              <p className="mt-4 font-mono text-4xl font-bold tracking-tight tabular-nums">
-                $149.99
-              </p>
-              <p className="text-text-secondary mt-1 text-sm">per year — $12.50 a month</p>
-              <p className="border-border text-text-tertiary mt-4 border-t pt-4 text-sm">
+              <p className="text-display-lg mt-4 font-mono tabular-nums">$149.99</p>
+              <p className="text-text-secondary text-body-md mt-1">per year — $12.50 a month</p>
+              <p className="border-border text-text-tertiary text-body-md mt-4 border-t pt-4">
                 Save 69% versus monthly.
               </p>
             </div>
-            <div className="border-border bg-surface-1 rounded-2xl border p-6">
-              <span className="text-text-secondary text-sm font-medium">Monthly</span>
-              <p className="mt-4 font-mono text-4xl font-bold tracking-tight tabular-nums">
-                $39.99
-              </p>
-              <p className="text-text-secondary mt-1 text-sm">per month</p>
-              <p className="border-border text-text-tertiary mt-4 border-t pt-4 text-sm">
+            <div className="border-border bg-surface-1 rounded-lg border p-5">
+              <span className="text-text-secondary text-body-md font-medium">Monthly</span>
+              <p className="text-display-lg mt-4 font-mono tabular-nums">$39.99</p>
+              <p className="text-text-secondary text-body-md mt-1">per month</p>
+              <p className="border-border text-text-tertiary text-body-md mt-4 border-t pt-4">
                 Cancel any time.
               </p>
             </div>
           </div>
-          <p className="text-text-tertiary mt-6 max-w-2xl text-sm">
+          <p className="text-text-tertiary text-body-md mt-6 max-w-2xl">
             Subscriptions renew automatically until cancelled. You keep access until the end of the
             period you have paid for. Prices in USD.
           </p>
@@ -179,13 +179,13 @@ export default function Home() {
 
       {/* FAQ */}
       <section className="border-border border-t">
-        <div className="mx-auto max-w-3xl px-6 py-20">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Questions</h2>
+        <div className="mx-auto max-w-(--container-marketing) px-6 py-20">
+          <h2 className="text-display-md sm:text-display-lg">Questions</h2>
           <dl className="mt-10 space-y-8">
             {FAQ.map((item) => (
               <div key={item.q}>
                 <dt className="font-semibold">{item.q}</dt>
-                <dd className="text-text-secondary mt-2 text-sm leading-relaxed">{item.a}</dd>
+                <dd className="text-text-secondary text-body-md mt-2">{item.a}</dd>
               </div>
             ))}
           </dl>
@@ -193,15 +193,17 @@ export default function Home() {
       </section>
 
       <footer className="border-border border-t">
-        <div className="mx-auto max-w-5xl px-6 py-12">
+        <div className="mx-auto max-w-(--container-app) px-6 py-12">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-accent font-mono text-sm font-bold tracking-widest">SUITEDPOKER</p>
-              <p className="text-text-secondary mt-2 text-sm">
+              <p className="text-accent-bright text-body-md font-mono font-bold tracking-widest">
+                SUITEDPOKER
+              </p>
+              <p className="text-text-secondary text-body-md mt-2">
                 Educational software. Play money only. No real-money gambling.
               </p>
             </div>
-            <div className="text-text-secondary flex gap-6 text-sm">
+            <div className="text-text-secondary text-body-md flex gap-6">
               <Link href="/legal/terms" className="hover:text-text-primary transition">
                 Terms
               </Link>
@@ -216,7 +218,7 @@ export default function Home() {
               </a>
             </div>
           </div>
-          <p className="text-text-tertiary mt-8 text-xs">
+          <p className="text-text-tertiary text-caption mt-8">
             Questions or support: support@suitedpoker.com · © {new Date().getFullYear()} SuitedPoker
           </p>
         </div>

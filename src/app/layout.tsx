@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
+import "@fontsource-variable/inter";
 import "./globals.css";
+import { MotionProvider } from "@/components/motion";
 
-// Fonts are self-hosted via the `geist` package rather than next/font/google so
-// builds stay hermetic — no network call to fonts.googleapis.com at build time.
+// Every font is self-hosted — Inter via @fontsource-variable, Geist via the
+// `geist` package — rather than next/font/google, so builds stay hermetic with
+// no network call to fonts.googleapis.com. Inter is the display and body face;
+// Geist Sans is the fallback and Geist Mono carries every figure.
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://suitedpoker.com";
 
 export const metadata: Metadata = {
@@ -29,7 +33,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
-      <body className="bg-canvas text-text-primary antialiased">{children}</body>
+      <body className="bg-canvas text-text-primary antialiased">
+        <MotionProvider>{children}</MotionProvider>
+      </body>
     </html>
   );
 }
