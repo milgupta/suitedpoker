@@ -1,26 +1,28 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * Temporary brand tokens. Substage 0.2 replaces this with the full design
+ * system (complete accent ramp, semantic grade colours, type scale, motion).
+ * This exists so the marketing site can ship before that lands.
+ */
+@theme {
+  --color-canvas: #08090b;
+  --color-surface-1: #101215;
+  --color-surface-2: #171a1f;
+  --color-border: #262b33;
+  --color-text-primary: #f5f7fa;
+  --color-text-secondary: #9ba4b0;
+  --color-text-tertiary: #626c7a;
+  --color-accent: #38bdf8;
+  --color-accent-dim: #0e7490;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  color-scheme: dark;
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-canvas);
+  color: var(--color-text-primary);
 }

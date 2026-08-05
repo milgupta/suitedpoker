@@ -5,3 +5,8 @@ playwright-report
 test-results
 package-lock.json
 *.md
+
+# generated artifacts (not source)
+docs/build-tracker.html
+SUITEDPOKER_BUILD_PLAN.md
+docs/COMPETITOR-*.md
