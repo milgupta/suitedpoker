@@ -129,8 +129,37 @@ sessions.
 | 3.4 Daily challenge, streaks, leaderboard | done |
 | 3.5 Range grid viewer | done |
 | 3.6 Hand-history format and question types | done |
+| 4.1 Gemini integration and prompt architecture | done — **20-spot adversarial run unverified (no Gemini key)** |
 
 Stage 0 is complete. Update this table when you finish a substage.
+
+**What 4.1 left you.**
+
+- **`src/lib/ai/redact.ts` is the guarantee; the prompt is only the request.**
+  Anything that consumes model output must route through `redact()` (post-
+  decision) or `redactHint()` (pre-decision). A new AI surface that calls
+  `generateCoached()` directly and renders the text is a bug, however good the
+  prompt is.
+- **`redact()` is deliberately narrow.** It trips only on a *prescriptive*
+  statement naming a non-best action, and only when `displayMode === "clear"`.
+  Mentioning another action is allowed — "folding is close here" is exactly what
+  a mixed spot needs to say, and a guard that blocked it would gut the coach on
+  the spots that matter most. Do not widen it into a keyword blocklist.
+- **`redactHint()` levels 1 and 2 may not name ANY legal action.** A hint fires
+  before the user acts. 4.2 builds on this; do not relax it for fluency.
+- **The cache key includes `PROMPT_VERSION`.** Editing a prompt in `prompts.ts`
+  without bumping the version serves stale explanations for 30 days. Bump it.
+- **Only clean output is cached.** Caching a redacted explanation would serve the
+  template to everyone hitting that spot for a month. There is a test.
+- **`GOOGLE_GENERATIVE_AI_API_KEY` is empty in `.env.local`.** Everything
+  degrades to `templateExplanation()`, which is a true (if plainer) explanation
+  built from the same solution data — not an error path. The 20-spot adversarial
+  run in `tests/unit/coach-live.test.ts` **has never executed**; it skips loudly
+  and must be run once a key exists, before the coach is shown to a paying user.
+- **Cost, from the published Flash rates:** $0.00007 per explanation
+  (420 in / 70 out) → **$420/month** at 10,000 users × 50 drills/day with a 60%
+  cache hit rate, $1,050 at 0%. Computed in `tests/unit/coach.test.ts` from the
+  same constants the code prices with, so it cannot drift.
 
 **What 1.1 left you.**
 
