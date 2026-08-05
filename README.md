@@ -129,6 +129,19 @@ unverified until `npm run test:rls` has actually run.**
 - **Test users go into the production auth table.** Before running ads, create a
   second free Supabase project for tests so signup metrics stay clean.
 
+## API routes
+
+**Every authenticated API route uses `withAuth` or `withEntitlement` from
+`src/lib/api-guard.ts`. No route rolls its own auth check.** One place to get
+right, one place to audit, and one place where the 401/402 distinction is made:
+
+- **401** — not logged in. The client shows the login screen.
+- **402** — logged in, not subscribed. The client shows the paywall. Not 403,
+  which means "you may never do this" and is a different screen.
+
+Middleware gates the `(app)` route group for UX, but it is **not** a security
+boundary — an API route is reachable directly, so it re-checks server-side.
+
 ## Architecture
 
 ```

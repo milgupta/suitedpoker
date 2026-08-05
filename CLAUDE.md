@@ -119,7 +119,7 @@ sessions.
 | 0.4 Redis, caching, rate-limit primitives | done |
 | 1.1 Supabase project and schema | done — applied and verified against live Supabase |
 | 1.2 Auth flows | done — verified against live Supabase, Google OAuth live |
-| 1.3 Entitlement scaffold and route gating | NEXT |
+| 1.3 Entitlement scaffold and route gating | done — four gating states verified live |
 
 Stage 0 is complete. Update this table when you finish a substage.
 
@@ -159,6 +159,23 @@ Stage 0 is complete. Update this table when you finish a substage.
   Resend (7.3) fixes this properly.
 - **Before spending on ads, move e2e to a second Supabase project.** Test users
   land in the production auth table and will corrupt signup metrics.
+
+**What 1.3 left you.**
+
+- **Every authenticated API route uses `withAuth` or `withEntitlement`.** No
+  route rolls its own check. 401 = log in, 402 = subscribe, never 403.
+- **The entitlement rule lives in `entitlement-rule.ts` and has no I/O**, so
+  middleware (Edge) and the cached server path evaluate the same predicate and
+  cannot drift.
+- **Middleware is UX, not security.** It runs the check without the Redis cache
+  because Edge cannot reach the node clients; API routes re-check server-side.
+- **`/onboarding`, `/welcome`, `/paywall` and `/account` are exempt** from the
+  entitlement gate. Gating onboarding traps every new signup; gating `/welcome`
+  bounces a user whose Stripe webhook has not landed yet.
+- **`middleware.ts` is now `src/proxy.ts`** — Next 16 deprecated the middleware
+  convention.
+- **Folders under `src/app` starting with `_` are never routed.** A probe route
+  there silently 404s.
 
 **What 0.2 left you.** Anything a later substage needs to build on:
 
