@@ -120,12 +120,14 @@ merges before continuing.
 | 2.5 | Hand classification and postflop templates |
 | 2.6 | Spot generator |
 | 2.7 | Grading engine |
+| 2.8 | Scenario matrix |
 
 **Owns — exclusively:**
 
 ```
 src/poker/**
 src/content/solutions/**
+src/content/solver/**
 scripts/import-solutions.ts
 tests/unit/poker/**
 ```
@@ -135,6 +137,10 @@ tests/unit/poker/**
 > `tests/unit` (Track B legitimately needed `redis`, `ratelimit`, `rls`,
 > `sessionstore` there) while not claiming the solution data and importer that
 > 2.4 onward cannot be built without.
+>
+> `src/content/solver/**` was added for 2.8, as the sibling of
+> `src/content/solutions/**`. The build plan puts 2.8's guide in `docs/`; it
+> lives beside its matrix instead, the same call made for `AUTHORING.md`.
 
 **Runway:** 4 substages. Still fully independent of `main`'s 1.2/1.3 auth work.
 `src/poker` is pure TypeScript by architectural rule — no React, no DB, no
