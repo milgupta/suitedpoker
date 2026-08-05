@@ -47,7 +47,7 @@ export interface EventMap {
   module_completed: { moduleId: string };
   sim_session_started: { tableType: string };
   sim_session_ended: { hands: number; netBb: number };
-  coach_hint_requested: { level: number };
+  coach_hint_requested: { level: number; source: string };
   coach_explanation_viewed: Record<string, never>;
   coach_chat_message: Record<string, never>;
   rating_tier_changed: { from: string; to: string };

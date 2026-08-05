@@ -8,7 +8,16 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  /**
+   * Capped at 2 locally.
+   *
+   * Most of this suite creates a real Supabase user and logs it in. At the
+   * default worker count (cores - 1, doubled across the two projects) Supabase's
+   * own auth rate limiting starts refusing sign-ins, and roughly a dozen
+   * unrelated tests fail with timeouts that look like product bugs. Two workers
+   * keeps the whole suite green and still finishes in about four minutes.
+   */
+  workers: process.env.CI ? 1 : 2,
   reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",
   use: {
     baseURL,

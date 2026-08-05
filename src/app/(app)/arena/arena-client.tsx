@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button";
 import { GradeBadge } from "@/components/ui/grade-badge";
 import { Shimmer } from "@/components/motion";
 import { AnimatedNumber } from "@/components/motion";
-import { Feedback, FrequencyCapsules, PlayingCard } from "@/components/poker";
+import { Feedback, FrequencyCapsules, HintButton, PlayingCard } from "@/components/poker";
+import type { HintLine } from "@/components/poker";
+import type { HintLevel } from "@/lib/hints";
 import { parseArenaPreset, type ArenaPreset } from "@/lib/arena-preset";
 import { capture } from "@/lib/analytics-client";
 import { GRADES } from "@/lib/grade";
@@ -48,6 +50,8 @@ export function ArenaClient() {
   const [error, setError] = useState("");
   const startedAt = useRef(0);
   const [finished, setFinished] = useState(false);
+  const [hintsRemaining, setHintsRemaining] = useState<number | null>(null);
+  const hintLevel = useRef(0);
 
   const loadNext = useCallback(async () => {
     setLoading(true);
@@ -73,6 +77,7 @@ export function ArenaClient() {
       const data = (await response.json()) as { spotId: string; spot: ClientSpot };
       setSpotId(data.spotId);
       setSpot(data.spot);
+      hintLevel.current = 0;
       startedAt.current = nowMs();
     } catch {
       setError("Could not reach the server.");
@@ -108,7 +113,10 @@ export function ArenaClient() {
       return;
     }
 
-    const graded = (await response.json()) as Grade & { ratingDelta: number };
+    const graded = (await response.json()) as Grade & {
+      ratingDelta: number;
+      hintsUsed?: number;
+    };
     setResult(graded);
     setHistory((h) => [...h, { spot, result: graded, action }]);
 
@@ -117,8 +125,43 @@ export function ArenaClient() {
       evLoss: graded.evLoss,
       timeMs: nowMs() - startedAt.current,
       difficulty: spot.difficulty,
-      hintsUsed: 0,
+      hintsUsed: graded.hintsUsed ?? hintLevel.current,
     });
+  }
+
+  /**
+   * The level is tracked here only so the analytics event can carry it. The
+   * rating penalty is computed server-side from the session, because a client
+   * that reports its own hint usage will eventually report zero.
+   */
+  async function requestHint(level: HintLevel): Promise<HintLine | null> {
+    if (spotId === null) return null;
+
+    try {
+      const response = await fetch("/api/coach/hint", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ spotId, level }),
+      });
+
+      if (!response.ok) return null;
+
+      const data = (await response.json()) as {
+        level: HintLevel;
+        text: string;
+        source: string;
+        hintsRemaining: number;
+      };
+
+      setHintsRemaining(data.hintsRemaining);
+      if (data.source !== "exhausted") hintLevel.current = Math.max(hintLevel.current, data.level);
+
+      capture("coach_hint_requested", { level: data.level, source: data.source });
+
+      return { level: data.level, text: data.text };
+    } catch {
+      return null;
+    }
   }
 
   function next(): void {
@@ -250,6 +293,15 @@ export function ArenaClient() {
               </Button>
             ))}
           </div>
+
+          {result === null && spotId !== null && (
+            <HintButton
+              key={spotId}
+              onRequest={requestHint}
+              hintsRemaining={hintsRemaining}
+              disabled={result !== null}
+            />
+          )}
 
           {result !== null && <Feedback result={result} ratingDelta={0} onNext={next} />}
         </>

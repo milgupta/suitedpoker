@@ -130,8 +130,37 @@ sessions.
 | 3.5 Range grid viewer | done |
 | 3.6 Hand-history format and question types | done |
 | 4.1 Gemini integration and prompt architecture | done — **20-spot adversarial run unverified (no Gemini key)** |
+| 4.2 Hint system | done — 7 hint e2e green, 50-hint leak test green |
 
 Stage 0 is complete. Update this table when you finish a substage.
+
+**What 4.2 left you.**
+
+- **`src/lib/hints.ts` is pure and holds the fallback.** With no Gemini key every
+  hint comes from these templates, so they are the product, not a stub. They are
+  poker-accurate on purpose: `OPENS_TIGHT` (UTG, MP) and `BEHIND` are kept as
+  separate facts because CO has players behind it and still opens wide, and
+  conflating them produced a fluent, wrong hint.
+- **Levels 1 and 2 may not name ANY action.** `tests/unit/hints.test.ts` runs 50
+  real generated spots through both the guard and an independent regex, and
+  prints all 50 so they can be read. If you add a template, that test is the gate.
+- **The hint level lives on the drill session, never in the request body.** The
+  answer route computes the rating penalty from `stored.hints`, and the client's
+  `hintsUsed` is analytics only. There is an e2e that sends `hintsUsed: 0` after
+  taking three hints and asserts the server still says 3.
+- **`RULES.COACH_HINT.limit` must stay strictly above `RULES.HINTS_DAILY.limit`.**
+  Both were 20, so the burst guard fired first and the user got a 429 where the
+  product promised "20 hints left today". There is now a test asserting the
+  ordering.
+- **Level repeats are free.** A re-request of a level already served comes from
+  the session, costs no model call and no budget — the UI keeps all levels on
+  screen, so a refresh must not be charged.
+- **Playwright now runs 2 workers locally** (`playwright.config.ts`). At the
+  default count Supabase's auth rate limiting refuses sign-ins and about a dozen
+  unrelated tests fail in ways that look like product bugs.
+- **Fixed in passing:** `tests/e2e/auth.spec.ts` had been red since 1.3 — it
+  created unsubscribed users and expected `/dashboard`, which correctly redirects
+  to `/paywall` now. Its users get a subscription so the file tests auth only.
 
 **What 4.1 left you.**
 

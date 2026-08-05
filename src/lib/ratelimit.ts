@@ -72,12 +72,34 @@ export const RULES = {
     failMode: "open",
   },
 
+  /**
+   * A flood guard, NOT the hint budget — `HINTS_DAILY` is that.
+   *
+   * It must stay strictly above `HINTS_DAILY.limit`, or it fires first and the
+   * user gets a 429 where the product promised a friendly counter. Two limits
+   * with the same number means the softer one can never be reached.
+   */
   COACH_HINT: {
     key: "coach_hint",
-    limit: 20,
+    limit: 40,
     kind: "sliding",
-    windowSeconds: 300,
+    windowSeconds: 60,
     failMode: "closed",
+  },
+
+  /**
+   * The hint budget the UI shows as a counter.
+   *
+   * A calendar day rather than a rolling window, because "20 hints left today"
+   * is the only honest way to phrase it in the interface — a rolling 24h window
+   * cannot answer "when do I get more?" with a time the user recognises.
+   */
+  HINTS_DAILY: {
+    key: "hints_daily",
+    limit: 20,
+    kind: "calendarDay",
+    failMode: "closed",
+    timeZone: "UTC",
   },
 
   COACH_EXPLAIN: {

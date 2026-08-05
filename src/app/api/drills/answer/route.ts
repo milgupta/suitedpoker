@@ -11,6 +11,7 @@ import { getDb } from "@/db";
 import { drillAttempts, profiles } from "@/db/schema";
 import { MAX_RD, difficultyToRating, scoreForGrade, tieredUp, updateRating } from "@/lib/rating";
 import { spotConfigSchema } from "@/lib/arena-preset";
+import { applyHintPenalty } from "@/lib/hints";
 import { SPOT_TTL_SECONDS } from "../next/route";
 
 const answerSchema = z.object({
@@ -26,6 +27,8 @@ interface StoredSpot {
   handKey: string;
   config: z.infer<typeof spotConfigSchema>;
   answered: boolean;
+  /** Hints served for this spot, keyed by level. Server-recorded, never client-supplied. */
+  hints?: Record<string, string>;
 }
 
 /**
@@ -87,6 +90,11 @@ export const POST = withEntitlement(async (request, auth) => {
 
   const result = gradePreflop(node, spot.handKey, action as PreflopActionName);
 
+  // The level the user actually reached, from the session. The client sends its
+  // own `hintsUsed` for analytics, but a rating penalty computed from a number
+  // the client controls is not a penalty at all.
+  const hintLevelReached = Math.max(0, ...Object.keys(stored.hints ?? {}).map(Number));
+
   // Burn the spot before persisting, so a concurrent second submit loses.
   await putSession("drill", spotId, auth.userId, { ...stored, answered: true }, SPOT_TTL_SECONDS);
 
@@ -104,7 +112,7 @@ export const POST = withEntitlement(async (request, auth) => {
         evLoss: result.evLoss.toFixed(3),
         timeMs,
         source: stored.config.tags?.[0] ?? "arena",
-        hintsUsed: parsed.data.hintsUsed ?? 0,
+        hintsUsed: hintLevelReached,
       });
   } catch {
     // A failed write must not cost the user their feedback — the whole point of
@@ -140,8 +148,10 @@ export const POST = withEntitlement(async (request, auth) => {
         ],
       );
 
-      ratingDelta = Math.round(updated.rating) - before.rating;
-      newRating = Math.round(updated.rating);
+      // A hint shrinks the GAIN, never the loss. Zeroing it out would teach
+      // users to guess rather than ask, which is the opposite of the point.
+      ratingDelta = applyHintPenalty(Math.round(updated.rating) - before.rating, hintLevelReached);
+      newRating = before.rating + ratingDelta;
       crossedTier = tieredUp(before.rating, newRating);
 
       await db
@@ -153,5 +163,11 @@ export const POST = withEntitlement(async (request, auth) => {
     // Leave the delta at zero rather than failing the request.
   }
 
-  return NextResponse.json({ ...result, ratingDelta, rating: newRating, tieredUp: crossedTier });
+  return NextResponse.json({
+    ...result,
+    ratingDelta,
+    rating: newRating,
+    tieredUp: crossedTier,
+    hintsUsed: hintLevelReached,
+  });
 });

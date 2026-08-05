@@ -22,4 +22,5 @@ export {
   type RangeStrategy,
 } from "./RangeGrid";
 export { ChoiceGrid, type ChoiceGridProps, type ChoiceOption } from "./ChoiceGrid";
+export { HintButton, type HintButtonProps, type HintLine } from "./HintButton";
 export { HandHistory, historyLines, potByStreet, type HandHistoryProps } from "./HandHistory";

@@ -33,6 +33,15 @@ function uniqueEmail(): string {
   return `e2e+${Date.now()}${Math.floor(Math.random() * 1000)}@suitedpoker.com`;
 }
 
+/**
+ * A confirmed user WITH an active subscription.
+ *
+ * The subscription is not incidental. Since 1.3, /dashboard is behind the
+ * entitlement gate, so an unsubscribed user lands on /paywall — correctly. An
+ * auth test that asserts /dashboard would then be measuring entitlement, which
+ * has its own suite (tests/e2e/entitlement.spec.ts). Granting the subscription
+ * keeps these tests about auth and nothing else.
+ */
 async function makeConfirmedUser(email: string): Promise<string> {
   const { data, error } = await admin.auth.admin.createUser({
     email,
@@ -43,6 +52,15 @@ async function makeConfirmedUser(email: string): Promise<string> {
   const id = data.user?.id;
   if (id === undefined) throw new Error("no user id");
   created.push(id);
+
+  const { error: subError } = await admin.from("subscriptions").insert({
+    user_id: id,
+    status: "active",
+    price_id: "price_e2e",
+    current_period_end: new Date(Date.now() + 30 * 86_400_000).toISOString(),
+  });
+  if (subError !== null) throw subError;
+
   return id;
 }
 
