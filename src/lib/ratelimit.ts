@@ -1,6 +1,7 @@
 import "server-only";
 
 import { getRedis } from "@/lib/redis";
+import { localDay } from "@/lib/local-day";
 
 /**
  * Rate limiting.
@@ -129,61 +130,6 @@ export interface LimitOptions {
   readonly cost?: number;
   /** Injectable clock, for tests. */
   readonly now?: () => number;
-}
-
-/* ── Calendar-day helpers ────────────────────────────────────────────────── */
-
-const dayFormatters = new Map<string, Intl.DateTimeFormat>();
-
-function formatterFor(timeZone: string): Intl.DateTimeFormat {
-  let fmt = dayFormatters.get(timeZone);
-  if (fmt === undefined) {
-    fmt = new Intl.DateTimeFormat("en-CA", {
-      timeZone,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-    });
-    dayFormatters.set(timeZone, fmt);
-  }
-  return fmt;
-}
-
-interface LocalDay {
-  /** `YYYY-MM-DD` in the target zone. */
-  readonly key: string;
-  /** Epoch ms of the next local midnight. */
-  readonly nextMidnight: number;
-}
-
-/**
- * The local calendar day and when it ends.
- *
- * Derived by formatting rather than by offset arithmetic, so it is correct for
- * any zone without a timezone library. On a DST transition day the computed
- * midnight can be an hour out; that shifts when a budget resets by an hour
- * twice a year, which is not worth a dependency.
- */
-export function localDay(nowMs: number, timeZone: string): LocalDay {
-  const parts = formatterFor(timeZone).formatToParts(new Date(nowMs));
-  const get = (type: string): number => Number(parts.find((p) => p.type === type)?.value ?? "0");
-
-  const year = get("year");
-  const month = String(get("month")).padStart(2, "0");
-  const day = String(get("day")).padStart(2, "0");
-
-  // Intl renders midnight as hour 24 in some zones/locales.
-  const hour = get("hour") % 24;
-  const elapsed = hour * 3600 + get("minute") * 60 + get("second");
-
-  return {
-    key: `${year}-${month}-${day}`,
-    nextMidnight: nowMs + (86_400 - elapsed) * 1000,
-  };
 }
 
 /* ── The limiter ─────────────────────────────────────────────────────────── */

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { MemoryRedis, __setRedisForTests, type RedisPort } from "../../src/lib/redis";
-import { RULES, limit, localDay, type Rule } from "../../src/lib/ratelimit";
+import { RULES, limit, type Rule } from "../../src/lib/ratelimit";
+import { localDay } from "../../src/lib/local-day";
 
 class Clock {
   constructor(private ms = Date.UTC(2026, 7, 5, 9, 30, 0)) {}

@@ -126,6 +126,7 @@ sessions.
 | 8.1 PostHog and product analytics | done — schema + proxy shipped, **live stream unverified (no key)** |
 | 3.2 Drill player: the core loop | done |
 | 3.3 Rating system and adaptive difficulty | done |
+| 3.4 Daily challenge, streaks, leaderboard | done |
 
 Stage 0 is complete. Update this table when you finish a substage.
 
@@ -255,6 +256,23 @@ Stage 0 is complete. Update this table when you finish a substage.
   feeding someone their worst spot reads as the app being unfair.
 - Glicko is verified against the worked example in Glickman's paper
   (1500/200 → 1464.1/151.4) and converges within ±50 over 10,000 attempts.
+
+**What 3.4 left you.**
+
+- **`localDay()` in `src/lib/local-day.ts` is the ONLY answer to "what day is
+  it for this user".** The rate limiter and the streak both use it. Two
+  implementations is how an LA user loses a streak to a UTC rollover while
+  their budget resets an hour later.
+- **One attempt per daily spot is a DATABASE constraint**, not an application
+  check — `UNIQUE(result_id, spot_index)`. An app check loses the concurrency
+  race, and there is an e2e that fires two simultaneous answers to prove it.
+- **The daily is rebuilt with `buildDailySpots()`, never spot-by-spot.** It
+  threads an accumulating `excludeNodeRefs` through the five, so regenerating
+  one spot from its seed alone yields a different node.
+- **The streak freeze must be announced.** An unannounced save teaches nothing;
+  an announced one is the moment the user feels looked after.
+- **The share grid is spoiler-free by construction** — grades only, no
+  position, hand, action, board or EV. A test asserts each of those absent.
 
 **What 0.2 left you.** Anything a later substage needs to build on:
 

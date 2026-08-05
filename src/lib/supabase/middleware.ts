@@ -4,7 +4,15 @@ import { isEntitled } from "@/lib/entitlement-rule";
 import { isSupabaseConfigured, supabaseConfig } from "./config";
 
 /** Everything under here requires a session. */
-const PROTECTED_PREFIXES = ["/dashboard", "/onboarding", "/drill", "/ranges", "/arena", "/account"];
+const PROTECTED_PREFIXES = [
+  "/dashboard",
+  "/onboarding",
+  "/drill",
+  "/daily",
+  "/ranges",
+  "/arena",
+  "/account",
+];
 
 /** Signed-in users have no business on these. */
 const AUTH_ONLY_PREFIXES = ["/login", "/signup", "/forgot"];
