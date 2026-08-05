@@ -19,6 +19,12 @@ own git worktree on its own branch. **If you are in a worktree, read
 `PARALLEL.md` and stay inside your track's `owns` list.** Writing outside your
 lane is how three agents produce one unmergeable mess.
 
+**Every session, first thing: run `git branch -a` and `git worktree list`.**
+If any branch other than `main` exists, there is unmerged work outstanding —
+name it in your opening message and point at the merge-back procedure at the top
+of `PARALLEL.md`. An unmerged branch that nobody mentions is how a week of engine
+work quietly rots on a stale base.
+
 ## How a session works
 
 1. Milan names a substage (e.g. "run 0.2").
@@ -111,9 +117,17 @@ sessions.
 | 0.2 Design system and motion language | done — implements `DESIGN.md` |
 | 0.3 Core UI component library | done |
 | 0.4 Redis, caching, rate-limit primitives | done |
-| 1.1 Supabase project and schema | NEXT |
+| 1.1 Supabase project and schema | done — schema + RLS written, **not yet applied to a live DB** |
+| 1.2 Auth flows | NEXT |
 
 Stage 0 is complete. Update this table when you finish a substage.
+
+> ⚠️ **1.1 is code-complete but unverified against a real database.** No Supabase
+> project existed when it was built. Before 1.2, follow the Database setup steps
+> in `README.md` and run `npm run db:migrate`, `npm run db:seed` and
+> **`npm run test:rls`**. Until that last one runs, row-level security is
+> untested — the static audit in `tests/unit/rls-policy.test.ts` proves the
+> policies were written, not that they work.
 
 **What 0.2 left you.** Anything a later substage needs to build on:
 

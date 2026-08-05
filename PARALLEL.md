@@ -1,5 +1,33 @@
 # Building in parallel
 
+> ## ⚠️ OPEN BRANCHES — CHECK THIS EVERY SESSION
+>
+> **Run `git branch -a` and `git worktree list` at the start of every session.**
+> If any branch other than `main` exists, it is unfinished work that still has to
+> be merged back. Say so out loud in your first message — do not let it sit.
+>
+> | Branch | Track | Substages | State |
+> |---|---|---|---|
+> | `track/engine` | C — poker engine | 2.1, 2.2, 2.3 | branch exists, **no commits yet** |
+>
+> As of 1.1 the tracks are NOT running in parallel — `track/data` was never
+> created and 0.4 and 1.1 were both built on `main`. Track B below is therefore
+> already done. `track/engine` is provisioned and empty; nothing is waiting to
+> be merged.
+>
+> **Merge-back procedure** (from inside the worktree, once its substages pass):
+>
+> ```bash
+> git fetch origin && git rebase origin/main
+> npm run verify                 # must pass on the rebased branch
+> git push -u origin track/engine
+> # merge the PR on GitHub, then from the main folder:
+> git worktree remove ../suitedpoker-engine
+> ```
+>
+> Rebase onto main — never merge main into the branch. Tick the table above and
+> delete the row once the merge has landed.
+
 Three Claude Code instances can work on this repo simultaneously without stepping
 on each other, because the dependency graph has three genuinely independent
 tracks and each one owns a different set of directories.
@@ -46,8 +74,8 @@ git worktree remove ../suitedpoker-engine
 
 | Substage | |
 |---|---|
-| 0.2 | Design system and motion language |
-| 0.3 | Core UI component library |
+| 0.2 | Design system and motion language — **done** |
+| 0.3 | Core UI component library — **done** |
 
 **Owns:** `src/app/**`, `src/components/**`, `src/lib/motion.ts`, `DESIGN.md`
 
@@ -60,8 +88,11 @@ downstream needs both.
 
 | Substage | |
 |---|---|
-| 0.4 | Redis, caching, rate-limit primitives |
-| 1.1 | Database schema and RLS |
+| 0.4 | Redis, caching, rate-limit primitives — **done, on `main`** |
+| 1.1 | Database schema and RLS — **done, on `main`** |
+
+> Both were built sequentially on `main` rather than on `track/data`, which was
+> never created. This track has nothing left in it.
 
 **Owns:** `src/db/**`, `src/lib/redis.ts`, `src/lib/ratelimit.ts`,
 `src/lib/sessionstore.ts`, `supabase/**`, `drizzle.config.ts`, `scripts/seed.ts`

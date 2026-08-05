@@ -38,8 +38,73 @@ optional so the app runs before Stripe, Supabase, and Redis exist.
 | `npm run test:e2e` | Playwright, desktop + mobile |
 | `npm run test:e2e:ui` | Playwright UI mode |
 | `npm run verify` | typecheck → lint → format → test |
+| `npm run db:generate` | Generate a migration from `src/db/schema.ts` |
+| `npm run db:migrate` | Apply pending migrations |
+| `npm run db:push` | Push the schema straight to the DB (dev only) |
+| `npm run db:seed` | Seed modules, lessons and a dev user |
+| `npm run db:studio` | Drizzle Studio |
+| `npm run test:rls` | The cross-user security test — needs a live Supabase |
 
 `npm run verify` is the single command to run before declaring any substage done.
+
+## Database setup
+
+The app builds, tests and runs without a database — but nothing that touches
+`src/db` works until this is done, and **the row-level security boundary is
+unverified until `npm run test:rls` has actually run.**
+
+1. Create a project at [supabase.com](https://supabase.com). Any region; pick
+   one close to your users.
+
+2. From **Project settings → Data API** and **→ API keys**, copy into
+   `.env.local`:
+
+   ```
+   NEXT_PUBLIC_SUPABASE_URL="https://<ref>.supabase.co"
+   NEXT_PUBLIC_SUPABASE_ANON_KEY="<anon key>"
+   SUPABASE_SERVICE_ROLE_KEY="<service role key>"
+   ```
+
+   The service role key bypasses RLS entirely. It is server-only and must never
+   reach the client bundle — 1.2 adds a test that greps the bundle for it.
+
+3. From **Project settings → Database → Connection string**, take the
+   **Session pooler** URI and add it as `DATABASE_URL`. Use the pooler rather
+   than the direct connection: serverless functions open far more connections
+   than Postgres will accept directly.
+
+   ```
+   DATABASE_URL="postgresql://postgres.<ref>:<password>@<host>:5432/postgres"
+   ```
+
+4. Apply the schema and the security policies:
+
+   ```bash
+   npm run db:migrate
+   ```
+
+   `0000_schema.sql` creates the tables. `0001_auth_fks_rls.sql` adds the
+   foreign keys to `auth.users`, the new-user trigger, and every RLS policy.
+   Both are safe to re-run.
+
+5. Seed development data:
+
+   ```bash
+   npm run db:seed
+   ```
+
+   Creates a solution set, 3 modules with 4 lessons each, and a dev user
+   (`dev@suitedpoker.com` / `devpassword123`) with onboarding already complete.
+
+6. **Verify the security boundary.** This is not optional:
+
+   ```bash
+   npm run test:rls
+   ```
+
+   It creates two users, gives each of them rows, and asserts that user A reads
+   zero of user B's profile, drill attempts and subscriptions. It skips loudly
+   when credentials are absent — a skipped security test proves nothing.
 
 ## Architecture
 

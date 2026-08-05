@@ -13,3 +13,6 @@ docs/COMPETITOR-*.md
 
 # local agent settings
 .claude/settings.local.json
+
+# drizzle-kit generated snapshots — reformatting churns on every regenerate
+supabase/migrations/meta
