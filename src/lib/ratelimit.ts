@@ -1,0 +1,310 @@
+import "server-only";
+
+import { getRedis } from "@/lib/redis";
+
+/**
+ * Rate limiting.
+ *
+ * Two window kinds, because two genuinely different things are being limited:
+ *
+ * `sliding`     — burst control. "No more than N of these per minute." Uses a
+ *                 two-bucket weighted counter, the same approximation Upstash's
+ *                 own sliding limiter uses: exact counting would need one
+ *                 stored entry per unit, and a token budget charging 1500 units
+ *                 would write 1500 entries.
+ *
+ * `calendarDay` — a daily budget that resets at midnight. A rolling 24h window
+ *                 can never say "resets at midnight" truthfully, and that is
+ *                 the message the UI has to show.
+ *
+ * Rules also carry a `cost`, because an AI call spending 1500 tokens is not the
+ * same event as one spending 20.
+ */
+
+export type WindowKind = "sliding" | "calendarDay";
+export type FailMode = "open" | "closed";
+
+export interface Rule {
+  /** Namespace in the key. Never reuse one across rules. */
+  readonly key: string;
+  readonly limit: number;
+  readonly kind: WindowKind;
+  /** Required for `sliding`, ignored for `calendarDay`. */
+  readonly windowSeconds?: number;
+  /**
+   * What to do when Redis is unreachable.
+   *
+   * `open` for anything that only costs us latency — blocking a paying user
+   * because our cache is down is worse than letting a few extra requests
+   * through. `closed` for anything that costs MONEY, because an outage is
+   * exactly when an unmetered AI endpoint drains a budget.
+   */
+  readonly failMode: FailMode;
+  /** IANA zone the day boundary is measured in. `calendarDay` only. */
+  readonly timeZone?: string;
+}
+
+export interface LimitResult {
+  readonly allowed: boolean;
+  /** Units left in the current window, floored at 0. */
+  readonly remaining: number;
+  /** Epoch ms at which the allowance is back. */
+  readonly resetAt: number;
+  /** True when this verdict came from a Redis failure rather than a count. */
+  readonly degraded: boolean;
+}
+
+/**
+ * Named rules. Every caller references one of these rather than passing
+ * numbers, so 4.5 can tune the whole app from one place.
+ *
+ * The numbers are deliberate defaults, not measurements — 4.5 tunes them
+ * against real usage.
+ */
+export const RULES = {
+  /** One graded answer per drill decision; generous, this is the core loop. */
+  DRILL_ANSWER: {
+    key: "drill_answer",
+    limit: 120,
+    kind: "sliding",
+    windowSeconds: 60,
+    failMode: "open",
+  },
+
+  COACH_HINT: {
+    key: "coach_hint",
+    limit: 20,
+    kind: "sliding",
+    windowSeconds: 300,
+    failMode: "closed",
+  },
+
+  COACH_EXPLAIN: {
+    key: "coach_explain",
+    limit: 30,
+    kind: "sliding",
+    windowSeconds: 300,
+    failMode: "closed",
+  },
+
+  COACH_CHAT: {
+    key: "coach_chat",
+    limit: 40,
+    kind: "sliding",
+    windowSeconds: 300,
+    failMode: "closed",
+  },
+
+  /** A token budget, charged by `cost`, that resets at the user's midnight. */
+  AI_TOKENS_DAILY: {
+    key: "ai_tokens_daily",
+    limit: 150_000,
+    kind: "calendarDay",
+    failMode: "closed",
+    timeZone: "UTC",
+  },
+
+  API_GENERIC: {
+    key: "api_generic",
+    limit: 300,
+    kind: "sliding",
+    windowSeconds: 60,
+    failMode: "open",
+  },
+
+  /** Fails CLOSED despite costing nothing — this one guards credentials. */
+  AUTH_ATTEMPT: {
+    key: "auth_attempt",
+    limit: 10,
+    kind: "sliding",
+    windowSeconds: 900,
+    failMode: "closed",
+  },
+} as const satisfies Record<string, Rule>;
+
+export type RuleName = keyof typeof RULES;
+
+export interface LimitOptions {
+  /** Units this request consumes. Defaults to 1. */
+  readonly cost?: number;
+  /** Injectable clock, for tests. */
+  readonly now?: () => number;
+}
+
+/* ── Calendar-day helpers ────────────────────────────────────────────────── */
+
+const dayFormatters = new Map<string, Intl.DateTimeFormat>();
+
+function formatterFor(timeZone: string): Intl.DateTimeFormat {
+  let fmt = dayFormatters.get(timeZone);
+  if (fmt === undefined) {
+    fmt = new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    });
+    dayFormatters.set(timeZone, fmt);
+  }
+  return fmt;
+}
+
+interface LocalDay {
+  /** `YYYY-MM-DD` in the target zone. */
+  readonly key: string;
+  /** Epoch ms of the next local midnight. */
+  readonly nextMidnight: number;
+}
+
+/**
+ * The local calendar day and when it ends.
+ *
+ * Derived by formatting rather than by offset arithmetic, so it is correct for
+ * any zone without a timezone library. On a DST transition day the computed
+ * midnight can be an hour out; that shifts when a budget resets by an hour
+ * twice a year, which is not worth a dependency.
+ */
+export function localDay(nowMs: number, timeZone: string): LocalDay {
+  const parts = formatterFor(timeZone).formatToParts(new Date(nowMs));
+  const get = (type: string): number => Number(parts.find((p) => p.type === type)?.value ?? "0");
+
+  const year = get("year");
+  const month = String(get("month")).padStart(2, "0");
+  const day = String(get("day")).padStart(2, "0");
+
+  // Intl renders midnight as hour 24 in some zones/locales.
+  const hour = get("hour") % 24;
+  const elapsed = hour * 3600 + get("minute") * 60 + get("second");
+
+  return {
+    key: `${year}-${month}-${day}`,
+    nextMidnight: nowMs + (86_400 - elapsed) * 1000,
+  };
+}
+
+/* ── The limiter ─────────────────────────────────────────────────────────── */
+
+function degraded(rule: Rule, resetAt: number): LimitResult {
+  return {
+    allowed: rule.failMode === "open",
+    remaining: rule.failMode === "open" ? rule.limit : 0,
+    resetAt,
+    degraded: true,
+  };
+}
+
+async function limitSliding(
+  identifier: string,
+  rule: Rule,
+  cost: number,
+  nowMs: number,
+): Promise<LimitResult> {
+  const windowMs = (rule.windowSeconds ?? 60) * 1000;
+  const bucket = Math.floor(nowMs / windowMs);
+  const elapsed = nowMs - bucket * windowMs;
+  const nextBoundary = (bucket + 1) * windowMs;
+
+  const currentKey = `rl:${rule.key}:${identifier}:${bucket}`;
+  const previousKey = `rl:${rule.key}:${identifier}:${bucket - 1}`;
+
+  const redis = getRedis();
+
+  const [currentRaw, previousRaw] = await Promise.all([
+    redis.get(currentKey),
+    redis.get(previousKey),
+  ]);
+
+  const current = Number(currentRaw ?? "0");
+  const previous = Number(previousRaw ?? "0");
+
+  // The previous window's contribution decays as the current one fills. This
+  // is what makes the limit slide instead of resetting on a boundary.
+  const weight = 1 - elapsed / windowMs;
+  const used = current + previous * weight;
+
+  if (used + cost > rule.limit) {
+    return {
+      allowed: false,
+      remaining: Math.max(0, Math.floor(rule.limit - used)),
+      resetAt: nextBoundary,
+      degraded: false,
+    };
+  }
+
+  await redis.incrBy(currentKey, cost);
+  // Two windows, so the previous bucket is still readable while it decays.
+  await redis.expire(currentKey, (rule.windowSeconds ?? 60) * 2);
+
+  return {
+    allowed: true,
+    remaining: Math.max(0, Math.floor(rule.limit - used - cost)),
+    resetAt: nextBoundary,
+    degraded: false,
+  };
+}
+
+async function limitCalendarDay(
+  identifier: string,
+  rule: Rule,
+  cost: number,
+  nowMs: number,
+): Promise<LimitResult> {
+  const { key: dayKey, nextMidnight } = localDay(nowMs, rule.timeZone ?? "UTC");
+  const redisKey = `rl:${rule.key}:${identifier}:${dayKey}`;
+
+  const redis = getRedis();
+  const used = Number((await redis.get(redisKey)) ?? "0");
+
+  if (used + cost > rule.limit) {
+    return {
+      allowed: false,
+      remaining: Math.max(0, rule.limit - used),
+      resetAt: nextMidnight,
+      degraded: false,
+    };
+  }
+
+  await redis.incrBy(redisKey, cost);
+  // Two days of slack, so a key cannot outlive its usefulness or vanish early.
+  await redis.expire(redisKey, 172_800);
+
+  return {
+    allowed: true,
+    remaining: Math.max(0, rule.limit - used - cost),
+    resetAt: nextMidnight,
+    degraded: false,
+  };
+}
+
+/**
+ * Checks and consumes allowance for `identifier` under `rule`.
+ *
+ * Returns a result rather than a boolean because the UI needs to say WHEN the
+ * allowance returns, not just that it is gone.
+ */
+export async function limit(
+  identifier: string,
+  rule: Rule,
+  options: LimitOptions = {},
+): Promise<LimitResult> {
+  const nowMs = (options.now ?? Date.now)();
+  const cost = options.cost ?? 1;
+
+  try {
+    return rule.kind === "calendarDay"
+      ? await limitCalendarDay(identifier, rule, cost, nowMs)
+      : await limitSliding(identifier, rule, cost, nowMs);
+  } catch {
+    // A cost-bearing rule fails CLOSED: an outage is precisely when an
+    // unmetered AI endpoint would drain the budget.
+    const resetAt =
+      rule.kind === "calendarDay"
+        ? localDay(nowMs, rule.timeZone ?? "UTC").nextMidnight
+        : nowMs + (rule.windowSeconds ?? 60) * 1000;
+    return degraded(rule, resetAt);
+  }
+}

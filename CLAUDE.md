@@ -110,10 +110,10 @@ sessions.
 | `DESIGN.md` written from reference teardowns | done |
 | 0.2 Design system and motion language | done — implements `DESIGN.md` |
 | 0.3 Core UI component library | done |
-| 0.4 Redis, caching, rate-limit primitives | NEXT |
+| 0.4 Redis, caching, rate-limit primitives | done |
+| 1.1 Supabase project and schema | NEXT |
 
-Everything from 0.5 onward is untouched. Update this table when you finish a
-substage.
+Stage 0 is complete. Update this table when you finish a substage.
 
 **What 0.2 left you.** Anything a later substage needs to build on:
 
@@ -154,6 +154,30 @@ substage.
   easy to lose when adding a component.
 - **Glossary content** is typed TS in `src/content/glossary/`. `StatInfoSheet`
   only touches `getGlossaryEntry`, so the MDX swap later is one file.
+
+**What 0.4 left you.**
+
+- **Nothing in `src/lib/redis.ts` throws.** `cacheGet` returns null for a miss,
+  malformed JSON and a Redis outage alike; the caller cannot tell and should
+  not need to. `withCache` is the exception on purpose: an error from the
+  loader propagates, or a broken query renders as a silently empty page.
+- **There is always an implementation.** With no Upstash credentials the
+  in-memory store takes over, so dev and CI run the same code path. It does not
+  survive a restart and is not shared between instances — fine for a cache,
+  not fine as a source of truth.
+- **Rules carry their own fail mode.** Open for anything costing only latency,
+  closed for anything costing money, and `AUTH_ATTEMPT` is closed despite being
+  free because it guards credentials. Add new rules to `RULES`, never inline
+  numbers at a call site.
+- **`AI_TOKENS_DAILY` is a calendar-day budget, not a rolling window**, charged
+  by `cost` so a 1500-token call is not one 20-token call. A sliding window can
+  never truthfully say "resets at midnight".
+- **`getSession` verifies ownership and that is a security boundary.** Do not
+  optimise the `userId` argument away; there is an explicit test for it, and
+  3.2 and 6.2 depend on it.
+- **The Upstash client is built with `automaticDeserialization: false`.** With
+  the SDK's default parsing a stored string `"123"` and a stored number `123`
+  come back identical.
 
 ## Environment
 
