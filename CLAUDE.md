@@ -120,6 +120,9 @@ sessions.
 | 1.1 Supabase project and schema | done — applied and verified against live Supabase |
 | 1.2 Auth flows | done — verified against live Supabase, Google OAuth live |
 | 1.3 Entitlement scaffold and route gating | done — four gating states verified live |
+| 2.1–2.3 Poker engine (Track C) | done — merged from `track/engine` |
+| 2.5–2.7 Hand classes, spot generator, grading | done |
+| 3.1 The poker table component | done |
 
 Stage 0 is complete. Update this table when you finish a substage.
 
@@ -176,6 +179,24 @@ Stage 0 is complete. Update this table when you finish a substage.
   convention.
 - **Folders under `src/app` starting with `_` are never routed.** A probe route
   there silently 404s.
+
+**What 3.1 left you.**
+
+- **The table is a glowing elliptical RING, never a filled surface.** A felt
+  oval fights every piece of data placed on it; a stroke on near-black keeps
+  the board cards the brightest objects on screen.
+- **Four-colour deck has its own tokens** (`--color-suit-*`). They are NOT the
+  grade ramp and must never be mixed with it — a card is red because it is a
+  heart, never because the play was bad.
+- **Suit pips are SVG paths, not unicode.** ♠♥♦♣ get emoji-fied on Android and
+  become unreadable at 24px.
+- **Board layout is 3-over-2, not a row of five.** At 390px a row of five is
+  either too small to read or too wide to fit. Undealt cards render as dimmed
+  backs so a runout never shifts layout.
+- **Seats carry `data-seat` / `data-folded`** so tests can assert on state
+  without scraping class names.
+- **Styleguide table states are driven by `legalActions`**, never by scripted
+  action lists — a hand-written sequence goes stale and throws at build time.
 
 **What 0.2 left you.** Anything a later substage needs to build on:
 

@@ -129,6 +129,27 @@
   --color-danger-fill: color-mix(in srgb, var(--color-danger) 12%, transparent);
   --color-danger-border: color-mix(in srgb, var(--color-danger) 30%, transparent);
 
+  /*
+   * ── Card suits — a four-colour deck ──────────────────────────────────────
+   * Four colours rather than two because it materially reduces beginner
+   * misreads, which is the entire audience.
+   *
+   * These are NOT the grade ramp and must never be mixed with it: a card is
+   * red because it is a heart, never because the play was bad. They live on a
+   * white card face, so every one is measured against white — 4.98 to 5.75 —
+   * not against the canvas.
+   */
+  --color-suit-hearts: #d32f2f;
+  --color-suit-diamonds: #1565c0;
+  --color-suit-clubs: #2e7d32;
+  --color-suit-spades: #14131c;
+
+  /* The card face itself. The brightest object on the table by design. */
+  --color-card-face: #ffffff;
+  /* Face-down backs: dark, patterned, never a solid block. */
+  --color-card-back: #131a2e;
+  --color-card-back-pattern: rgba(91, 140, 255, 0.22);
+
   /* ── 1. Ambient violet — MARKETING AND ONBOARDING ONLY ──────────────────── */
   --color-ambient-violet: #2d0077;
 

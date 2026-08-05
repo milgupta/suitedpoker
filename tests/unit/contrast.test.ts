@@ -103,6 +103,16 @@ function buildPairings(): Pairing[] {
     min: AA_TEXT,
   });
 
+  // Four-colour deck. These live on a white card face, never on the canvas.
+  for (const suit of ["hearts", "diamonds", "clubs", "spades"]) {
+    pairings.push({
+      fg: `--color-suit-${suit}`,
+      bg: "--color-card-face",
+      use: "suit glyph on a card face",
+      min: AA_TEXT,
+    });
+  }
+
   // Grades as text, and as text on their own 12% fill.
   for (const grade of GRADES) {
     pairings.push({ fg: grade, bg: "--color-canvas", use: "grade text on canvas", min: AA_TEXT });

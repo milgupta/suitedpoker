@@ -170,6 +170,24 @@ blunder's 24.8), so the two never read as the same signal.
 Destructive intent is never carried by colour alone: the label says what will
 happen, and anything irreversible confirms first.
 
+### Card suits — a four-colour deck
+
+Added in 3.1. Four colours rather than two because it measurably reduces
+beginner misreads, and beginners are the entire audience.
+
+These are **not** the grade ramp and must never borrow from it: a card is red
+because it is a heart, never because the play was bad. They sit on a white card
+face, so every one is measured against white rather than the canvas.
+
+| Token | Value | On white |
+|---|---|---|
+| `--suit-hearts` | `#D32F2F` | 4.98 |
+| `--suit-diamonds` | `#1565C0` | 5.75 |
+| `--suit-clubs` | `#2E7D32` | 5.13 |
+| `--suit-spades` | `#14131C` | 18.43 |
+| `--card-face` | `#FFFFFF` | the brightest object on the table, by design |
+| `--card-back` | `#131A2E` | patterned, never a solid block |
+
 ### Ambient violet — marketing and onboarding only
 
 Flighty builds its glow with **three different techniques at three scales**, which
