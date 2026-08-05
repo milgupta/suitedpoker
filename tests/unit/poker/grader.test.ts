@@ -153,8 +153,13 @@ describe("mixed strategies are not errors", () => {
 describe("display mode branches on frequency AND ev gap", () => {
   const cases: Array<[number, number, string, string]> = [
     [0.71, 0.18, "preferred", "THE case a naive implementation gets wrong"],
-    [0.65, 0.3, "clear", "both exactly on the boundary"],
-    [0.65, 0.299, "preferred", "frequency clears, gap does not"],
+    // CLEAR_GAP is derived from INACCURACY_FROM (0.5), not set independently.
+    // A gap between 0.3 and 0.5 used to render a definitive one-word verdict
+    // while the alternative still graded `solid` — a contradiction the panel
+    // could not explain. See the comment on CLEAR_GAP in grader.ts.
+    [0.65, 0.5, "clear", "both exactly on the boundary"],
+    [0.65, 0.499, "preferred", "frequency clears, gap does not"],
+    [0.65, 0.3, "preferred", "a gap that still leaves the alternative solid"],
     [0.649, 5, "mixed", "frequency just under the boundary"],
     [0.9, 2, "clear", "confident and well separated"],
     [0.5, 0.05, "mixed", "genuinely mixed"],
@@ -188,7 +193,7 @@ describe("display mode branches on frequency AND ev gap", () => {
       const handKey = HAND_KEYS[Math.floor(rng() * HAND_KEYS.length)]!;
       const action = node.actions[Math.floor(rng() * node.actions.length)]!;
       const result = grade(node, handKey, action);
-      if (result.displayMode === "clear") expect(result.evGap).toBeGreaterThanOrEqual(0.3);
+      if (result.displayMode === "clear") expect(result.evGap).toBeGreaterThanOrEqual(0.5);
       if (result.isBalancedAlternative) {
         expect(result.displayMode).not.toBe("clear");
         expect(["best", "solid"]).toContain(result.grade);
@@ -196,7 +201,7 @@ describe("display mode branches on frequency AND ev gap", () => {
     }
     record(
       "grading never contradicts display",
-      "20,000 real grades: a `clear` panel always has a >= 0.30bb gap",
+      "20,000 real grades: a `clear` panel always has a >= 0.50bb gap",
     );
   });
 });

@@ -75,7 +75,19 @@ const MISTAKE_FROM = 2;
 const BLUNDER_FROM = 5;
 
 const CLEAR_FREQ = 0.65;
-const CLEAR_GAP = 0.3;
+/**
+ * Derived from INACCURACY_FROM, never set independently.
+ *
+ * `clear` licenses the panel to print one word in display type. If the gap
+ * needed for that were SMALLER than the gap at which a second action stops
+ * grading as `solid`, the panel would say "Fold." definitively while the badge
+ * called the user's call Solid — a contradiction a beginner cannot reconcile,
+ * and the fastest way to make the product feel arbitrary.
+ *
+ * Tying them together makes that state unreachable by construction rather than
+ * by two constants happening to agree.
+ */
+const CLEAR_GAP = INACCURACY_FROM;
 
 const SHARP_MIN_ATTEMPTS = 30;
 /**

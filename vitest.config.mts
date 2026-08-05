@@ -12,6 +12,18 @@ export default defineConfig({
     },
   },
   test: {
+    /**
+     * The engine suite runs exhaustive property tests — 100,000 random spots,
+     * 200,000 weighted draws, a full five-card enumeration. Alone they take
+     * ~2s; under the parallel load of the whole suite they cross Vitest's 5s
+     * default and fail as timeouts, which looks exactly like a real regression
+     * and wastes an afternoon.
+     *
+     * The tests are legitimately long-running, so the budget is raised rather
+     * than the sample sizes being cut.
+     */
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
     projects: [
       {
         // Pure engine + unit tests. Node environment, no DOM, fast.

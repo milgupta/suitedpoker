@@ -124,6 +124,7 @@ sessions.
 | 2.5–2.7 Hand classes, spot generator, grading | done |
 | 3.1 The poker table component | done |
 | 8.1 PostHog and product analytics | done — schema + proxy shipped, **live stream unverified (no key)** |
+| 3.2 Drill player: the core loop | done |
 
 Stage 0 is complete. Update this table when you finish a substage.
 
@@ -216,6 +217,28 @@ Stage 0 is complete. Update this table when you finish a substage.
   the six event-stream e2e tests skip. Add the key and run
   `npx playwright test tests/e2e/analytics.spec.ts` to verify the real stream.
 - Insight configurations are in `docs/POSTHOG-INSIGHTS.md`.
+
+**What 3.2 left you.**
+
+- **`/api/drills/next` returns a `ClientSpot` and nothing else.** No strategy,
+  no EV, no `nodeRef` — without the nodeRef the client cannot even identify the
+  node, so it cannot look the answer up. Structural tests enforce the key
+  allowlist; do not add a field to that response without re-reading them.
+- **Never grade client-side.** The seed is stored server-side, the spot is
+  regenerated from it, and the nodeRef is compared before grading.
+- **A spot can be answered once.** It is burned before the row is written, so a
+  resubmit loses rather than double-counting.
+- **`CLEAR_GAP` is derived from `INACCURACY_FROM`**, never set independently.
+  They were 0.3 and 0.5, which made the panel print a definitive "Fold." while
+  grading the alternative "Solid" — a contradiction a beginner cannot
+  reconcile. `tests/unit/drill-display.test.ts` guards it across 1,000 spots.
+- **`buildArenaLink()` is the only way to build an /arena URL.** 3.3, 3.5, 5.2
+  and 5.3 all launch pre-configured sessions; an invalid preset falls back to
+  the endless session rather than erroring, because that value arrives in a
+  shared URL.
+- **FrequencyBar takes every colour from `evColor()`.** Width is frequency,
+  colour is EV loss — a hardcoded colour there decouples the bar from the
+  grading language.
 
 **What 0.2 left you.** Anything a later substage needs to build on:
 
