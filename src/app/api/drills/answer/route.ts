@@ -6,8 +6,10 @@ import { loadSolutionData } from "@/lib/solution-data";
 import { generateSpot } from "@/poker/generator";
 import { grade as gradePreflop } from "@/poker/grader";
 import { nodeRefOf, type PreflopActionName } from "@/poker/solutions";
+import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
-import { drillAttempts } from "@/db/schema";
+import { drillAttempts, profiles } from "@/db/schema";
+import { MAX_RD, difficultyToRating, scoreForGrade, tieredUp, updateRating } from "@/lib/rating";
 import { spotConfigSchema } from "@/lib/arena-preset";
 import { SPOT_TTL_SECONDS } from "../next/route";
 
@@ -109,9 +111,47 @@ export const POST = withEntitlement(async (request, auth) => {
     // the loop is the explanation, and the attempt row is telemetry.
   }
 
-  return NextResponse.json({
-    ...result,
-    // 3.3 replaces this with the real rating update.
-    ratingDelta: 0,
-  });
+  // Rating update. Failures here must not cost the user their feedback, so the
+  // whole block is best-effort and the response still carries the grade.
+  let ratingDelta = 0;
+  let newRating: number | null = null;
+  let crossedTier = false;
+
+  try {
+    const db = getDb();
+    const rows = await db
+      .select({ rating: profiles.rating, ratingDeviation: profiles.ratingDeviation })
+      .from(profiles)
+      .where(eq(profiles.id, auth.userId))
+      .limit(1);
+
+    const before = rows[0];
+    if (before?.rating != null) {
+      const updated = updateRating(
+        { rating: before.rating, rd: before.ratingDeviation ?? MAX_RD },
+        [
+          {
+            opponentRating: difficultyToRating(spot.difficulty),
+            // The spot's difficulty is an authored estimate, so it carries real
+            // uncertainty of its own rather than being treated as exact.
+            opponentRd: 80,
+            score: scoreForGrade(result.grade),
+          },
+        ],
+      );
+
+      ratingDelta = Math.round(updated.rating) - before.rating;
+      newRating = Math.round(updated.rating);
+      crossedTier = tieredUp(before.rating, newRating);
+
+      await db
+        .update(profiles)
+        .set({ rating: newRating, ratingDeviation: Math.round(updated.rd) })
+        .where(eq(profiles.id, auth.userId));
+    }
+  } catch {
+    // Leave the delta at zero rather than failing the request.
+  }
+
+  return NextResponse.json({ ...result, ratingDelta, rating: newRating, tieredUp: crossedTier });
 });

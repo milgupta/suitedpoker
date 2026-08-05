@@ -125,6 +125,7 @@ sessions.
 | 3.1 The poker table component | done |
 | 8.1 PostHog and product analytics | done — schema + proxy shipped, **live stream unverified (no key)** |
 | 3.2 Drill player: the core loop | done |
+| 3.3 Rating system and adaptive difficulty | done |
 
 Stage 0 is complete. Update this table when you finish a substage.
 
@@ -239,6 +240,21 @@ Stage 0 is complete. Update this table when you finish a substage.
 - **FrequencyBar takes every colour from `evColor()`.** Width is frequency,
   colour is EV loss — a hardcoded colour there decouples the bar from the
   grading language.
+
+**What 3.3 left you.**
+
+- **`initialRatingFromOnboarding()` is imported by 7.1, never duplicated.** Two
+  copies of a placement table is how a first session gets calibrated against a
+  number nothing else agrees with.
+- **`sharp` scores the same as `best`.** It is recognition, not rating —
+  inflating from a cosmetic grade would quietly break difficulty targeting,
+  which is what the rating actually drives.
+- **Anti-tilt: three consecutive wrong answers drop the target 150.** Beginners
+  quit when they feel stupid, and beginners are the whole audience.
+- **Leak targeting fires ~30% of the time and the UI must say so.** Silently
+  feeding someone their worst spot reads as the app being unfair.
+- Glicko is verified against the worked example in Glickman's paper
+  (1500/200 → 1464.1/151.4) and converges within ±50 over 10,000 attempts.
 
 **What 0.2 left you.** Anything a later substage needs to build on:
 

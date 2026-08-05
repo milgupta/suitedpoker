@@ -6,6 +6,11 @@ import { loadSolutionData } from "@/lib/solution-data";
 import { generateSpot, toClientSpot } from "@/poker/generator";
 import { spotConfigSchema } from "@/lib/arena-preset";
 import { limit, RULES } from "@/lib/ratelimit";
+import { desc, eq } from "drizzle-orm";
+import { getDb } from "@/db";
+import { drillAttempts, profiles } from "@/db/schema";
+import { selectNextDifficulty } from "@/lib/rating";
+import type { GradeName } from "@/poker/grader";
 
 export const SPOT_TTL_SECONDS = 30 * 60;
 
@@ -43,8 +48,44 @@ export const POST = withEntitlement(async (request, auth) => {
     return NextResponse.json({ error: "invalid_config" }, { status: 400 });
   }
 
+  // Adaptive difficulty. Best-effort: a user with no rating yet, or a database
+  // hiccup, gets the config's difficulty rather than no spot at all.
+  let config = parsed.data;
+  let leakTag: string | null = null;
+
+  try {
+    const db = getDb();
+    const [profile] = await db
+      .select({ rating: profiles.rating })
+      .from(profiles)
+      .where(eq(profiles.id, auth.userId))
+      .limit(1);
+
+    if (profile?.rating != null) {
+      const recent = await db
+        .select({ grade: drillAttempts.grade })
+        .from(drillAttempts)
+        .where(eq(drillAttempts.userId, auth.userId))
+        .orderBy(desc(drillAttempts.createdAt))
+        .limit(3);
+
+      const selection = selectNextDifficulty({
+        rating: profile.rating,
+        // Newest first from the query; the selector wants oldest first.
+        recentGrades: recent.map((r) => r.grade as GradeName).reverse(),
+        roll: Math.random(),
+        leakTags: [],
+      });
+
+      leakTag = selection.leakTag;
+      config = { ...config, difficulty: selection.targetDifficulty };
+    }
+  } catch {
+    // Fall through with the requested config.
+  }
+
   const seed = randomUUID();
-  const spot = generateSpot(parsed.data, loadSolutionData(), seed);
+  const spot = generateSpot(config, loadSolutionData(), seed);
   const spotId = randomUUID();
 
   const stored = await putSession(
@@ -55,7 +96,7 @@ export const POST = withEntitlement(async (request, auth) => {
       seed,
       nodeRef: spot.nodeRef,
       handKey: spot.handKey,
-      config: parsed.data,
+      config,
       answered: false,
     },
     SPOT_TTL_SECONDS,
@@ -67,5 +108,7 @@ export const POST = withEntitlement(async (request, auth) => {
     return NextResponse.json({ error: "session_unavailable" }, { status: 503 });
   }
 
-  return NextResponse.json({ spotId, spot: toClientSpot(spot) });
+  // leakTag is a UI hint, not solution data — it names a category the user is
+  // weak in, never anything about this spot's answer.
+  return NextResponse.json({ spotId, spot: toClientSpot(spot), leakTag });
 });

@@ -95,6 +95,9 @@ test.describe("drill loop", () => {
     const allowed = new Set([
       "spotId",
       "spot",
+      // A UI hint naming a category the user is weak in — never anything about
+      // THIS spot's answer.
+      "leakTag",
       "id",
       "type",
       "heroPos",
