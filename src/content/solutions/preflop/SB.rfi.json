@@ -1,0 +1,1207 @@
+{
+  "solutionSet": "suitedpoker-6max-100bb-v1",
+  "provenance": "authored-approximation",
+  "heroPos": "SB",
+  "actionSeq": "rfi",
+  "potBb": 1.5,
+  "effStackBb": 100,
+  "actions": ["fold", "raise"],
+  "confidence": {
+    "rangeShape": "medium",
+    "frequencies": "medium",
+    "ev": "medium",
+    "note": "SIMPLIFIED: real 100bb solutions play a mixed limp/raise strategy from the SB, and this node collapses that to raise-or-fold. The set of hands is defensible as a raise-first range; the omission of the limp is a deliberate product simplification, not an oversight. Treat the bottom of the range as the part that would actually be limped."
+  },
+  "notes": "Opening range for SB at 6-max 100bb, folded to hero. Open size 2.5bb. The small blind opens into one player but is out of position for the whole hand, so the range is wide on value and thin on speculative offsuit hands.",
+  "strategy": {
+    "22": {
+      "raise": 1
+    },
+    "33": {
+      "raise": 1
+    },
+    "44": {
+      "raise": 1
+    },
+    "55": {
+      "raise": 1
+    },
+    "66": {
+      "raise": 1
+    },
+    "77": {
+      "raise": 1
+    },
+    "88": {
+      "raise": 1
+    },
+    "99": {
+      "raise": 1
+    },
+    "AA": {
+      "raise": 1
+    },
+    "AKs": {
+      "raise": 1
+    },
+    "AQs": {
+      "raise": 1
+    },
+    "AJs": {
+      "raise": 1
+    },
+    "ATs": {
+      "raise": 1
+    },
+    "A9s": {
+      "raise": 1
+    },
+    "A8s": {
+      "raise": 1
+    },
+    "A7s": {
+      "raise": 1
+    },
+    "A6s": {
+      "raise": 1
+    },
+    "A5s": {
+      "raise": 1
+    },
+    "A4s": {
+      "raise": 1
+    },
+    "A3s": {
+      "raise": 1
+    },
+    "A2s": {
+      "raise": 1
+    },
+    "AKo": {
+      "raise": 1
+    },
+    "KK": {
+      "raise": 1
+    },
+    "KQs": {
+      "raise": 1
+    },
+    "KJs": {
+      "raise": 1
+    },
+    "KTs": {
+      "raise": 1
+    },
+    "K9s": {
+      "raise": 1
+    },
+    "K8s": {
+      "raise": 1
+    },
+    "K7s": {
+      "raise": 1
+    },
+    "K6s": {
+      "raise": 1
+    },
+    "K5s": {
+      "raise": 1
+    },
+    "K4s": {
+      "raise": 1
+    },
+    "K3s": {
+      "raise": 1
+    },
+    "K2s": {
+      "raise": 1
+    },
+    "AQo": {
+      "raise": 1
+    },
+    "KQo": {
+      "raise": 1
+    },
+    "QQ": {
+      "raise": 1
+    },
+    "QJs": {
+      "raise": 1
+    },
+    "QTs": {
+      "raise": 1
+    },
+    "Q9s": {
+      "raise": 1
+    },
+    "Q8s": {
+      "raise": 1
+    },
+    "Q7s": {
+      "raise": 1
+    },
+    "Q6s": {
+      "raise": 1
+    },
+    "Q5s": {
+      "raise": 1
+    },
+    "Q4s": {
+      "raise": 1
+    },
+    "Q3s": {
+      "raise": 1
+    },
+    "Q2s": {
+      "raise": 1
+    },
+    "AJo": {
+      "raise": 1
+    },
+    "KJo": {
+      "raise": 1
+    },
+    "QJo": {
+      "raise": 1
+    },
+    "JJ": {
+      "raise": 1
+    },
+    "JTs": {
+      "raise": 1
+    },
+    "J9s": {
+      "raise": 1
+    },
+    "J8s": {
+      "raise": 1
+    },
+    "J7s": {
+      "raise": 1
+    },
+    "J6s": {
+      "raise": 1
+    },
+    "J5s": {
+      "raise": 1
+    },
+    "J4s": {
+      "fold": 1
+    },
+    "J3s": {
+      "fold": 1
+    },
+    "J2s": {
+      "fold": 1
+    },
+    "ATo": {
+      "raise": 1
+    },
+    "KTo": {
+      "raise": 1
+    },
+    "QTo": {
+      "raise": 1
+    },
+    "JTo": {
+      "raise": 1
+    },
+    "TT": {
+      "raise": 1
+    },
+    "T9s": {
+      "raise": 1
+    },
+    "T8s": {
+      "raise": 1
+    },
+    "T7s": {
+      "raise": 1
+    },
+    "T6s": {
+      "raise": 1
+    },
+    "T5s": {
+      "fold": 1
+    },
+    "T4s": {
+      "fold": 1
+    },
+    "T3s": {
+      "fold": 1
+    },
+    "T2s": {
+      "fold": 1
+    },
+    "A9o": {
+      "raise": 1
+    },
+    "K9o": {
+      "raise": 1
+    },
+    "Q9o": {
+      "raise": 1
+    },
+    "J9o": {
+      "fold": 1
+    },
+    "T9o": {
+      "fold": 1
+    },
+    "98s": {
+      "raise": 1
+    },
+    "97s": {
+      "raise": 1
+    },
+    "96s": {
+      "raise": 1
+    },
+    "95s": {
+      "fold": 1
+    },
+    "94s": {
+      "fold": 1
+    },
+    "93s": {
+      "fold": 1
+    },
+    "92s": {
+      "fold": 1
+    },
+    "A8o": {
+      "raise": 1
+    },
+    "K8o": {
+      "raise": 1
+    },
+    "Q8o": {
+      "fold": 1
+    },
+    "J8o": {
+      "fold": 1
+    },
+    "T8o": {
+      "fold": 1
+    },
+    "98o": {
+      "fold": 1
+    },
+    "87s": {
+      "raise": 1
+    },
+    "86s": {
+      "raise": 1
+    },
+    "85s": {
+      "fold": 1
+    },
+    "84s": {
+      "fold": 1
+    },
+    "83s": {
+      "fold": 1
+    },
+    "82s": {
+      "fold": 1
+    },
+    "A7o": {
+      "raise": 1
+    },
+    "K7o": {
+      "raise": 1
+    },
+    "Q7o": {
+      "fold": 1
+    },
+    "J7o": {
+      "fold": 1
+    },
+    "T7o": {
+      "fold": 1
+    },
+    "97o": {
+      "fold": 1
+    },
+    "87o": {
+      "fold": 1
+    },
+    "76s": {
+      "raise": 1
+    },
+    "75s": {
+      "raise": 1
+    },
+    "74s": {
+      "fold": 1
+    },
+    "73s": {
+      "fold": 1
+    },
+    "72s": {
+      "fold": 1
+    },
+    "A6o": {
+      "fold": 1
+    },
+    "K6o": {
+      "fold": 1
+    },
+    "Q6o": {
+      "fold": 1
+    },
+    "J6o": {
+      "fold": 1
+    },
+    "T6o": {
+      "fold": 1
+    },
+    "96o": {
+      "fold": 1
+    },
+    "86o": {
+      "fold": 1
+    },
+    "76o": {
+      "fold": 1
+    },
+    "65s": {
+      "raise": 1
+    },
+    "64s": {
+      "raise": 1
+    },
+    "63s": {
+      "fold": 1
+    },
+    "62s": {
+      "fold": 1
+    },
+    "A5o": {
+      "raise": 0.5,
+      "fold": 0.5
+    },
+    "K5o": {
+      "fold": 1
+    },
+    "Q5o": {
+      "fold": 1
+    },
+    "J5o": {
+      "fold": 1
+    },
+    "T5o": {
+      "fold": 1
+    },
+    "95o": {
+      "fold": 1
+    },
+    "85o": {
+      "fold": 1
+    },
+    "75o": {
+      "fold": 1
+    },
+    "65o": {
+      "fold": 1
+    },
+    "54s": {
+      "raise": 1
+    },
+    "53s": {
+      "fold": 1
+    },
+    "52s": {
+      "fold": 1
+    },
+    "A4o": {
+      "raise": 0.5,
+      "fold": 0.5
+    },
+    "K4o": {
+      "fold": 1
+    },
+    "Q4o": {
+      "fold": 1
+    },
+    "J4o": {
+      "fold": 1
+    },
+    "T4o": {
+      "fold": 1
+    },
+    "94o": {
+      "fold": 1
+    },
+    "84o": {
+      "fold": 1
+    },
+    "74o": {
+      "fold": 1
+    },
+    "64o": {
+      "fold": 1
+    },
+    "54o": {
+      "fold": 1
+    },
+    "43s": {
+      "fold": 1
+    },
+    "42s": {
+      "fold": 1
+    },
+    "A3o": {
+      "raise": 0.5,
+      "fold": 0.5
+    },
+    "K3o": {
+      "fold": 1
+    },
+    "Q3o": {
+      "fold": 1
+    },
+    "J3o": {
+      "fold": 1
+    },
+    "T3o": {
+      "fold": 1
+    },
+    "93o": {
+      "fold": 1
+    },
+    "83o": {
+      "fold": 1
+    },
+    "73o": {
+      "fold": 1
+    },
+    "63o": {
+      "fold": 1
+    },
+    "53o": {
+      "fold": 1
+    },
+    "43o": {
+      "fold": 1
+    },
+    "32s": {
+      "fold": 1
+    },
+    "A2o": {
+      "raise": 0.5,
+      "fold": 0.5
+    },
+    "K2o": {
+      "fold": 1
+    },
+    "Q2o": {
+      "fold": 1
+    },
+    "J2o": {
+      "fold": 1
+    },
+    "T2o": {
+      "fold": 1
+    },
+    "92o": {
+      "fold": 1
+    },
+    "82o": {
+      "fold": 1
+    },
+    "72o": {
+      "fold": 1
+    },
+    "62o": {
+      "fold": 1
+    },
+    "52o": {
+      "fold": 1
+    },
+    "42o": {
+      "fold": 1
+    },
+    "32o": {
+      "fold": 1
+    }
+  },
+  "ev": {
+    "22": {
+      "fold": 0,
+      "raise": 1.81
+    },
+    "33": {
+      "fold": 0,
+      "raise": 2.04
+    },
+    "44": {
+      "fold": 0,
+      "raise": 2.28
+    },
+    "55": {
+      "fold": 0,
+      "raise": 2.54
+    },
+    "66": {
+      "fold": 0,
+      "raise": 2.82
+    },
+    "77": {
+      "fold": 0,
+      "raise": 3.11
+    },
+    "88": {
+      "fold": 0,
+      "raise": 3.41
+    },
+    "99": {
+      "fold": 0,
+      "raise": 3.72
+    },
+    "AA": {
+      "fold": 0,
+      "raise": 5.5
+    },
+    "AKs": {
+      "fold": 0,
+      "raise": 1.99
+    },
+    "AQs": {
+      "fold": 0,
+      "raise": 1.77
+    },
+    "AJs": {
+      "fold": 0,
+      "raise": 1.6
+    },
+    "ATs": {
+      "fold": 0,
+      "raise": 1.46
+    },
+    "A9s": {
+      "fold": 0,
+      "raise": 1.37
+    },
+    "A8s": {
+      "fold": 0,
+      "raise": 1.27
+    },
+    "A7s": {
+      "fold": 0,
+      "raise": 1.18
+    },
+    "A6s": {
+      "fold": 0,
+      "raise": 1.1
+    },
+    "A5s": {
+      "fold": 0,
+      "raise": 1.01
+    },
+    "A4s": {
+      "fold": 0,
+      "raise": 0.93
+    },
+    "A3s": {
+      "fold": 0,
+      "raise": 0.86
+    },
+    "A2s": {
+      "fold": 0,
+      "raise": 0.79
+    },
+    "AKo": {
+      "fold": 0,
+      "raise": 1.58
+    },
+    "KK": {
+      "fold": 0,
+      "raise": 5.12
+    },
+    "KQs": {
+      "fold": 0,
+      "raise": 1.67
+    },
+    "KJs": {
+      "fold": 0,
+      "raise": 1.47
+    },
+    "KTs": {
+      "fold": 0,
+      "raise": 1.31
+    },
+    "K9s": {
+      "fold": 0,
+      "raise": 1.19
+    },
+    "K8s": {
+      "fold": 0,
+      "raise": 1.11
+    },
+    "K7s": {
+      "fold": 0,
+      "raise": 1.02
+    },
+    "K6s": {
+      "fold": 0,
+      "raise": 0.94
+    },
+    "K5s": {
+      "fold": 0,
+      "raise": 0.87
+    },
+    "K4s": {
+      "fold": 0,
+      "raise": 0.8
+    },
+    "K3s": {
+      "fold": 0,
+      "raise": 0.73
+    },
+    "K2s": {
+      "fold": 0,
+      "raise": 0.67
+    },
+    "AQo": {
+      "fold": 0,
+      "raise": 1.38
+    },
+    "KQo": {
+      "fold": 0,
+      "raise": 1.29
+    },
+    "QQ": {
+      "fold": 0,
+      "raise": 4.75
+    },
+    "QJs": {
+      "fold": 0,
+      "raise": 1.38
+    },
+    "QTs": {
+      "fold": 0,
+      "raise": 1.2
+    },
+    "Q9s": {
+      "fold": 0,
+      "raise": 1.06
+    },
+    "Q8s": {
+      "fold": 0,
+      "raise": 0.95
+    },
+    "Q7s": {
+      "fold": 0,
+      "raise": 0.88
+    },
+    "Q6s": {
+      "fold": 0,
+      "raise": 0.81
+    },
+    "Q5s": {
+      "fold": 0,
+      "raise": 0.74
+    },
+    "Q4s": {
+      "fold": 0,
+      "raise": 0.68
+    },
+    "Q3s": {
+      "fold": 0,
+      "raise": 0.62
+    },
+    "Q2s": {
+      "fold": 0,
+      "raise": 0.57
+    },
+    "AJo": {
+      "fold": 0,
+      "raise": 1.23
+    },
+    "KJo": {
+      "fold": 0,
+      "raise": 1.12
+    },
+    "QJo": {
+      "fold": 0,
+      "raise": 1.04
+    },
+    "JJ": {
+      "fold": 0,
+      "raise": 4.39
+    },
+    "JTs": {
+      "fold": 0,
+      "raise": 1.12
+    },
+    "J9s": {
+      "fold": 0,
+      "raise": 0.96
+    },
+    "J8s": {
+      "fold": 0,
+      "raise": 0.84
+    },
+    "J7s": {
+      "fold": 0,
+      "raise": 0.75
+    },
+    "J6s": {
+      "fold": 0,
+      "raise": 0.69
+    },
+    "J5s": {
+      "fold": 0,
+      "raise": 0.63
+    },
+    "J4s": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "J3s": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "J2s": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "ATo": {
+      "fold": 0,
+      "raise": 1.12
+    },
+    "KTo": {
+      "fold": 0,
+      "raise": 0.99
+    },
+    "QTo": {
+      "fold": 0,
+      "raise": 0.89
+    },
+    "JTo": {
+      "fold": 0,
+      "raise": 0.83
+    },
+    "TT": {
+      "fold": 0,
+      "raise": 4.05
+    },
+    "T9s": {
+      "fold": 0,
+      "raise": 0.89
+    },
+    "T8s": {
+      "fold": 0,
+      "raise": 0.75
+    },
+    "T7s": {
+      "fold": 0,
+      "raise": 0.65
+    },
+    "T6s": {
+      "fold": 0,
+      "raise": 0.58
+    },
+    "T5s": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "T4s": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "T3s": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "T2s": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "A9o": {
+      "fold": 0,
+      "raise": 1.03
+    },
+    "K9o": {
+      "fold": 0,
+      "raise": 0.89
+    },
+    "Q9o": {
+      "fold": 0,
+      "raise": 0.78
+    },
+    "J9o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "T9o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "98s": {
+      "fold": 0,
+      "raise": 0.69
+    },
+    "97s": {
+      "fold": 0,
+      "raise": 0.58
+    },
+    "96s": {
+      "fold": 0,
+      "raise": 0.5
+    },
+    "95s": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "94s": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "93s": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "92s": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "A8o": {
+      "fold": 0,
+      "raise": 0.95
+    },
+    "K8o": {
+      "fold": 0,
+      "raise": 0.82
+    },
+    "Q8o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "J8o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "T8o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "98o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "87s": {
+      "fold": 0,
+      "raise": 0.53
+    },
+    "86s": {
+      "fold": 0,
+      "raise": 0.45
+    },
+    "85s": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "84s": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "83s": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "82s": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "A7o": {
+      "fold": 0,
+      "raise": 0.88
+    },
+    "K7o": {
+      "fold": 0,
+      "raise": 0.75
+    },
+    "Q7o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "J7o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "T7o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "97o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "87o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "76s": {
+      "fold": 0,
+      "raise": 0.41
+    },
+    "75s": {
+      "fold": 0,
+      "raise": 0.35
+    },
+    "74s": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "73s": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "72s": {
+      "fold": 0,
+      "raise": -0.57
+    },
+    "A6o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "K6o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "Q6o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "J6o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "T6o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "96o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "86o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "76o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "65s": {
+      "fold": 0,
+      "raise": 0.33
+    },
+    "64s": {
+      "fold": 0,
+      "raise": 0.3
+    },
+    "63s": {
+      "fold": 0,
+      "raise": -0.62
+    },
+    "62s": {
+      "fold": 0,
+      "raise": -0.72
+    },
+    "A5o": {
+      "fold": 0,
+      "raise": 0
+    },
+    "K5o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "Q5o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "J5o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "T5o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "95o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "85o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "75o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "65o": {
+      "fold": 0,
+      "raise": -0.63
+    },
+    "54s": {
+      "fold": 0,
+      "raise": 0.3
+    },
+    "53s": {
+      "fold": 0,
+      "raise": -0.71
+    },
+    "52s": {
+      "fold": 0,
+      "raise": -0.84
+    },
+    "A4o": {
+      "fold": 0,
+      "raise": 0
+    },
+    "K4o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "Q4o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "J4o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "T4o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "94o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "84o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "74o": {
+      "fold": 0,
+      "raise": -0.68
+    },
+    "64o": {
+      "fold": 0,
+      "raise": -0.78
+    },
+    "54o": {
+      "fold": 0,
+      "raise": -0.85
+    },
+    "43s": {
+      "fold": 0,
+      "raise": -0.79
+    },
+    "42s": {
+      "fold": 0,
+      "raise": -0.94
+    },
+    "A3o": {
+      "fold": 0,
+      "raise": 0
+    },
+    "K3o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "Q3o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "J3o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "T3o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "93o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "83o": {
+      "fold": 0,
+      "raise": -0.64
+    },
+    "73o": {
+      "fold": 0,
+      "raise": -0.79
+    },
+    "63o": {
+      "fold": 0,
+      "raise": -0.91
+    },
+    "53o": {
+      "fold": 0,
+      "raise": -1
+    },
+    "43o": {
+      "fold": 0,
+      "raise": -1.08
+    },
+    "32s": {
+      "fold": 0,
+      "raise": -1.01
+    },
+    "A2o": {
+      "fold": 0,
+      "raise": 0
+    },
+    "K2o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "Q2o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "J2o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "T2o": {
+      "fold": 0,
+      "raise": -0.56
+    },
+    "92o": {
+      "fold": 0,
+      "raise": -0.57
+    },
+    "82o": {
+      "fold": 0,
+      "raise": -0.72
+    },
+    "72o": {
+      "fold": 0,
+      "raise": -0.86
+    },
+    "62o": {
+      "fold": 0,
+      "raise": -1.01
+    },
+    "52o": {
+      "fold": 0,
+      "raise": -1.13
+    },
+    "42o": {
+      "fold": 0,
+      "raise": -1.23
+    },
+    "32o": {
+      "fold": 0,
+      "raise": -1.3
+    }
+  }
+}
