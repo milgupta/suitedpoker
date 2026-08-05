@@ -535,9 +535,12 @@ This substage turns that document into working code:
    exactly so the two can never drift.
 
 2. ACCENT RAMP — DESIGN.md names four accent tokens; generate a full 50→950 ramp
-   anchored on them (500 = --accent, 400 = --accent-bright, 700 = --accent-deep)
+   anchored on them (500 = --accent, 400 = --accent-bright, 800 = --accent-deep)
    and interpolate the rest. The four named tokens become semantic aliases into
    that ramp. The full ramp is needed for hover, active, disabled and alpha fills.
+   Pin those three stops to their measured values exactly — #1A2F9E sits at
+   L=0.375 in OKLCh, which is stop 800; moving it to 700 would either shift a
+   measured value or compress the ladder unevenly.
 
 3. evColor(bbLoss) — the EV-loss ramp as a FUNCTION, not a palette. Interpolate in
    OKLCH, never sRGB: sRGB interpolation between green and amber passes through a
@@ -547,8 +550,11 @@ This substage turns that document into working code:
 
 4. TYPOGRAPHY — the scale in DESIGN.md §2 with its bimodal line-height rule
    (display 1.00–1.10, body 1.43–1.56) intact. Font stack exactly as specified.
-   Do NOT add an @font-face for TWK Lausanne yet — the licence files are not in
-   the repo and the fallback chain is deliberate. Mono is tabular-nums always.
+   The face is Inter, self-hosted via @fontsource-variable/inter — never
+   next/font/google, which would make the build hit the network. TWK Lausanne is
+   out of the system entirely; it is a paid licence we are not buying, so it does
+   not belong in the stack even as a first choice that never resolves. Mono is
+   Geist Mono, tabular-nums always.
 
 5. MOTION — src/lib/motion.ts exporting the springs, durations, easings and
    variant presets from DESIGN.md §7. Every preset respects prefers-reduced-motion
