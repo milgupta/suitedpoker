@@ -104,11 +104,17 @@ describe("the seed postflop templates", () => {
     record("example boards", "every example board actually has the tags its template claims");
   });
 
-  it("parses the hero range of every template it claims is notation", () => {
+  it("parses every hero AND villain range as real notation", () => {
+    // No exemptions. A range that is prose rather than notation is a
+    // correctness bug: the spot generator samples hero hands from it, and an
+    // unparseable villain range silently becomes whatever the fallback is.
     for (const template of templates) {
-      if (template.id === "river-facing-large-bet-after-two-calls") continue; // flagged in its own note
-      expect(() => Range.parse(template.heroRange)).not.toThrow();
+      expect(() => Range.parse(template.heroRange), `${template.id} heroRange`).not.toThrow();
+      expect(() => Range.parse(template.villainRange), `${template.id} villainRange`).not.toThrow();
+      expect(Range.parse(template.heroRange).totalCombos()).toBeGreaterThan(0);
+      expect(Range.parse(template.villainRange).totalCombos()).toBeGreaterThan(0);
     }
+    record("ranges parse", "all 16 hero and villain ranges are real notation, no exemptions");
   });
 });
 

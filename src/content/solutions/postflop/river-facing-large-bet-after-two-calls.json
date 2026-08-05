@@ -9,7 +9,7 @@
   "potBb": 32,
   "effStackBb": 68,
   "heroRange": "TT-88,AJs:0.5,ATs,KQs:0.6,KJs,QJs,JTs,T9s,AQo:0.4,AJo:0.5,KQo:0.4",
-  "villainRange": "AA:0.3,KK:0.35,set:0.2,AQs,AJs,KQs,flushdraws-missed,A5s,A4s",
+  "villainRange": "TT+,AJs+,KQs,KJs:0.5,AQo+,AJo:0.4,A5s:0.5,A4s:0.5,QJs:0.4,JTs:0.4,T9s:0.35,98s:0.3",
   "boardTags": ["wet", "connected"],
   "exampleBoards": ["Jh Th 9c 4d 2s", "Qs Js 8h 3d 7c", "Th 9h 6c Kd 2h", "9h 8h 7d Ac 3s"],
   "actionHistory": [
@@ -24,7 +24,7 @@
     "rangeShape": "low",
     "frequencies": "low",
     "ev": "low",
-    "note": "The lowest-confidence template in the set and the one to review first. River decisions against a large bet depend almost entirely on the exact composition of the bettor's range after three streets of aggression, which my authored ranges do not model to that depth — the villainRange string here is descriptive rather than parseable notation and should be replaced with a real range when 2.8-2.10 runs. The one thing I would defend is the SHAPE: hero is capped by calling twice and must fold a lot. Do not present the specific frequencies to a user as authoritative."
+    "note": "The lowest-confidence template in the set and the one to review first. River decisions against a large bet depend almost entirely on the exact composition of the bettor's range after three streets of aggression, and the villainRange here is a PREFLOP range narrowed by judgement rather than by the actual betting line — it does not model which combos would really have barrelled twice. The one thing I would defend is the SHAPE: hero is capped by calling twice and must fold a lot. Do not present the specific frequencies to a user as authoritative."
   },
   "strategies": [
     {

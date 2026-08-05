@@ -78,6 +78,16 @@ const CLEAR_FREQ = 0.65;
 const CLEAR_GAP = 0.3;
 
 const SHARP_MIN_ATTEMPTS = 30;
+/**
+ * RETUNE THIS AGAINST REAL DATA once there is traffic.
+ *
+ * The target is 1-3% of decisions earning `sharp`. The test suite's observed
+ * rate (~3.4%) comes from a SIMULATED population and is a placeholder — the
+ * band was written for real user behaviour, and since `sharp` cannot fire
+ * below SHARP_MIN_ATTEMPTS recorded attempts, production nodeStats govern the
+ * real rate regardless of what the simulation says. Do not tune this dial to
+ * make the simulation land in band.
+ */
 const SHARP_MAX_SUCCESS_RATE = 0.35;
 
 const BALANCED_MIN_FREQ = 0.15;

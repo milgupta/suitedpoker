@@ -1192,6 +1192,11 @@ Implement postflop hand classification and the postflop strategy template system
      overpair, top_pair_good_kicker, top_pair_weak_kicker, middle_pair,
      combo_draw, bottom_pair, pocket_pair_below_top, flush_draw, open_ended,
      ace_high, gutshot, overcards_bdfd, overcards, air
+   NOTE: this list is a PRECEDENCE order for classification, not a strength
+   order. `bottom_pair` and `pocket_pair_below_top` are not rankable by a fixed
+   order at all — which one is ahead is board-dependent (a pocket pair of nines
+   beats a pair of deuces on A72, but not on TT4). Treat them as ONE tier
+   anywhere strength is being asserted, and leave the precedence order alone.
    Rules:
    - Made hands take precedence over draws, EXCEPT combo_draw
      (a draw plus a pair, or a flush draw plus an open-ender) which outranks
@@ -1233,9 +1238,11 @@ Implement postflop hand classification and the postflop strategy template system
 4. Extend scripts/import-solutions.ts to validate and import postflop templates
    with the same strictness as preflop.
 
-5. Write docs/AUTHORING.md — a guide for a poker consultant to write more
-   templates without touching code: the JSON format, what each field means, and
-   a fully worked example.
+5. Write src/content/solutions/AUTHORING.md — a guide for a poker consultant to
+   write more templates without touching code: the JSON format, what each field
+   means, and a fully worked example. It lives next to the data it describes,
+   not in docs/, and it also carries the review queue for the authored
+   approximation.
 
 SELF-VERIFICATION:
 1. Test classifyHand against 60 hand-picked (hole, board) pairs covering every
@@ -2244,7 +2251,7 @@ screen and lets you ask much more interesting questions.
 4. SCHEMA: add `question_type` and `question_payload jsonb` to drill_attempts, and
    an optional `questions[]` array to postflop_templates so an author can attach
    hand_choice and sizing questions to a template. Update the 2.5 zod schema and
-   docs/AUTHORING.md to cover it.
+   src/content/solutions/AUTHORING.md to cover it.
 
 5. ROUTING: the drill player (3.2) picks the format from the spot:
    single-decision preflop and flop spots -> graphical table;

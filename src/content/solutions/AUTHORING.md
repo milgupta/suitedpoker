@@ -260,6 +260,93 @@ These are not style rules. If you break one, the data is wrong.
 
 ---
 
+---
+
+## THE REVIEW QUEUE — start here
+
+The data currently in this folder is an `authored-approximation`. The list
+below is the known scope of work, worst first. It is not a vague "check
+everything" — each item names the specific defect.
+
+### 1. `vs_3bet` — 15 nodes · **highest priority**
+
+**The defect:** these 15 nodes were not authored per pairing. They are generated
+from three templates keyed on (a) the 3bettor's position tier — early, late, or
+blind — and (b) whether the original opener has position for the rest of the
+hand. That means **two different openers facing the same tier of 3bettor get
+byte-identical ranges**, which no solver would ever produce. `UTG:vs_3bet_BTN`
+and `MP:vs_3bet_BTN` are the same file with a different name.
+
+**What to do:** author each of the 15 pairings separately. Expect UTG's
+continuing range against a 3bet to be much tighter and more 4bet-heavy than
+CO's, because UTG's opening range is stronger and more concentrated.
+
+**Also uncertain within these nodes:** the 4bet-bluff frequencies (the A5s/A4s
+weights) are a guess even within the template.
+
+Files: `preflop/{UTG,MP,CO,BTN,SB}.vs_3bet_*.json`
+
+### 2. `vs_4bet` — 8 nodes
+
+**The defect:** all eight nodes share **one** template and **do not vary by the
+4bettor's position at all**. A 4bet from UTG is far tighter than a 4bet from
+CO, and hero should fold materially more against it — as written, hero plays
+identically against both.
+
+**Why it is still second:** these are the lowest-frequency nodes in the app, so
+the damage per unit of error is smaller. It is also the family where published
+charts disagree most with each other, being the most sensitive to stack depth,
+4bet sizing and rake.
+
+**What to do:** at minimum split into three tiers by 4bettor position. Do not
+present these to a user as authoritative until that is done.
+
+Files: `preflop/{BB,SB,BTN,CO}.vs_4bet_*.json`
+
+### 3. `vs_rfi` — 15 nodes · specifically the BB ones
+
+**The defect:** the 3bet *value* ranges are standard and defensible. Two things
+are not:
+
+- **Bluff selection.** Which specific hands 3bet as bluffs is close to
+  arbitrary at these frequencies. Solvers rotate them freely.
+- **The BB defending ranges are rake-sensitive and too wide.** A rake-free
+  solver defends the big blind much wider than is correct at real online rake,
+  and these ranges sit near the rake-free end. If you change one thing in the
+  vs-RFI family, trim the bottom of the BB calling ranges — the offsuit
+  broadways and the weakest suited gappers.
+
+Files: `preflop/*.vs_rfi_*.json`, BB first
+
+### 4. `rfi` — 5 nodes · lowest priority
+
+The hand sets are standard and I would defend them. Two specific caveats:
+
+- **`SB.rfi.json` collapses a real limp/raise strategy into raise-or-fold.**
+  Solvers at 100bb do limp from the small blind. This is a deliberate product
+  simplification, not an oversight — treat the bottom of the range as the part
+  that would actually be limped.
+- The mixed weights on the small pairs and the suited wheel aces are where
+  solvers disagree by 20–30 points depending on rake and open size.
+
+### 5. `postflop/river-facing-large-bet-after-two-calls.json`
+
+The lowest-confidence template. Its `villainRange` is a preflop range narrowed
+by judgement, **not** derived from the actual betting line — it does not model
+which combos would really have barrelled three streets. The SHAPE is right
+(hero is capped by calling twice and must fold a lot); the specific frequencies
+are not authoritative.
+
+### What is NOT on this list
+
+Every EV number in every file. All of them are modelled from the frequencies
+rather than solved — see the indifference rule above. They are internally
+consistent and correctly *ordered*, but their magnitudes are not solver output.
+Reviewing them individually is not a good use of your time; fixing the ranges
+and frequencies is, because the EVs are derived from those.
+
+---
+
 ## Workflow
 
 1. Copy the closest existing file.
