@@ -201,91 +201,63 @@ SELF-VERIFICATION — before you tell me you are done:
     <div class="prompt-wrap">
       <div class="prompt-head"><span>Claude Code prompt</span>
         <button class="copy" data-num="0.2">Copy</button></div>
-      <pre class="prompt">Build the complete design system for `suitedpoker`. Reference aesthetic: Flighty
-(flighty.com) — near-black canvas, oversized typography, one saturated accent,
-generous negative space, and motion that feels physical rather than decorative.
-Secondary reference: Linear. This must read as precision analytical software,
-NOT as a casino.
+      <pre class="prompt">Build the complete design system for `suitedpoker`.
 
-DESIGN TOKENS — define as CSS custom properties in globals.css consumed by
-Tailwind v4&#x27;s @theme:
+⚠️ READ `DESIGN.md` IN THE REPO ROOT FIRST. It is the authoritative specification
+for every colour, radius, spacing value, type size, and motion token, and it
+SUPERSEDES anything in this prompt that conflicts with it. Its values were derived
+by measuring two reference sites (flighty.com and flysoar.ai) — computed styles
+pulled from the live CSS, pixel distances measured off frame captures — so they
+are evidence, not preference. Do not substitute your own judgement for them.
 
-Canvas &amp; surfaces (dark only, no light theme in v1):
-  --canvas       #08090B   near-black page background
-  --surface-1    #101215   cards
-  --surface-2    #171A1F   raised / hover
-  --surface-3    #1F242B   inputs, borders-as-fills
-  --border       #262B33
-  --border-loud  #363D47
+This substage turns that document into working code:
 
-Text:
-  --text-primary   #F5F7FA
-  --text-secondary #9BA4B0
-  --text-tertiary  #626C7A
+1. TOKENS — implement every token in DESIGN.md as CSS custom properties in
+   globals.css, consumed by Tailwind v4&#x27;s @theme. Names must match DESIGN.md
+   exactly so the two can never drift.
 
-COLOR ROLE RULE — decide this once and enforce it everywhere, because it is what
-separates a premium poker UI from a noisy one:
-  - WHITE (--text-primary) is the PRIMARY ACTION color. Full-width primary CTAs
-    are white fill, near-black text. Highest possible contrast on this canvas,
-    and it never competes with data.
-  - CYAN is reserved for DATA AND STATE: ratings, progress, the frequency bar,
-    the `best` grade, active selections, links. Never a plain CTA.
-  - Semantic colors are reserved for grades and EV. Nothing decorative uses them.
-Reference apps in this category all converge on white primary buttons over a
-near-black canvas for exactly this reason. Follow it.
+2. ACCENT RAMP — DESIGN.md names four accent tokens; generate a full 50→950 ramp
+   anchored on them (500 = --accent, 400 = --accent-bright, 700 = --accent-deep)
+   and interpolate the rest. The four named tokens become semantic aliases into
+   that ramp. The full ramp is needed for hover, active, disabled and alpha fills.
 
-Accent — cool cyan/blue. Generate a full 50→950 ramp anchored on a vivid
-mid-tone around #22D3EE / #38BDF8. Pick the exact anchor yourself, but it must
-achieve WCAG AA (4.5:1) as text on --canvas at the shade used for links, and
-AA for large text at the shade used on buttons.
+3. evColor(bbLoss) — the EV-loss ramp as a FUNCTION, not a palette. Interpolate in
+   OKLCH, never sRGB: sRGB interpolation between green and amber passes through a
+   muddy olive. Stops: 0 → grade-best, 0.5 → grade-solid, 2 → grade-inaccuracy,
+   5 → grade-mistake, beyond 5 → grade-blunder. Clamp both ends. Provide a JS
+   implementation for canvas-rendered segments alongside the CSS one.
 
-Semantic (these map 1:1 to the six grades, so they matter — see PART 2):
-  --sharp        vivid cyan, the brightest color in the app; nothing else uses it
-  --best         cyan accent
-  --solid        desaturated cyan
-  --inaccuracy   amber
-  --mistake      orange
-  --blunder      red
-Each needs a solid, a 12%-alpha fill, and a border variant.
+4. TYPOGRAPHY — the scale in DESIGN.md §2 with its bimodal line-height rule
+   (display 1.00–1.10, body 1.43–1.56) intact. Font stack exactly as specified.
+   Do NOT add an @font-face for TWK Lausanne yet — the licence files are not in
+   the repo and the fallback chain is deliberate. Mono is tabular-nums always.
 
-Also define an EV-LOSS COLOR RAMP as a function, not a palette: `evColor(bbLoss)`
-interpolating --best (0bb) -&gt; --solid (0.5) -&gt; --inaccuracy (2) -&gt; --mistake (5)
--&gt; --blunder (5+). The frequency bar colors every segment through this function,
-so the whole app&#x27;s color language derives from one place.
+5. MOTION — src/lib/motion.ts exporting the springs, durations, easings and
+   variant presets from DESIGN.md §7. Every preset respects prefers-reduced-motion
+   by collapsing to opacity-only. Staggers cap at 300ms total regardless of item
+   count — 169 range cells at 10ms each is 1.7s and reads as broken.
 
-TYPOGRAPHY — this carries the whole Flighty feel:
-- Display face: Inter Tight or Geist, weights 600/700, tight tracking (-0.02em to
-  -0.04em), used at genuinely large sizes (48–96px) for numbers and headlines.
-- Body: Inter, 400/500.
-- Mono: Geist Mono or JetBrains Mono for cards, ranges, and bet sizes —
-  MUST be tabular-nums so numbers don&#x27;t jitter during animation.
-- Build a modular type scale: display-xl/lg/md, heading-lg/md/sm, body-lg/md/sm,
-  caption, mono-lg/md/sm. Expose as Tailwind utilities.
-- Spacing on a 4px grid. Radii: 8 / 12 / 16 / 24 / full.
+6. PRIMITIVES — src/components/motion/: &lt;FadeUp&gt;, &lt;Stagger&gt;, &lt;AnimatedNumber&gt;
+   (springs between values, tabular-nums, optional prefix/suffix), &lt;Shimmer&gt;,
+   &lt;PageTransition&gt;.
 
-MOTION — create `src/lib/motion.ts` exporting shared Framer Motion config so
-every animation in the app is consistent:
-- Springs: `snappy` (stiffness 400, damping 30), `smooth` (260/26),
-  `gentle` (170/26), `bouncy` (500/22, for card deals and correct answers)
-- Durations: instant 100ms, fast 180ms, base 260ms, slow 420ms, deliberate 800ms
-- Easings: standard, decelerate, accelerate as cubic-beziers
-- Variant presets: fadeUp, fadeIn, scaleIn, slideInRight, staggerContainer,
-  staggerChild
-- Every preset must respect `prefers-reduced-motion` and collapse to opacity-only
+7. MIGRATE THE EXISTING PAGES. A marketing landing page plus terms and privacy
+   pages already exist, built ahead of schedule against provisional tokens. Move
+   them onto the real tokens. Do not break them, and do not leave two token
+   systems in the codebase.
 
-Create `src/components/motion/` primitives:
-  &lt;FadeUp&gt;, &lt;Stagger&gt;, &lt;AnimatedNumber&gt; (springs between values, tabular-nums,
-  optional prefix/suffix), &lt;Shimmer&gt; (skeleton loading), &lt;PageTransition&gt;
-
-Build a styleguide page at /styleguide rendering EVERY token, type scale step,
-color swatch with its contrast ratio printed, motion preset with a replay
-button, and each motion primitive live. This page is your visual regression
-check for the rest of the build.
+8. STYLEGUIDE — a page at /styleguide rendering every token, every type scale
+   step, every colour swatch with its measured contrast ratio printed beside it,
+   every motion preset with a replay button, and each motion primitive live. This
+   page is the visual regression check for the rest of the build.
 
 SELF-VERIFICATION:
 1. Programmatically compute the contrast ratio of every text-on-surface and
-   accent-on-surface pairing. Print a table. Any pairing below WCAG AA for its
-   intended use must be adjusted, not excused.
+   accent-on-surface pairing. Print a table.
+   KNOWN AND EXPECTED: `--accent` (#2F68FF) measures 4.37:1 on `--canvas` and so
+   fails AA for normal-size text. This is documented in DESIGN.md and handled by
+   using `--accent-bright` for accent-coloured text. Confirm it — do NOT &quot;fix&quot; it
+   by changing the blue. Every other pairing must pass for its intended use.
 2. Confirm no hardcoded hex values exist anywhere outside globals.css.
 3. Screenshot /styleguide at 390px and 1440px width and confirm no overflow.
 4. Toggle prefers-reduced-motion and confirm every primitive degrades to
@@ -541,7 +513,7 @@ SELF-VERIFICATION:
   <div class="card-body">
     <p class="goal">Users can sign up, log in, reset a password, and use Google — with sessions that survive refresh.</p>
     <div class="kv"><span>Depends on</span><div>1.1, 0.3</div></div>
-    <div class="kv"><span>Files</span><div><code>src/app/(marketing)/(auth)/<em></code>, <code>src/lib/supabase/</em></code>, <code>middleware.ts</code></div></div>
+    <div class="kv"><span>Files</span><div><code>src/app/(marketing)/(auth)/*</code>, <code>src/lib/supabase/*</code>, <code>middleware.ts</code></div></div>
     <div class="prompt-wrap">
       <div class="prompt-head"><span>Claude Code prompt</span>
         <button class="copy" data-num="1.2">Copy</button></div>
@@ -1504,7 +1476,7 @@ being judged against.
 
 The table is NOT a green felt surface and NOT a filled shape. It is a GLOWING
 ELLIPTICAL RING on near-black:
-  - a 2-3px elliptical stroke in the cyan accent, with an outer glow
+  - a 2-3px elliptical stroke in `--accent`, with an outer glow
     (layered box-shadows or an SVG gaussian blur) falling off over ~40px
   - the ellipse interior stays canvas-dark; a very subtle radial gradient from
     the center, no more than 4% lighter at the middle
@@ -1514,7 +1486,7 @@ ELLIPTICAL RING on near-black:
 Seats sit ON the ring, not inside it. Each seat is a small dark pill:
   [ POS ] [ stack BB ]   e.g.  &quot;CO  48 BB&quot;
 with the position label in mono at ~10px and the stack in tabular-nums. A
-folded seat drops to 40% opacity. The hero seat gets a cyan border.
+folded seat drops to 40% opacity. The hero seat gets a `--grade-best` border.
 
 Face-down cards render as a rounded rect with a subtle blue geometric pattern —
 recognizable as a card back at 24px wide, never a solid block.
@@ -1542,7 +1514,7 @@ Components:
 &lt;Seat player position isHero isActive isFolded /&gt;
   - Name, stack in tabular-nums, position badge (UTG/BTN/etc)
   - Folded seats desaturate to 40% opacity and cards fade out
-  - Active seat gets an animated cyan ring
+  - Active seat gets an animated `--accent` ring
   - Bet chips animate from the seat toward the pot on action
 
 &lt;PotDisplay amountBb sidePots? /&gt;
@@ -1618,7 +1590,7 @@ SELF-VERIFICATION:
   <div class="card-body">
     <p class="goal">The loop the entire product is built around — see a spot, decide, get graded, understand why.</p>
     <div class="kv"><span>Depends on</span><div>3.1, 2.6, 2.7, 1.2, 1.3, 0.4</div></div>
-    <div class="kv"><span>Files</span><div><code>src/app/(app)/arena/<em></code>, <code>src/app/api/drills/</em></code>, <code>src/components/poker/Feedback.tsx</code>, <code>FrequencyBar.tsx</code></div></div>
+    <div class="kv"><span>Files</span><div><code>src/app/(app)/arena/*</code>, <code>src/app/api/drills/*</code>, <code>src/components/poker/Feedback.tsx</code>, <code>FrequencyBar.tsx</code></div></div>
     <div class="prompt-wrap">
       <div class="prompt-head"><span>Claude Code prompt</span>
         <button class="copy" data-num="3.2">Copy</button></div>
@@ -1725,7 +1697,7 @@ engine&#x27;s answer stated plainly. Structure, in order:
 Micro-interactions that matter:
   - Sharp: radial glow, a brief particle burst, the strongest haptic, and the
     badge holds ~200ms longer than other grades. Make this feel like winning.
-  - Best: brief cyan pulse behind the badge, light haptic, streak +1 with a spring
+  - Best: brief `--grade-best` pulse behind the badge, light haptic, streak +1 with a spring
   - Solid: no celebration, but the copy must actively reassure — &quot;a solver folds
     here 29% of the time&quot; — never let a balanced action feel like a near-miss
   - Blunder: a short, restrained shake. Do NOT make it punishing. This is a
@@ -1858,7 +1830,7 @@ SELF-VERIFICATION:
   <div class="card-body">
     <p class="goal">The habit loop. This is what makes people open the app tomorrow.</p>
     <div class="kv"><span>Depends on</span><div>3.2, 3.3</div></div>
-    <div class="kv"><span>Files</span><div><code>src/app/(app)/daily/<em></code>, <code>src/app/api/daily/</em></code>, <code>src/lib/streak.ts</code>, <code>vercel.json</code></div></div>
+    <div class="kv"><span>Files</span><div><code>src/app/(app)/daily/*</code>, <code>src/app/api/daily/*</code>, <code>src/lib/streak.ts</code>, <code>vercel.json</code></div></div>
     <div class="prompt-wrap">
       <div class="prompt-head"><span>Claude Code prompt</span>
         <button class="copy" data-num="3.4">Copy</button></div>
@@ -1945,9 +1917,9 @@ SELF-VERIFICATION:
 
 - The canonical 13x13 grid: pairs on the diagonal, suited above, offsuit below
 - Each cell is filled proportionally to its action frequencies — a hand that is
-  62% raise / 38% fold renders as 62% cyan filling from the bottom and 38% muted
+  62% raise / 38% fold renders as 62% `--accent` filling from the bottom and 38% muted
   gray above it. This single visual makes mixed strategy immediately legible.
-- Action colors: raise/bet cyan, call blue-gray, fold near-transparent
+- Action colors: raise/bet `--accent`, call `--accent-deep`, fold near-transparent
 - Hover or tap a cell → tooltip with exact frequencies and EVs
 - `highlightHand` draws a bright ring around one cell — used post-drill to show
   the user exactly where their hand sat in the range
@@ -2045,7 +2017,7 @@ screen and lets you ask much more interesting questions.
 3. &lt;ChoiceGrid options selected onSelect /&gt; — a 2x2 grid of large tappable cards.
    Each renders its content (a pair of playing cards for hand_choice, a sizing
    label for sizing). Minimum 44px targets, generous spacing, springs on select.
-   After answering, the correct option gets a cyan border and the chosen-but-wrong
+   After answering, the correct option gets a `--grade-best` border and the chosen-but-wrong
    one gets its EV-loss color from evColor().
 
 4. SCHEMA: add `question_type` and `question_payload jsonb` to drill_attempts, and
@@ -2092,7 +2064,7 @@ SELF-VERIFICATION:
   <div class="card-body">
     <p class="goal">A safe, cached, cost-controlled AI layer that cannot invent strategy.</p>
     <div class="kv"><span>Depends on</span><div>2.7, 3.2</div></div>
-    <div class="kv"><span>Files</span><div><code>src/lib/ai/<em></code>, <code>src/app/api/coach/</em></code></div></div>
+    <div class="kv"><span>Files</span><div><code>src/lib/ai/*</code>, <code>src/app/api/coach/*</code></div></div>
     <div class="prompt-wrap">
       <div class="prompt-head"><span>Claude Code prompt</span>
         <button class="copy" data-num="4.1">Copy</button></div>
@@ -2441,7 +2413,7 @@ SELF-VERIFICATION:
   <div class="card-body">
     <p class="goal">Structured learning — the thing that makes a total beginner feel guided rather than lost.</p>
     <div class="kv"><span>Depends on</span><div>1.1, 2.4, 2.6, 3.1, 3.5</div></div>
-    <div class="kv"><span>Files</span><div><code>src/content/curriculum/<em>*/</em>.mdx</code>, <code>src/lib/curriculum.ts</code>, <code>scripts/import-curriculum.ts</code></div></div>
+    <div class="kv"><span>Files</span><div><code>src/content/curriculum/**/*.mdx</code>, <code>src/lib/curriculum.ts</code>, <code>scripts/import-curriculum.ts</code></div></div>
     <div class="prompt-wrap">
       <div class="prompt-head"><span>Claude Code prompt</span>
         <button class="copy" data-num="5.1">Copy</button></div>
@@ -2525,7 +2497,7 @@ SELF-VERIFICATION:
   <div class="card-body">
     <p class="goal">Lessons that flow into practice, with visible progress and sequential unlocking.</p>
     <div class="kv"><span>Depends on</span><div>5.1, 3.2</div></div>
-    <div class="kv"><span>Files</span><div><code>src/app/(app)/learn/<em></code>, <code>src/components/curriculum/</em></code></div></div>
+    <div class="kv"><span>Files</span><div><code>src/app/(app)/learn/*</code>, <code>src/components/curriculum/*</code></div></div>
     <div class="prompt-wrap">
       <div class="prompt-head"><span>Claude Code prompt</span>
         <button class="copy" data-num="5.2">Copy</button></div>
@@ -2606,7 +2578,7 @@ Layout (mobile order, top to bottom):
    (&quot;Working toward: beat your friends&quot;)
 
 2. DAILY CHALLENGE CARD — the most prominent element
-   Not played: bold cyan CTA, streak count, &quot;5 hands · 3 min&quot;
+   Not played: bold primary CTA, streak count, &quot;5 hands · 3 min&quot;
    Completed: score, rank, streak, and a countdown to tomorrow&#x27;s
 
 3. CONTINUE LEARNING
@@ -2764,7 +2736,7 @@ SELF-VERIFICATION:
   <div class="card-body">
     <p class="goal">Play real hands. Where knowledge turns into skill.</p>
     <div class="kv"><span>Depends on</span><div>6.1, 3.1, 2.3, 1.3, 0.4</div></div>
-    <div class="kv"><span>Files</span><div><code>src/app/(app)/table/<em></code>, <code>src/app/api/sim/</em></code></div></div>
+    <div class="kv"><span>Files</span><div><code>src/app/(app)/table/*</code>, <code>src/app/api/sim/*</code></div></div>
     <div class="prompt-wrap">
       <div class="prompt-head"><span>Claude Code prompt</span>
         <button class="copy" data-num="6.2">Copy</button></div>
@@ -3244,7 +3216,7 @@ SELF-VERIFICATION:
   <div class="card-body">
     <p class="goal">Take money.</p>
     <div class="kv"><span>Depends on</span><div>1.1, 1.2</div></div>
-    <div class="kv"><span>Files</span><div><code>src/lib/stripe/<em></code>, <code>src/app/api/stripe/</em></code>, <code>src/app/(onboarding)/paywall/page.tsx</code></div></div>
+    <div class="kv"><span>Files</span><div><code>src/lib/stripe/*</code>, <code>src/app/api/stripe/*</code>, <code>src/app/(onboarding)/paywall/page.tsx</code></div></div>
     <div class="prompt-wrap">
       <div class="prompt-head"><span>Claude Code prompt</span>
         <button class="copy" data-num="7.3">Copy</button></div>
@@ -3637,7 +3609,7 @@ SELF-VERIFICATION:
         <button class="copy" data-num="8.3">Copy</button></div>
       <pre class="prompt">Implement transactional email for suitedpoker using Resend + React Email.
 
-Emails (all in the brand aesthetic — dark, clean, big type, cyan accent; and all
+Emails (all in the brand aesthetic per `DESIGN.md` — dark, clean, big type; and all
 with a plain-text fallback):
 
 1. Welcome — sent after purchase. Not a generic welcome: restate their diagnosis,
@@ -3791,7 +3763,8 @@ SELF-VERIFICATION:
       <pre class="prompt">Produce every static asset suitedpoker needs. Nothing else in the plan creates these.
 
 1. APP ICON + FAVICON
-   Design a mark that works at 16px. Given the brand (near-black, cyan, analytical),
+   Design a mark that works at 16px. Given the brand (see `DESIGN.md` — violet-shifted
+   near-black, azure accent, analytical),
    the strongest direction is a minimal geometric mark derived from the frequency
    bar — two unequal segments — rather than a card or chip, which would read as
    gambling to Meta&#x27;s reviewers and to the App Store later.
@@ -3921,7 +3894,8 @@ a Meta ad.
 3. iOS Safari specifics: prevent bounce-scroll on the table view, handle the
    dynamic viewport height (use dvh, not vh), prevent input zoom (16px minimum
    font size on inputs), and disable text selection on cards and action buttons.
-4. Add a PWA manifest: name, short_name, all icon sizes, theme_color #08090B,
+4. Add a PWA manifest: name, short_name, all icon sizes, theme_color = `--canvas`
+   from DESIGN.md,
    display standalone, orientation portrait.
 5. Add a tasteful install prompt — shown only after a user has completed 3
    sessions, dismissible permanently, never on the first visit.
