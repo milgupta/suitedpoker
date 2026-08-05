@@ -184,6 +184,8 @@ export const postflopTemplates = pgTable(
     heroRangeRef: text("hero_range_ref"),
     villainRangeRef: text("villain_range_ref"),
     actionHistory: jsonb("action_history"),
+    /** Optional hand_choice / sizing questions attached by an author. */
+    questions: jsonb("questions"),
     createdAt: createdAt(),
   },
   (t) => [index("postflop_templates_solution_set_id_idx").on(t.solutionSetId)],
@@ -225,6 +227,10 @@ export const drillAttempts = pgTable(
     evLoss: numeric("ev_loss", { precision: 10, scale: 3 }),
     timeMs: integer("time_ms"),
     source: text("source"),
+    /** 'action' | 'hand_choice' | 'sizing'. See src/poker/questions.ts. */
+    questionType: text("question_type").notNull().default("action"),
+    /** The question as asked, so a replay shows the same four candidates. */
+    questionPayload: jsonb("question_payload"),
     hintsUsed: integer("hints_used").notNull().default(0),
     createdAt: createdAt(),
   },

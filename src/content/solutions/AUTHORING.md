@@ -358,3 +358,38 @@ and frequencies is, because the EVs are derived from those.
 
 If the checker reports something you believe is a false alarm, say so rather
 than working around it — the rule is probably protecting something.
+
+
+## Attaching questions to a template (3.6)
+
+A postflop template may carry an optional `questions` array so a hand can ask
+something other than "what do you do?". Three types exist, and **all three grade
+through the same 2.7 grader on EV loss** — never add a fourth grading path, or
+the accuracy number stops being comparable between sessions.
+
+```jsonc
+{
+  "questions": [
+    {
+      "type": "hand_choice",
+      "prompt": "Which hand is the better bluff here?",
+      "action": "raise",
+      // Exactly four. Graded on the EV gap between the chosen hand's EV for
+      // `action` and the best candidate's.
+      "candidates": ["A5s", "KQo", "76s", "T9s"]
+    },
+    {
+      "type": "sizing",
+      "prompt": "Which sizing is best?",
+      // Action names that exist in the node. Graded identically to `action`.
+      "options": ["raise", "allin"]
+    }
+  ]
+}
+```
+
+Omitting `questions` leaves the template asking the default `action` question.
+
+`presentationFor()` in `src/poker/questions.ts` decides the format: anything
+other than an `action` question renders as a hand history, because the graphical
+table can only ever ask which action to take.

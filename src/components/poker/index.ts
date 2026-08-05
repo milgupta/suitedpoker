@@ -21,3 +21,5 @@ export {
   type RangeGridProps,
   type RangeStrategy,
 } from "./RangeGrid";
+export { ChoiceGrid, type ChoiceGridProps, type ChoiceOption } from "./ChoiceGrid";
+export { HandHistory, historyLines, potByStreet, type HandHistoryProps } from "./HandHistory";

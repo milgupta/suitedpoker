@@ -128,6 +128,7 @@ sessions.
 | 3.3 Rating system and adaptive difficulty | done |
 | 3.4 Daily challenge, streaks, leaderboard | done |
 | 3.5 Range grid viewer | done |
+| 3.6 Hand-history format and question types | done |
 
 Stage 0 is complete. Update this table when you finish a substage.
 
@@ -288,6 +289,21 @@ Stage 0 is complete. Update this table when you finish a substage.
   not a graded decision.
 - **The 169-cell reveal is capped at 300ms** via `staggerDelay`, and an e2e
   reads the real animation timings to prove it.
+
+**What 3.6 left you.**
+
+- **Every question type grades through the 2.7 grader.** `hand_choice` reshapes
+  its candidates into a `GradeInput` and calls `gradeDecision` — there is no
+  second band table. A fourth grading path would make the accuracy number
+  incomparable between sessions.
+- **`presentationFor()` is the ONLY place the format is decided.** Not
+  conditionals in the player. A test runs it over 5,000 spots.
+- **An `action` event's `amount` is the TO-amount, not the increment.** Summing
+  posts and actions naively double-counts the small blind's post when they
+  call. `potByStreet` tracks per-seat commitment and adds deltas.
+- **Check pot arithmetic against the ENGINE, never against a re-implementation.**
+  The first version of that test repeated the renderer's own mistake and passed
+  while both were wrong.
 
 **What 0.2 left you.** Anything a later substage needs to build on:
 
