@@ -313,3 +313,167 @@ export function reviewRisk(node: PreflopNode): ReviewRisk {
 export function rankByReviewRisk(nodes: readonly PreflopNode[]): ReviewRisk[] {
   return nodes.map(reviewRisk).sort((a, b) => b.score - a.score || a.ref.localeCompare(b.ref));
 }
+
+// ── Postflop templates ────────────────────────────────────────────────────────
+
+/**
+ * Postflop strategy is stored over HAND CLASSES within curated scenario
+ * templates, not as a solver tree. That is a deliberate simplification and the
+ * UI is required to label it as one — see PROVENANCE above, which applies here
+ * identically.
+ */
+export const POSTFLOP_ACTIONS = [
+  "check",
+  "bet_33",
+  "bet_66",
+  "bet_100",
+  "fold",
+  "call",
+  "raise_small",
+  "raise_pot",
+  "allin",
+] as const;
+
+export type PostflopActionName = (typeof POSTFLOP_ACTIONS)[number];
+
+export const STREETS = ["flop", "turn", "river"] as const;
+export type Street = (typeof STREETS)[number];
+
+const postflopStrategySchema = z.object({
+  handClass: z.string().min(1),
+  strategy: z.record(z.string(), z.number()),
+  ev: z.record(z.string(), z.number()),
+  rationale: z.string().min(20),
+});
+
+export const postflopTemplateSchema = z
+  .object({
+    id: z.string().min(1),
+    solutionSet: z.string().min(1),
+    provenance: z.enum(PROVENANCE_VALUES, {
+      error: "provenance is required and must be 'authored-approximation' or 'solver-verified'",
+    }),
+    label: z.string().min(1),
+    street: z.enum(STREETS),
+    heroPos: z.enum(HERO_POSITIONS),
+    villainPos: z.enum(HERO_POSITIONS),
+    potBb: z.number().positive(),
+    effStackBb: z.number().positive(),
+    heroRange: z.string().min(1),
+    villainRange: z.string().min(1),
+    boardTags: z.array(z.string()).min(1),
+    exampleBoards: z.array(z.string()).min(3).max(5),
+    actionHistory: z.array(z.string()),
+    actions: z.array(z.enum(POSTFLOP_ACTIONS)).min(2),
+    confidence: confidenceSchema,
+    strategies: z.array(postflopStrategySchema).min(1),
+  })
+  .superRefine((template, ctx) => {
+    const fail = (message: string) => ctx.addIssue({ code: "custom", message });
+    const actionSet = new Set<string>(template.actions);
+    const seen = new Set<string>();
+
+    for (const entry of template.strategies) {
+      if (seen.has(entry.handClass)) fail(`${entry.handClass}: appears twice`);
+      seen.add(entry.handClass);
+
+      let sum = 0;
+      for (const [action, frequency] of Object.entries(entry.strategy)) {
+        if (!actionSet.has(action)) {
+          fail(`${entry.handClass}: strategy names "${action}", which is not in actions[]`);
+        }
+        if (frequency < 0 || frequency > 1) {
+          fail(`${entry.handClass}: frequency for "${action}" is ${frequency}, must be in [0,1]`);
+        }
+        if (entry.ev[action] === undefined) {
+          fail(`${entry.handClass}: "${action}" appears in strategy but not in ev`);
+        }
+        sum += frequency;
+      }
+      if (Math.abs(sum - 1) > 0.001) {
+        fail(`${entry.handClass}: frequencies sum to ${sum.toFixed(4)}, must be 1.0 ±0.001`);
+      }
+      for (const action of template.actions) {
+        if (entry.ev[action] === undefined) {
+          fail(`${entry.handClass}: ev is missing "${action}", which is in actions[]`);
+        }
+      }
+    }
+  });
+
+export type PostflopTemplateFile = z.infer<typeof postflopTemplateSchema>;
+
+export interface PostflopTemplate extends PostflopTemplateFile {
+  readonly ref: string;
+}
+
+export function parsePostflopTemplate(input: unknown, source = "<inline>"): PostflopTemplate {
+  const result = postflopTemplateSchema.safeParse(input);
+  if (!result.success) {
+    const issues = result.error.issues
+      .map((issue) => `  ${issue.path.join(".") || "(root)"}: ${issue.message}`)
+      .join("\n");
+    throw new SyntaxError(`${source} is not a valid postflop template:\n${issues}`);
+  }
+  return { ...result.data, ref: result.data.id };
+}
+
+export function validatePostflopTemplate(input: unknown, source: string): NodeValidationResult {
+  const result = postflopTemplateSchema.safeParse(input);
+  if (!result.success) {
+    return {
+      ok: false,
+      source,
+      errors: result.error.issues.map(
+        (issue) => `${issue.path.join(".") || "(root)"}: ${issue.message}`,
+      ),
+    };
+  }
+  return { ok: true, source, ref: result.data.id, errors: [] };
+}
+
+export function getPostflopStrategy(
+  template: PostflopTemplate,
+  handClass: string,
+): PostflopTemplateFile["strategies"][number] | undefined {
+  return template.strategies.find((s) => s.handClass === handClass);
+}
+
+export function postflopBestAction(
+  template: PostflopTemplate,
+  handClass: string,
+): PostflopActionName {
+  const entry = getPostflopStrategy(template, handClass);
+  if (entry === undefined) throw new RangeError(`${template.ref} has no strategy for ${handClass}`);
+  let best: PostflopActionName | undefined;
+  let bestEv = -Infinity;
+  let bestFrequency = -1;
+  for (const action of POSTFLOP_ACTIONS) {
+    if (!template.actions.includes(action)) continue;
+    const ev = entry.ev[action];
+    if (ev === undefined) continue;
+    const frequency = entry.strategy[action] ?? 0;
+    if (ev > bestEv || (ev === bestEv && frequency > bestFrequency)) {
+      best = action;
+      bestEv = ev;
+      bestFrequency = frequency;
+    }
+  }
+  if (best === undefined) throw new RangeError(`${template.ref} has no actions`);
+  return best;
+}
+
+export function postflopEvLoss(
+  template: PostflopTemplate,
+  handClass: string,
+  chosenAction: PostflopActionName,
+): number {
+  const entry = getPostflopStrategy(template, handClass);
+  if (entry === undefined) throw new RangeError(`${template.ref} has no strategy for ${handClass}`);
+  const best = entry.ev[postflopBestAction(template, handClass)];
+  const chosen = entry.ev[chosenAction];
+  if (best === undefined || chosen === undefined) {
+    throw new RangeError(`${template.ref} / ${handClass} has no ev for ${chosenAction}`);
+  }
+  return Math.max(0, best - chosen);
+}

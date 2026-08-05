@@ -20,15 +20,19 @@ import { loadEnvConfig } from "@next/env";
 import postgres from "postgres";
 
 import {
+  parsePostflopTemplate,
   parsePreflopNode,
+  type PostflopTemplate,
   type PreflopNode,
   rankByReviewRisk,
+  validatePostflopTemplate,
   validatePreflopNode,
 } from "../src/poker/solutions";
 
 loadEnvConfig(process.cwd());
 
 const PREFLOP_DIR = resolve(process.cwd(), "src/content/solutions/preflop");
+const POSTFLOP_DIR = resolve(process.cwd(), "src/content/solutions/postflop");
 const SOLUTION_SET = {
   name: "suitedpoker-6max-100bb-v1",
   version: "1",
@@ -41,12 +45,12 @@ const SOLUTION_SET = {
 
 const checkOnly = process.argv.includes("--check");
 
-function readNodeFiles(): Array<{ source: string; json: unknown }> {
-  const names = readdirSync(PREFLOP_DIR)
+function readNodeFiles(dir = PREFLOP_DIR): Array<{ source: string; json: unknown }> {
+  const names = readdirSync(dir)
     .filter((n) => n.endsWith(".json"))
     .sort();
   return names.map((name) => {
-    const path = join(PREFLOP_DIR, name);
+    const path = join(dir, name);
     try {
       return { source: name, json: JSON.parse(readFileSync(path, "utf8")) as unknown };
     } catch (error) {
@@ -94,6 +98,43 @@ function validateAll(files: ReturnType<typeof readNodeFiles>): PreflopNode[] {
   return nodes;
 }
 
+function validateTemplates(files: ReturnType<typeof readNodeFiles>): PostflopTemplate[] {
+  const failures: string[] = [];
+  const templates: PostflopTemplate[] = [];
+
+  for (const { source, json } of files) {
+    const result = validatePostflopTemplate(json, source);
+    if (!result.ok) {
+      const shown = result.errors.slice(0, 8);
+      const extra = result.errors.length - shown.length;
+      failures.push(
+        `\u2717 ${source}\n${shown.map((e) => `    ${e}`).join("\n")}` +
+          (extra > 0 ? `\n    \u2026 and ${extra} more` : ""),
+      );
+      continue;
+    }
+    templates.push(parsePostflopTemplate(json, source));
+  }
+
+  if (failures.length > 0) {
+    console.error(`\n${failures.length} postflop template(s) failed validation:\n`);
+    console.error(failures.join("\n\n"));
+    console.error(`\nNothing was imported.\n`);
+    process.exit(1);
+  }
+
+  const ids = new Set<string>();
+  for (const template of templates) {
+    if (ids.has(template.id)) {
+      console.error(`\u2717 duplicate template id ${template.id}`);
+      process.exit(1);
+    }
+    ids.add(template.id);
+  }
+
+  return templates;
+}
+
 function report(nodes: PreflopNode[]): void {
   console.log(`✓ ${nodes.length} nodes validated, all 169 hands present in each`);
 
@@ -120,7 +161,7 @@ ALTER TABLE preflop_nodes
   ADD COLUMN IF NOT EXISTS provenance text NOT NULL DEFAULT 'authored-approximation';
 `.trim();
 
-async function importAll(nodes: PreflopNode[]): Promise<void> {
+async function importAll(nodes: PreflopNode[], templates: PostflopTemplate[]): Promise<void> {
   const url = process.env.DATABASE_URL;
   if (url === undefined || url === "") {
     console.error("\nDATABASE_URL is not set. Run with --check to validate without a database.\n");
@@ -184,11 +225,18 @@ async function main(): Promise<void> {
   }
   const nodes = validateAll(files);
   report(nodes);
+
+  const templates = validateTemplates(readNodeFiles(POSTFLOP_DIR));
+  console.log(`\u2713 ${templates.length} postflop templates validated`);
+  for (const template of templates) {
+    console.log(`  ${template.id.padEnd(40)} ${template.strategies.length} hand classes`);
+  }
+
   if (checkOnly) {
     console.log(`\n--check: validated only, nothing written.`);
     return;
   }
-  await importAll(nodes);
+  await importAll(nodes, templates);
 }
 
 void main().catch((error: unknown) => {

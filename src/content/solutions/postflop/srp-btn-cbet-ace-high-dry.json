@@ -1,0 +1,194 @@
+{
+  "id": "srp-btn-cbet-ace-high-dry",
+  "solutionSet": "suitedpoker-6max-100bb-v1",
+  "provenance": "authored-approximation",
+  "label": "BTN opens, BB calls; BB checks a dry ace-high flop",
+  "street": "flop",
+  "heroPos": "BTN",
+  "villainPos": "BB",
+  "potBb": 5.5,
+  "effStackBb": 97.5,
+  "heroRange": "22+,A2s+,K2s+,Q4s+,J6s+,T6s+,95s+,85s+,74s+,64s+,53s+,A5o+,K7o+,Q8o+,J8o+,T8o+,97o+",
+  "villainRange": "22-88,A2s-A9s:0.7,ATs,AJs:0.55,AQs:0.6,K6s+,KJs:0.7,KQs:0.6,Q7s+,QJs:0.75,J8s+,JTs:0.75,T8s+,97s+,87s,76s,65s,54s,AQo,AJo:0.8,ATo:0.65,A9o:0.5,KQo:0.75,KJo:0.6,KTo:0.45,QJo:0.6,QTo:0.45,JTo:0.5",
+  "boardTags": ["dry", "ace-high", "rainbow"],
+  "exampleBoards": ["Ah 7d 2c", "As 8h 3d", "Ad 6c 2h", "Ac 9d 4s"],
+  "actionHistory": ["BTN opens 2.5bb", "BB calls", "BB checks"],
+  "actions": ["check", "bet_33", "bet_66", "bet_100"],
+  "confidence": {
+    "rangeShape": "high",
+    "frequencies": "medium",
+    "ev": "low",
+    "note": "The headline strategy here — bet 33% with close to the entire range on a dry ace-high board — is one of the most robust results in postflop theory and I would defend it. The specific split between bet_33 and bet_66 for the strongest hands is a modelled guess; solvers put a small amount of the nutted range into a larger size and the exact number is not something I can defend to a decimal place. EVs are derived from the frequencies, not solved."
+  },
+  "strategies": [
+    {
+      "handClass": "set",
+      "strategy": {
+        "bet_33": 0.7,
+        "bet_66": 0.3
+      },
+      "ev": {
+        "check": 1.66,
+        "bet_33": 2.49,
+        "bet_66": 2.26,
+        "bet_100": 1.66
+      },
+      "rationale": "A set wants money in against every ace. Mostly the small size to keep their whole range in, some large to build the pot."
+    },
+    {
+      "handClass": "two_pair",
+      "strategy": {
+        "bet_33": 0.75,
+        "bet_66": 0.25
+      },
+      "ev": {
+        "check": 1.47,
+        "bet_33": 2.35,
+        "bet_66": 2.03,
+        "bet_100": 1.47
+      },
+      "rationale": "Strong enough to bet for value three streets. The small size keeps weaker aces calling."
+    },
+    {
+      "handClass": "top_pair_good_kicker",
+      "strategy": {
+        "bet_33": 0.85,
+        "check": 0.15
+      },
+      "ev": {
+        "check": 1.54,
+        "bet_33": 2.07,
+        "bet_66": 1.06,
+        "bet_100": 1.06
+      },
+      "rationale": "Top pair with a real kicker is a clear value bet, but a small check frequency protects the checking range."
+    },
+    {
+      "handClass": "top_pair_weak_kicker",
+      "strategy": {
+        "bet_33": 0.6,
+        "check": 0.4
+      },
+      "ev": {
+        "check": 1.84,
+        "bet_33": 1.92,
+        "bet_66": 1.21,
+        "bet_100": 1.21
+      },
+      "rationale": "Ace with a weak kicker is thin value that can get raised off its equity. Check about as often as you bet."
+    },
+    {
+      "handClass": "middle_pair",
+      "strategy": {
+        "check": 0.7,
+        "bet_33": 0.3
+      },
+      "ev": {
+        "check": 1.78,
+        "bet_33": 1.55,
+        "bet_66": 0.95,
+        "bet_100": 0.95
+      },
+      "rationale": "Middle pair on an ace-high board is a bluff-catcher, not a value bet. Mostly check."
+    },
+    {
+      "handClass": "pocket_pair_below_top",
+      "strategy": {
+        "check": 0.65,
+        "bet_33": 0.35
+      },
+      "ev": {
+        "check": 1.36,
+        "bet_33": 1.21,
+        "bet_66": 0.58,
+        "bet_100": 0.58
+      },
+      "rationale": "A pocket pair under the ace has showdown value worth protecting by checking."
+    },
+    {
+      "handClass": "bottom_pair",
+      "strategy": {
+        "check": 0.8,
+        "bet_33": 0.2
+      },
+      "ev": {
+        "check": 1.5,
+        "bet_33": 1.08,
+        "bet_66": 0.55,
+        "bet_100": 0.55
+      },
+      "rationale": "Almost no hand that calls a bet is worse. Check and take a free card."
+    },
+    {
+      "handClass": "flush_draw",
+      "strategy": {
+        "bet_33": 0.7,
+        "bet_66": 0.2,
+        "check": 0.1
+      },
+      "ev": {
+        "check": 0.8,
+        "bet_33": 1.21,
+        "bet_66": 0.9,
+        "bet_100": 0.39
+      },
+      "rationale": "A flush draw is the ideal small-bet bluff: it can barrel any turn and has equity when called."
+    },
+    {
+      "handClass": "gutshot",
+      "strategy": {
+        "bet_33": 0.6,
+        "check": 0.4
+      },
+      "ev": {
+        "check": 0.71,
+        "bet_33": 0.79,
+        "bet_66": 0.07,
+        "bet_100": 0.07
+      },
+      "rationale": "Enough equity to justify one small bet, not enough to fire repeatedly."
+    },
+    {
+      "handClass": "overcards_bdfd",
+      "strategy": {
+        "bet_33": 0.55,
+        "check": 0.45
+      },
+      "ev": {
+        "check": 0.62,
+        "bet_33": 0.65,
+        "bet_66": -0.02,
+        "bet_100": -0.02
+      },
+      "rationale": "The backdoor flush draw is what makes this a bet rather than a give-up — it gives you turn cards to keep betting."
+    },
+    {
+      "handClass": "ace_high",
+      "strategy": {
+        "check": 0.75,
+        "bet_33": 0.25
+      },
+      "ev": {
+        "check": 0.93,
+        "bet_33": 0.61,
+        "bet_66": 0.05,
+        "bet_100": 0.05
+      },
+      "rationale": "Hero already has showdown value against a big part of their range. Betting turns a made hand into a bluff."
+    },
+    {
+      "handClass": "air",
+      "strategy": {
+        "bet_33": 0.45,
+        "check": 0.55
+      },
+      "ev": {
+        "check": 0.36,
+        "bet_33": 0.33,
+        "bet_66": -0.3,
+        "bet_100": -0.3
+      },
+      "rationale": "Some air has to bet or the betting range is all value and unbluffable. Prefer the hands with a backdoor."
+    }
+  ]
+}

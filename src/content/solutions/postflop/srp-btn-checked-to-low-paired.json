@@ -1,0 +1,142 @@
+{
+  "id": "srp-btn-checked-to-low-paired",
+  "solutionSet": "suitedpoker-6max-100bb-v1",
+  "provenance": "authored-approximation",
+  "label": "CO opens, BTN calls; flop checks to BTN on a low paired board",
+  "street": "flop",
+  "heroPos": "BTN",
+  "villainPos": "CO",
+  "potBb": 6,
+  "effStackBb": 97.5,
+  "heroRange": "55-TT,A9s,ATs:0.7,AJs:0.6,AQs:0.6,KTs,KJs:0.8,QTs,QJs,J9s,JTs,T9s,98s:0.6,87s:0.5,AQo:0.75,AJo:0.5,KQo:0.45",
+  "villainRange": "22+,A2s+,K8s+,Q8s+,J8s+,T8s+,96s+,86s+,75s+,65s,A9o+,KTo+,QTo+,JTo",
+  "boardTags": ["paired", "low", "dry"],
+  "exampleBoards": ["7h 7d 2c", "5s 5h 3d", "8c 8d 4h", "6h 6s 2d"],
+  "actionHistory": ["CO opens 2.5bb", "BTN calls", "CO checks"],
+  "actions": ["check", "bet_33", "bet_66"],
+  "confidence": {
+    "rangeShape": "medium",
+    "frequencies": "low",
+    "ev": "low",
+    "note": "Low paired boards are the spot where my authored ranges are least trustworthy, because the correct strategy depends heavily on how the preflop caller's range was constructed and mine is an approximation. The high overall betting frequency is right in direction. The specific 33/66 split and the decision to bet air at 55% are the numbers I would change first if a solver disagreed."
+  },
+  "strategies": [
+    {
+      "handClass": "full_house",
+      "strategy": {
+        "bet_33": 0.5,
+        "check": 0.5
+      },
+      "ev": {
+        "check": 3.18,
+        "bet_33": 3.18,
+        "bet_66": 2.56
+      },
+      "rationale": "Nothing calls, so half the time you check to let them catch up or bluff."
+    },
+    {
+      "handClass": "set",
+      "strategy": {
+        "bet_33": 0.55,
+        "check": 0.45
+      },
+      "ev": {
+        "check": 2.69,
+        "bet_33": 2.72,
+        "bet_66": 2.05
+      },
+      "rationale": "Trips on a paired board is strong but nothing worse pays. Slow down often."
+    },
+    {
+      "handClass": "overpair",
+      "strategy": {
+        "bet_33": 0.75,
+        "check": 0.25
+      },
+      "ev": {
+        "check": 2.09,
+        "bet_33": 2.41,
+        "bet_66": 1.52
+      },
+      "rationale": "An overpair is a clear value bet on a board this dry — most of their range has two overcards."
+    },
+    {
+      "handClass": "pocket_pair_below_top",
+      "strategy": {
+        "bet_33": 0.5,
+        "check": 0.5
+      },
+      "ev": {
+        "check": 1.48,
+        "bet_33": 1.48,
+        "bet_66": 0.86
+      },
+      "rationale": "A pocket pair beats their unpaired hands but folds to any real aggression."
+    },
+    {
+      "handClass": "middle_pair",
+      "strategy": {
+        "bet_33": 0.45,
+        "check": 0.55
+      },
+      "ev": {
+        "check": 1.94,
+        "bet_33": 1.92,
+        "bet_66": 1.28
+      },
+      "rationale": "Thin value at best on a board where their range is mostly overcards."
+    },
+    {
+      "handClass": "ace_high",
+      "strategy": {
+        "bet_33": 0.6,
+        "check": 0.4
+      },
+      "ev": {
+        "check": 0.93,
+        "bet_33": 1.02,
+        "bet_66": 0.3
+      },
+      "rationale": "Ace high is both a bluff and a hand with showdown value — betting small folds out the other overcard hands."
+    },
+    {
+      "handClass": "overcards",
+      "strategy": {
+        "bet_33": 0.6,
+        "check": 0.4
+      },
+      "ev": {
+        "check": 0.47,
+        "bet_33": 0.55,
+        "bet_66": -0.17
+      },
+      "rationale": "Two overcards on a paired low board is a standard small-bet bluff: their range missed too."
+    },
+    {
+      "handClass": "gutshot",
+      "strategy": {
+        "bet_33": 0.6,
+        "check": 0.4
+      },
+      "ev": {
+        "check": 0.78,
+        "bet_33": 0.86,
+        "bet_66": 0.14
+      },
+      "rationale": "Some equity plus fold equity on a board neither range connects with."
+    },
+    {
+      "handClass": "air",
+      "strategy": {
+        "bet_33": 0.55,
+        "check": 0.45
+      },
+      "ev": {
+        "check": 0.37,
+        "bet_33": 0.4,
+        "bet_66": -0.27
+      },
+      "rationale": "This is the spot to bluff. Both ranges miss a low paired board, and the small size only needs to work occasionally."
+    }
+  ]
+}

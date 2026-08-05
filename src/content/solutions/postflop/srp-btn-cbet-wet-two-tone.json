@@ -1,0 +1,197 @@
+{
+  "id": "srp-btn-cbet-wet-two-tone",
+  "solutionSet": "suitedpoker-6max-100bb-v1",
+  "provenance": "authored-approximation",
+  "label": "BTN opens, BB calls; BB checks a wet two-tone connected flop",
+  "street": "flop",
+  "heroPos": "BTN",
+  "villainPos": "BB",
+  "potBb": 5.5,
+  "effStackBb": 97.5,
+  "heroRange": "22+,A2s+,K2s+,Q4s+,J6s+,T6s+,95s+,85s+,74s+,64s+,53s+,A5o+,K7o+,Q8o+,J8o+,T8o+,97o+",
+  "villainRange": "22-88,A2s-A9s:0.7,ATs,AJs:0.55,AQs:0.6,K6s+,KJs:0.7,KQs:0.6,Q7s+,QJs:0.75,J8s+,JTs:0.75,T8s+,97s+,87s,76s,65s,54s,AQo,AJo:0.8,ATo:0.65,A9o:0.5,KQo:0.75,KJo:0.6,KTo:0.45,QJo:0.6,QTo:0.45,JTo:0.5",
+  "boardTags": ["wet", "two-tone", "connected"],
+  "exampleBoards": ["Jh Th 9c", "9h 8h 7d", "Qs Js 8h", "Th 9h 6c"],
+  "actionHistory": ["BTN opens 2.5bb", "BB calls", "BB checks"],
+  "actions": ["check", "bet_33", "bet_66", "bet_100"],
+  "confidence": {
+    "rangeShape": "high",
+    "frequencies": "medium",
+    "ev": "low",
+    "note": "The direction is solid: on a board that smashes the caller's range you bet less often and bigger when you do. Where I am least confident is the check frequency for top pair — solvers check a surprising amount of top pair on these boards and the number here is likely too low. A reviewer should look at top_pair_good_kicker and top_pair_weak_kicker first."
+  },
+  "strategies": [
+    {
+      "handClass": "straight",
+      "strategy": {
+        "bet_66": 0.55,
+        "bet_100": 0.3,
+        "check": 0.15
+      },
+      "ev": {
+        "check": 2.41,
+        "bet_33": 1.97,
+        "bet_66": 2.63,
+        "bet_100": 2.52
+      },
+      "rationale": "Bet big. The board is wet enough that charging draws matters more than keeping weak hands in."
+    },
+    {
+      "handClass": "set",
+      "strategy": {
+        "bet_66": 0.5,
+        "bet_100": 0.4,
+        "check": 0.1
+      },
+      "ev": {
+        "check": 2.26,
+        "bet_33": 1.87,
+        "bet_66": 2.49,
+        "bet_100": 2.46
+      },
+      "rationale": "A set on a connected board is vulnerable. Build the pot now rather than on a scary turn."
+    },
+    {
+      "handClass": "two_pair",
+      "strategy": {
+        "bet_66": 0.6,
+        "bet_100": 0.25,
+        "check": 0.15
+      },
+      "ev": {
+        "check": 2.08,
+        "bet_33": 1.63,
+        "bet_66": 2.35,
+        "bet_100": 2.16
+      },
+      "rationale": "Strong but not invulnerable — a straight card or a flush card kills the hand's value."
+    },
+    {
+      "handClass": "overpair",
+      "strategy": {
+        "bet_66": 0.5,
+        "check": 0.5
+      },
+      "ev": {
+        "check": 2.21,
+        "bet_33": 1.59,
+        "bet_66": 2.21,
+        "bet_100": 1.59
+      },
+      "rationale": "An overpair to a connected board is often only one pair. Half the time this is a check-and-evaluate hand."
+    },
+    {
+      "handClass": "top_pair_good_kicker",
+      "strategy": {
+        "bet_66": 0.45,
+        "check": 0.55
+      },
+      "ev": {
+        "check": 2.07,
+        "bet_33": 1.4,
+        "bet_66": 2.04,
+        "bet_100": 1.4
+      },
+      "rationale": "Top pair here is much weaker than on a dry board. Checking keeps the pot small with a hand that hates action."
+    },
+    {
+      "handClass": "top_pair_weak_kicker",
+      "strategy": {
+        "check": 0.75,
+        "bet_66": 0.25
+      },
+      "ev": {
+        "check": 1.92,
+        "bet_33": 1.04,
+        "bet_66": 1.61,
+        "bet_100": 1.04
+      },
+      "rationale": "Weak top pair on a wet board is close to a bluff-catcher. Check."
+    },
+    {
+      "handClass": "combo_draw",
+      "strategy": {
+        "bet_66": 0.55,
+        "bet_100": 0.35,
+        "check": 0.1
+      },
+      "ev": {
+        "check": 1.37,
+        "bet_33": 0.97,
+        "bet_66": 1.64,
+        "bet_100": 1.56
+      },
+      "rationale": "A pair plus a draw, or two draws at once, has enough equity to play a big pot. This is the best hand to shove the pot with."
+    },
+    {
+      "handClass": "flush_draw",
+      "strategy": {
+        "bet_66": 0.55,
+        "check": 0.45
+      },
+      "ev": {
+        "check": 1.19,
+        "bet_33": 0.55,
+        "bet_66": 1.21,
+        "bet_100": 0.55
+      },
+      "rationale": "Semi-bluff with the draw, but check enough of them to have flushes in the checking range too."
+    },
+    {
+      "handClass": "open_ended",
+      "strategy": {
+        "bet_66": 0.5,
+        "check": 0.5
+      },
+      "ev": {
+        "check": 1.07,
+        "bet_33": 0.45,
+        "bet_66": 1.07,
+        "bet_100": 0.45
+      },
+      "rationale": "Eight outs is enough to bet, and enough to be happy taking a free card."
+    },
+    {
+      "handClass": "middle_pair",
+      "strategy": {
+        "check": 0.85,
+        "bet_33": 0.15
+      },
+      "ev": {
+        "check": 1.78,
+        "bet_33": 1.25,
+        "bet_66": 0.78,
+        "bet_100": 0.78
+      },
+      "rationale": "Middle pair on a wet board beats almost nothing that continues. Check."
+    },
+    {
+      "handClass": "gutshot",
+      "strategy": {
+        "check": 0.65,
+        "bet_66": 0.35
+      },
+      "ev": {
+        "check": 0.79,
+        "bet_33": 0.02,
+        "bet_66": 0.64,
+        "bet_100": 0.02
+      },
+      "rationale": "Four outs is thin on a board where the caller has many pairs and draws."
+    },
+    {
+      "handClass": "air",
+      "strategy": {
+        "check": 0.8,
+        "bet_66": 0.2
+      },
+      "ev": {
+        "check": 0.36,
+        "bet_33": -0.58,
+        "bet_66": -0.06,
+        "bet_100": -0.58
+      },
+      "rationale": "Bluffing into the range that hit this board is expensive. Give up with most of it."
+    }
+  ]
+}

@@ -1,0 +1,166 @@
+{
+  "id": "threebet-pot-broadway-flop",
+  "solutionSet": "suitedpoker-6max-100bb-v1",
+  "provenance": "authored-approximation",
+  "label": "3-bet pot, hero is the 3-bettor on a broadway flop",
+  "street": "flop",
+  "heroPos": "BB",
+  "villainPos": "BTN",
+  "potBb": 22,
+  "effStackBb": 89,
+  "heroRange": "99+,AKs,AQs:0.35,AJs:0.4,AKo:0.7,AQo:0.3,A5s:0.65,A4s:0.5,KQs:0.35,KJs:0.25",
+  "villainRange": "QQ:0.5,JJ,TT,99,88:0.6,AQs,AJs:0.8,ATs:0.55,KQs:0.8,KJs:0.55,QJs:0.5,JTs:0.5,AQo:0.55,AKo:0.3",
+  "boardTags": ["broadway", "rainbow"],
+  "exampleBoards": ["Kh Qd 7c", "As Jh 4d", "Qc Jd 6h", "Kd Th 5s"],
+  "actionHistory": ["BTN opens 2.5bb", "BB 3bets to 11bb", "BTN calls", "BB to act"],
+  "actions": ["check", "bet_33", "bet_66", "bet_100"],
+  "confidence": {
+    "rangeShape": "medium",
+    "frequencies": "medium",
+    "ev": "low",
+    "note": "The small-bet-often strategy in a 3-bet pot on a broadway board is well established and I would defend it. What is weaker here is the assumed villain range: it is taken from the vs-3bet templates, which are themselves the lowest-confidence family in the preflop set, so an error there propagates straight into this template. Fix the vs-3bet nodes before trusting these numbers."
+  },
+  "strategies": [
+    {
+      "handClass": "set",
+      "strategy": {
+        "bet_33": 0.6,
+        "bet_66": 0.4
+      },
+      "ev": {
+        "check": 9.25,
+        "bet_33": 9.97,
+        "bet_66": 9.89,
+        "bet_100": 9.25
+      },
+      "rationale": "Stacks are shallow relative to the pot, so start building immediately."
+    },
+    {
+      "handClass": "two_pair",
+      "strategy": {
+        "bet_33": 0.65,
+        "bet_66": 0.35
+      },
+      "ev": {
+        "check": 8.63,
+        "bet_33": 9.4,
+        "bet_66": 9.25,
+        "bet_100": 8.63
+      },
+      "rationale": "Clear value in a pot this size."
+    },
+    {
+      "handClass": "overpair",
+      "strategy": {
+        "bet_33": 0.8,
+        "check": 0.2
+      },
+      "ev": {
+        "check": 8.41,
+        "bet_33": 8.83,
+        "bet_66": 7.89,
+        "bet_100": 7.89
+      },
+      "rationale": "An overpair in a 3-bet pot is a strong hand — bet small and often against a capped caller."
+    },
+    {
+      "handClass": "top_pair_good_kicker",
+      "strategy": {
+        "bet_33": 0.75,
+        "check": 0.25
+      },
+      "ev": {
+        "check": 7.95,
+        "bet_33": 8.26,
+        "bet_66": 7.38,
+        "bet_100": 7.38
+      },
+      "rationale": "Top pair with a good kicker is comfortably ahead of a calling range this wide."
+    },
+    {
+      "handClass": "top_pair_weak_kicker",
+      "strategy": {
+        "bet_33": 0.55,
+        "check": 0.45
+      },
+      "ev": {
+        "check": 7.67,
+        "bet_33": 7.7,
+        "bet_66": 7.03,
+        "bet_100": 7.03
+      },
+      "rationale": "Bet for thin value or check to control the pot with a hand that hates a raise."
+    },
+    {
+      "handClass": "pocket_pair_below_top",
+      "strategy": {
+        "check": 0.6,
+        "bet_33": 0.4
+      },
+      "ev": {
+        "check": 5.43,
+        "bet_33": 5.34,
+        "bet_66": 4.71,
+        "bet_100": 4.71
+      },
+      "rationale": "An underpair on a broadway board is a bluff-catcher in a big pot."
+    },
+    {
+      "handClass": "flush_draw",
+      "strategy": {
+        "bet_33": 0.7,
+        "bet_66": 0.2,
+        "check": 0.1
+      },
+      "ev": {
+        "check": 4.44,
+        "bet_33": 4.86,
+        "bet_66": 4.54,
+        "bet_100": 4.03
+      },
+      "rationale": "Semi-bluff with a hand that can barrel any turn."
+    },
+    {
+      "handClass": "gutshot",
+      "strategy": {
+        "bet_33": 0.6,
+        "check": 0.4
+      },
+      "ev": {
+        "check": 3.07,
+        "bet_33": 3.15,
+        "bet_66": 2.44,
+        "bet_100": 2.44
+      },
+      "rationale": "The small size makes a gutshot bluff cheap enough to be profitable."
+    },
+    {
+      "handClass": "ace_high",
+      "strategy": {
+        "bet_33": 0.5,
+        "check": 0.5
+      },
+      "ev": {
+        "check": 3.72,
+        "bet_33": 3.72,
+        "bet_66": 3.1,
+        "bet_100": 3.1
+      },
+      "rationale": "Ace high with a broadway blocker is a good candidate to bet small; it also has showdown value."
+    },
+    {
+      "handClass": "air",
+      "strategy": {
+        "bet_33": 0.5,
+        "check": 0.5
+      },
+      "ev": {
+        "check": 1.45,
+        "bet_33": 1.45,
+        "bet_66": 0.83,
+        "bet_100": 0.83
+      },
+      "rationale": "A 3-bet pot rewards small, frequent c-bets — even the misses bet half the time."
+    }
+  ]
+}

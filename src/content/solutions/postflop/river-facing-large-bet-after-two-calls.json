@@ -1,0 +1,146 @@
+{
+  "id": "river-facing-large-bet-after-two-calls",
+  "solutionSet": "suitedpoker-6max-100bb-v1",
+  "provenance": "authored-approximation",
+  "label": "River, hero faces a large bet after calling the flop and the turn",
+  "street": "river",
+  "heroPos": "BB",
+  "villainPos": "BTN",
+  "potBb": 32,
+  "effStackBb": 68,
+  "heroRange": "TT-88,AJs:0.5,ATs,KQs:0.6,KJs,QJs,JTs,T9s,AQo:0.4,AJo:0.5,KQo:0.4",
+  "villainRange": "AA:0.3,KK:0.35,set:0.2,AQs,AJs,KQs,flushdraws-missed,A5s,A4s",
+  "boardTags": ["wet", "connected"],
+  "exampleBoards": ["Jh Th 9c 4d 2s", "Qs Js 8h 3d 7c", "Th 9h 6c Kd 2h", "9h 8h 7d Ac 3s"],
+  "actionHistory": [
+    "BTN opens",
+    "BB calls",
+    "BB calls flop bet",
+    "BB calls turn bet",
+    "BTN bets 75% river"
+  ],
+  "actions": ["fold", "call", "raise_pot"],
+  "confidence": {
+    "rangeShape": "low",
+    "frequencies": "low",
+    "ev": "low",
+    "note": "The lowest-confidence template in the set and the one to review first. River decisions against a large bet depend almost entirely on the exact composition of the bettor's range after three streets of aggression, which my authored ranges do not model to that depth — the villainRange string here is descriptive rather than parseable notation and should be replaced with a real range when 2.8-2.10 runs. The one thing I would defend is the SHAPE: hero is capped by calling twice and must fold a lot. Do not present the specific frequencies to a user as authoritative."
+  },
+  "strategies": [
+    {
+      "handClass": "straight",
+      "strategy": {
+        "call": 0.6,
+        "raise_pot": 0.4
+      },
+      "ev": {
+        "fold": 0,
+        "call": 15.32,
+        "raise_pot": 15.24
+      },
+      "rationale": "A straight is near the top of a capped calling range — raise for value against their bluffs."
+    },
+    {
+      "handClass": "flush",
+      "strategy": {
+        "call": 0.55,
+        "raise_pot": 0.45
+      },
+      "ev": {
+        "fold": 0,
+        "call": 16.15,
+        "raise_pot": 16.12
+      },
+      "rationale": "Strong enough to raise, though a big raise only gets called by better."
+    },
+    {
+      "handClass": "two_pair",
+      "strategy": {
+        "call": 0.9,
+        "fold": 0.1
+      },
+      "ev": {
+        "fold": 0,
+        "call": 1,
+        "raise_pot": -0.07
+      },
+      "rationale": "A comfortable call. Raising turns a made hand into a bluff against a polarised range."
+    },
+    {
+      "handClass": "top_pair_good_kicker",
+      "strategy": {
+        "call": 0.6,
+        "fold": 0.4
+      },
+      "ev": {
+        "fold": 0,
+        "call": 0.13,
+        "raise_pot": -0.59
+      },
+      "rationale": "A genuine bluff-catcher. Call slightly more than half against a range with missed draws in it."
+    },
+    {
+      "handClass": "top_pair_weak_kicker",
+      "strategy": {
+        "fold": 0.65,
+        "call": 0.35
+      },
+      "ev": {
+        "fold": 0,
+        "call": -0.23,
+        "raise_pot": -0.72
+      },
+      "rationale": "Weak top pair beats only bluffs, and a large river bet is not mostly bluffs."
+    },
+    {
+      "handClass": "middle_pair",
+      "strategy": {
+        "fold": 0.85,
+        "call": 0.15
+      },
+      "ev": {
+        "fold": 0,
+        "call": -0.82,
+        "raise_pot": -1.17
+      },
+      "rationale": "Fold. Middle pair on a wet river facing a big bet is beaten by every value hand."
+    },
+    {
+      "handClass": "pocket_pair_below_top",
+      "strategy": {
+        "fold": 0.9,
+        "call": 0.1
+      },
+      "ev": {
+        "fold": 0,
+        "call": -1,
+        "raise_pot": -1.33
+      },
+      "rationale": "Almost a pure fold — this hand cannot beat a single value bet."
+    },
+    {
+      "handClass": "ace_high",
+      "strategy": {
+        "fold": 1
+      },
+      "ev": {
+        "fold": 0,
+        "call": -1.89,
+        "raise_pot": -1.89
+      },
+      "rationale": "Ace high never calls a large river bet from a range that has been betting three streets."
+    },
+    {
+      "handClass": "air",
+      "strategy": {
+        "fold": 1
+      },
+      "ev": {
+        "fold": 0,
+        "call": -2.23,
+        "raise_pot": -2.23
+      },
+      "rationale": "Fold. Bluff-raising here would need a blocker story this range does not have."
+    }
+  ]
+}

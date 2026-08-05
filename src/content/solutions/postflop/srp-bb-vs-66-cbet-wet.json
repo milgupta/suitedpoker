@@ -1,0 +1,196 @@
+{
+  "id": "srp-bb-vs-66-cbet-wet",
+  "solutionSet": "suitedpoker-6max-100bb-v1",
+  "provenance": "authored-approximation",
+  "label": "BB defends vs a BTN open and faces a 66% c-bet on a wet flop",
+  "street": "flop",
+  "heroPos": "BB",
+  "villainPos": "BTN",
+  "potBb": 5.5,
+  "effStackBb": 97.5,
+  "heroRange": "22-88,A2s-A9s:0.7,ATs,AJs:0.55,AQs:0.6,K6s+,KJs:0.7,KQs:0.6,Q7s+,QJs:0.75,J8s+,JTs:0.75,T8s+,97s+,87s,76s,65s,54s,AQo,AJo:0.8,ATo:0.65,A9o:0.5,KQo:0.75,KJo:0.6,KTo:0.45,QJo:0.6,QTo:0.45,JTo:0.5",
+  "villainRange": "22+,A2s+,K2s+,Q4s+,J6s+,T6s+,95s+,85s+,74s+,64s+,53s+,A5o+,K7o+,Q8o+,J8o+,T8o+,97o+",
+  "boardTags": ["wet", "two-tone", "connected"],
+  "exampleBoards": ["Jh Th 9c", "9h 8h 7d", "Qs Js 8h", "Th 9h 6c"],
+  "actionHistory": ["BTN opens 2.5bb", "BB calls", "BB checks", "BTN bets 66%"],
+  "actions": ["fold", "call", "raise_small", "raise_pot"],
+  "confidence": {
+    "rangeShape": "medium",
+    "frequencies": "low",
+    "ev": "low",
+    "note": "The least certain of the five flop templates. Against a larger bet on a board that hits both ranges, the correct defence is genuinely close between calling and raising for a lot of hands, and small changes to the assumed c-bet range swing it. Treat the raise frequencies as indicative only. The fold frequencies for the weak made hands are the part I would defend."
+  },
+  "strategies": [
+    {
+      "handClass": "straight",
+      "strategy": {
+        "call": 0.6,
+        "raise_small": 0.4
+      },
+      "ev": {
+        "fold": 0,
+        "call": 2.63,
+        "raise_small": 2.55,
+        "raise_pot": 1.92
+      },
+      "rationale": "Trapping has real value on a board where they will barrel turns, but raising gets money in against draws."
+    },
+    {
+      "handClass": "set",
+      "strategy": {
+        "raise_small": 0.55,
+        "call": 0.45
+      },
+      "ev": {
+        "fold": 0,
+        "call": 2.46,
+        "raise_small": 2.49,
+        "raise_pot": 1.82
+      },
+      "rationale": "Raise to charge the draws that this board is full of."
+    },
+    {
+      "handClass": "two_pair",
+      "strategy": {
+        "raise_small": 0.5,
+        "call": 0.5
+      },
+      "ev": {
+        "fold": 0,
+        "call": 2.35,
+        "raise_small": 2.35,
+        "raise_pot": 1.73
+      },
+      "rationale": "Strong now, but many turn cards are bad. Getting money in early is worth a lot."
+    },
+    {
+      "handClass": "overpair",
+      "strategy": {
+        "call": 0.7,
+        "fold": 0.15,
+        "raise_small": 0.15
+      },
+      "ev": {
+        "fold": 0,
+        "call": 0.57,
+        "raise_small": 0.2,
+        "raise_pot": -0.26
+      },
+      "rationale": "An overpair is a call, not a raise — it is often only beating bluffs on this texture."
+    },
+    {
+      "handClass": "top_pair_good_kicker",
+      "strategy": {
+        "call": 0.75,
+        "fold": 0.25
+      },
+      "ev": {
+        "fold": 0,
+        "call": 0.49,
+        "raise_small": -0.39,
+        "raise_pot": -0.39
+      },
+      "rationale": "Call once and re-evaluate. Top pair on a wet board is not a hand to build a pot with."
+    },
+    {
+      "handClass": "top_pair_weak_kicker",
+      "strategy": {
+        "call": 0.5,
+        "fold": 0.5
+      },
+      "ev": {
+        "fold": 0,
+        "call": 0,
+        "raise_small": -0.62,
+        "raise_pot": -0.62
+      },
+      "rationale": "A genuine coin-flip decision at this size — half of these should go in the muck."
+    },
+    {
+      "handClass": "combo_draw",
+      "strategy": {
+        "raise_small": 0.5,
+        "call": 0.35,
+        "raise_pot": 0.15
+      },
+      "ev": {
+        "fold": 0,
+        "call": 1.59,
+        "raise_small": 1.64,
+        "raise_pot": 1.45
+      },
+      "rationale": "The best semi-bluff available. Enough equity to be happy getting it all in."
+    },
+    {
+      "handClass": "flush_draw",
+      "strategy": {
+        "call": 0.65,
+        "raise_small": 0.35
+      },
+      "ev": {
+        "fold": 0,
+        "call": 1.21,
+        "raise_small": 1.07,
+        "raise_pot": 0.44
+      },
+      "rationale": "Never fold a flush draw to one bet at this size."
+    },
+    {
+      "handClass": "open_ended",
+      "strategy": {
+        "call": 0.6,
+        "raise_small": 0.4
+      },
+      "ev": {
+        "fold": 0,
+        "call": 1.07,
+        "raise_small": 0.99,
+        "raise_pot": 0.35
+      },
+      "rationale": "Raise often — the draw has equity and the board favours the defender's range."
+    },
+    {
+      "handClass": "middle_pair",
+      "strategy": {
+        "fold": 0.6,
+        "call": 0.4
+      },
+      "ev": {
+        "fold": 0,
+        "call": -0.13,
+        "raise_small": -0.65,
+        "raise_pot": -0.65
+      },
+      "rationale": "Middle pair on a wet board facing a big bet is mostly a fold."
+    },
+    {
+      "handClass": "gutshot",
+      "strategy": {
+        "fold": 0.6,
+        "call": 0.3,
+        "raise_small": 0.1
+      },
+      "ev": {
+        "fold": 0,
+        "call": -0.23,
+        "raise_small": -0.31,
+        "raise_pot": -0.68
+      },
+      "rationale": "Four outs is not enough to call a two-thirds bet without extra equity."
+    },
+    {
+      "handClass": "air",
+      "strategy": {
+        "fold": 0.92,
+        "raise_small": 0.08
+      },
+      "ev": {
+        "fold": 0,
+        "call": -1.4,
+        "raise_small": -1.08,
+        "raise_pot": -1.4
+      },
+      "rationale": "Fold. The small raise frequency exists only so the bettor cannot c-bet with impunity."
+    }
+  ]
+}

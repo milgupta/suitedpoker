@@ -1,0 +1,195 @@
+{
+  "id": "srp-bb-vs-33-cbet-ace-high-dry",
+  "solutionSet": "suitedpoker-6max-100bb-v1",
+  "provenance": "authored-approximation",
+  "label": "BB defends vs a BTN open and faces a 33% c-bet on a dry ace-high flop",
+  "street": "flop",
+  "heroPos": "BB",
+  "villainPos": "BTN",
+  "potBb": 5.5,
+  "effStackBb": 97.5,
+  "heroRange": "22-88,A2s-A9s:0.7,ATs,AJs:0.55,AQs:0.6,K6s+,KJs:0.7,KQs:0.6,Q7s+,QJs:0.75,J8s+,JTs:0.75,T8s+,97s+,87s,76s,65s,54s,AQo,AJo:0.8,ATo:0.65,A9o:0.5,KQo:0.75,KJo:0.6,KTo:0.45,QJo:0.6,QTo:0.45,JTo:0.5",
+  "villainRange": "22+,A2s+,K2s+,Q4s+,J6s+,T6s+,95s+,85s+,74s+,64s+,53s+,A5o+,K7o+,Q8o+,J8o+,T8o+,97o+",
+  "boardTags": ["dry", "ace-high", "rainbow"],
+  "exampleBoards": ["Ah 7d 2c", "As 8h 3d", "Ad 6c 2h", "Ac 9d 4s"],
+  "actionHistory": ["BTN opens 2.5bb", "BB calls", "BB checks", "BTN bets 33%"],
+  "actions": ["fold", "call", "raise_small", "allin"],
+  "confidence": {
+    "rangeShape": "high",
+    "frequencies": "medium",
+    "ev": "low",
+    "note": "Defending wide against a 33% bet is correct and the direction is not in doubt — the pot odds alone require it. What I would check is the raise frequency: this template raises more than most solver outputs do against a small c-bet on a dry board, where pure calling is usually preferred. The fold frequency for bottom pair is also on the tight side."
+  },
+  "strategies": [
+    {
+      "handClass": "set",
+      "strategy": {
+        "raise_small": 0.55,
+        "call": 0.45
+      },
+      "ev": {
+        "fold": 0,
+        "call": 2.46,
+        "raise_small": 2.49,
+        "allin": 1.82
+      },
+      "rationale": "Raise for value against a range that bets everything, but call enough to keep sets in the calling range."
+    },
+    {
+      "handClass": "two_pair",
+      "strategy": {
+        "raise_small": 0.5,
+        "call": 0.5
+      },
+      "ev": {
+        "fold": 0,
+        "call": 2.35,
+        "raise_small": 2.35,
+        "allin": 1.73
+      },
+      "rationale": "Strong enough to raise, vulnerable enough that calling and keeping their bluffs in also works."
+    },
+    {
+      "handClass": "top_pair_good_kicker",
+      "strategy": {
+        "call": 0.8,
+        "raise_small": 0.2
+      },
+      "ev": {
+        "fold": 0,
+        "call": 2.07,
+        "raise_small": 1.65,
+        "allin": 1.12
+      },
+      "rationale": "An ace with a good kicker is a comfortable call. Raising folds out everything you beat."
+    },
+    {
+      "handClass": "top_pair_weak_kicker",
+      "strategy": {
+        "call": 0.9,
+        "fold": 0.1
+      },
+      "ev": {
+        "fold": 0,
+        "call": 1,
+        "raise_small": -0.07,
+        "allin": -0.07
+      },
+      "rationale": "Call. A weak ace is exactly the hand a small c-bet is trying to charge, and folding it is far too tight."
+    },
+    {
+      "handClass": "middle_pair",
+      "strategy": {
+        "call": 0.85,
+        "fold": 0.15
+      },
+      "ev": {
+        "fold": 0,
+        "call": 0.82,
+        "raise_small": -0.19,
+        "allin": -0.19
+      },
+      "rationale": "Getting better than 4-to-1, a middle pair has plenty of equity against a range this wide."
+    },
+    {
+      "handClass": "bottom_pair",
+      "strategy": {
+        "call": 0.7,
+        "fold": 0.3
+      },
+      "ev": {
+        "fold": 0,
+        "call": 0.35,
+        "raise_small": -0.47,
+        "allin": -0.47
+      },
+      "rationale": "A marginal call at these odds — enough equity to continue most of the time."
+    },
+    {
+      "handClass": "pocket_pair_below_top",
+      "strategy": {
+        "call": 0.8,
+        "fold": 0.2
+      },
+      "ev": {
+        "fold": 0,
+        "call": 0.65,
+        "raise_small": -0.29,
+        "allin": -0.29
+      },
+      "rationale": "A pocket pair under the ace still beats every bluff in their range."
+    },
+    {
+      "handClass": "flush_draw",
+      "strategy": {
+        "call": 0.65,
+        "raise_small": 0.35
+      },
+      "ev": {
+        "fold": 0,
+        "call": 1.21,
+        "raise_small": 1.07,
+        "allin": 0.44
+      },
+      "rationale": "Call or raise as a semi-bluff. Never fold a flush draw at these odds."
+    },
+    {
+      "handClass": "open_ended",
+      "strategy": {
+        "call": 0.7,
+        "raise_small": 0.3
+      },
+      "ev": {
+        "fold": 0,
+        "call": 1.07,
+        "raise_small": 0.84,
+        "allin": 0.25
+      },
+      "rationale": "Eight outs plus fold equity makes this a fine raising candidate."
+    },
+    {
+      "handClass": "gutshot",
+      "strategy": {
+        "call": 0.55,
+        "fold": 0.3,
+        "raise_small": 0.15
+      },
+      "ev": {
+        "fold": 0,
+        "call": 0.18,
+        "raise_small": -0.05,
+        "allin": -0.49
+      },
+      "rationale": "A gutshot is a close call at 33% and a reasonable occasional bluff-raise."
+    },
+    {
+      "handClass": "overcards",
+      "strategy": {
+        "fold": 0.6,
+        "call": 0.4
+      },
+      "ev": {
+        "fold": 0,
+        "call": -0.13,
+        "raise_small": -0.65,
+        "allin": -0.65
+      },
+      "rationale": "Two cards below the ace with no draw is the bottom of the defending range."
+    },
+    {
+      "handClass": "air",
+      "strategy": {
+        "fold": 0.85,
+        "call": 0.05,
+        "raise_small": 0.1
+      },
+      "ev": {
+        "fold": 0,
+        "call": -0.92,
+        "raise_small": -0.91,
+        "allin": -1.24
+      },
+      "rationale": "Fold almost all of it. The small raise frequency is what stops the bettor from betting every flop for free."
+    }
+  ]
+}
