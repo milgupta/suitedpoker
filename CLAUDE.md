@@ -17,6 +17,9 @@ broken.
 1. Milan names a substage (e.g. "run 0.2").
 2. **Read that substage in `SUITEDPOKER_BUILD_PLAN.md` first.** Its `▶ PROMPT`
    block is the spec. Its `✅ Done when` list is the acceptance criteria.
+2b. **If the substage touches anything visual, read `DESIGN.md` too.** It is the
+   source of truth for every color, radius, spacing value, type size, and motion
+   token. Never invent one.
 3. **Ask your questions now, before writing code.** See below.
 4. Build it.
 5. Run `npm run verify`.
@@ -88,7 +91,8 @@ sessions.
 - Prettier owns formatting. Do not hand-format.
 - Comments explain *why*, never *what*.
 - Prefer a named function over a clever one-liner in engine code.
-- White is the primary-action colour; cyan is reserved for data and state.
+- All visual values come from `DESIGN.md`. Blue is interface; green-to-red is
+  grading; the two never borrow each other's range.
 
 ## Progress
 
@@ -96,7 +100,8 @@ sessions.
 |---|---|
 | 0.1 Repo, tooling, quality gate | done |
 | marketing landing page, terms, privacy | done (ahead of 8.4, for Stripe verification) |
-| 0.2 Design system and motion language | NEXT |
+| `DESIGN.md` written from reference teardowns | done |
+| 0.2 Design system and motion language | NEXT — implements `DESIGN.md` |
 
 Everything from 0.3 onward is untouched. Update this table when you finish a
 substage.
