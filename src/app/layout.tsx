@@ -4,6 +4,7 @@ import { GeistMono } from "geist/font/mono";
 import "@fontsource-variable/inter";
 import "./globals.css";
 import { MotionProvider } from "@/components/motion";
+import { PostHogProvider } from "@/components/PostHogProvider";
 
 // Every font is self-hosted — Inter via @fontsource-variable, Geist via the
 // `geist` package — rather than next/font/google, so builds stay hermetic with
@@ -34,7 +35,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
       <body className="bg-canvas text-text-primary antialiased">
-        <MotionProvider>{children}</MotionProvider>
+        <PostHogProvider>
+          <MotionProvider>{children}</MotionProvider>
+        </PostHogProvider>
       </body>
     </html>
   );

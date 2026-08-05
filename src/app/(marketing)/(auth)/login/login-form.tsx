@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { loginSchema, type LoginValues } from "@/lib/auth-schemas";
 import { createClient } from "@/lib/supabase/client";
 import { authErrorMessage } from "@/lib/supabase/errors";
+import { identify } from "@/lib/analytics-client";
 import { FormError } from "../auth-shell";
 
 export function LoginForm() {
@@ -40,6 +41,13 @@ export function LoginForm() {
     if (error !== null) {
       setSubmitError(authErrorMessage(error));
       return;
+    }
+
+    // Identify before navigating, so the events on the next page carry the
+    // user rather than an anonymous id.
+    const { data } = await supabase.auth.getUser();
+    if (data.user !== null) {
+      identify(data.user.id, { signupDate: data.user.created_at });
     }
 
     // Honour where they were headed before being bounced to login. Only

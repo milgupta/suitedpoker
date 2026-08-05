@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TrackView } from "@/components/track-view";
 
 const FEATURES = [
   {
@@ -57,6 +58,7 @@ const FAQ = [
 export default function Home() {
   return (
     <div className="min-h-screen">
+      <TrackView event="landing_viewed" properties={{}} />
       <header className="mx-auto flex max-w-(--container-app) items-center justify-between px-6 py-6">
         <span className="text-accent-bright text-body-md font-mono font-bold tracking-widest">
           SUITEDPOKER

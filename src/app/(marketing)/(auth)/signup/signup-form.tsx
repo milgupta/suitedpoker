@@ -11,6 +11,7 @@ import { SegmentedMeter } from "@/components/ui/segmented-meter";
 import { passwordStrength, signupSchema, type SignupValues } from "@/lib/auth-schemas";
 import { createClient } from "@/lib/supabase/client";
 import { authErrorMessage } from "@/lib/supabase/errors";
+import { capture } from "@/lib/analytics-client";
 import { FormError } from "../auth-shell";
 
 const STRENGTH_COLORS = [
@@ -41,6 +42,7 @@ export function SignupForm() {
 
   async function onSubmit(values: SignupValues) {
     setSubmitError("");
+    capture("signup_started", { method: "email" });
 
     const supabase = createClient();
     const { data, error } = await supabase.auth.signUp({
@@ -56,6 +58,8 @@ export function SignupForm() {
 
     // With email confirmation switched on, signUp returns a user but no
     // session. Sending them to /onboarding would just bounce off middleware.
+    capture("signup_completed", { method: "email" });
+
     if (data.session === null) {
       setCheckEmail(true);
       return;

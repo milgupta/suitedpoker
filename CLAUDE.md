@@ -123,6 +123,7 @@ sessions.
 | 2.1–2.3 Poker engine (Track C) | done — merged from `track/engine` |
 | 2.5–2.7 Hand classes, spot generator, grading | done |
 | 3.1 The poker table component | done |
+| 8.1 PostHog and product analytics | done — schema + proxy shipped, **live stream unverified (no key)** |
 
 Stage 0 is complete. Update this table when you finish a substage.
 
@@ -197,6 +198,24 @@ Stage 0 is complete. Update this table when you finish a substage.
   without scraping class names.
 - **Styleguide table states are driven by `legalActions`**, never by scripted
   action lists — a hand-written sequence goes stale and throws at build time.
+
+**What 8.1 left you.**
+
+- **No raw event names anywhere.** Every capture goes through the typed schema
+  in `src/lib/analytics.ts`; a test fails the build on a direct `posthog.capture`
+  or an unknown name.
+- **PostHog is proxied through `/ingest`** on our own origin. Adblockers block
+  posthog.com by hostname, and the users most likely to try a poker tool are the
+  most likely to run one. If volume drops sharply with no product change, check
+  the rewrite before believing the drop.
+- **Pageviews are captured manually.** The App Router does not reload between
+  routes, so PostHog's automatic pageview fires once and never again.
+- **`purchase_completed` must be captured SERVER-side** with the user's id.
+  Attributed to an anonymous id, revenue-by-source is silently wrong.
+- ⚠️ **`NEXT_PUBLIC_POSTHOG_KEY` is empty**, so the client never initialises and
+  the six event-stream e2e tests skip. Add the key and run
+  `npx playwright test tests/e2e/analytics.spec.ts` to verify the real stream.
+- Insight configurations are in `docs/POSTHOG-INSIGHTS.md`.
 
 **What 0.2 left you.** Anything a later substage needs to build on:
 

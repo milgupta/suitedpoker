@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { authErrorMessage } from "@/lib/supabase/errors";
+import { capture } from "@/lib/analytics-client";
 import { FormError } from "./auth-shell";
 
 /**
@@ -21,6 +22,7 @@ export function GoogleButton({ next }: { next?: string }) {
   async function signIn() {
     setPending(true);
     setError("");
+    capture("signup_started", { method: "google" });
 
     const supabase = createClient();
     const callback = new URL("/auth/callback", window.location.origin);
