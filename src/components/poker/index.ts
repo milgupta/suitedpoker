@@ -12,3 +12,12 @@ export {
   type FrequencyBarProps,
   type FrequencySegment,
 } from "./FrequencyBar";
+export {
+  RangeGrid,
+  cellBands,
+  type Band,
+  type CellStrategy,
+  type RangeGridMode,
+  type RangeGridProps,
+  type RangeStrategy,
+} from "./RangeGrid";

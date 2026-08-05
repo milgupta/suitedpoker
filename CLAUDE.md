@@ -127,6 +127,7 @@ sessions.
 | 3.2 Drill player: the core loop | done |
 | 3.3 Rating system and adaptive difficulty | done |
 | 3.4 Daily challenge, streaks, leaderboard | done |
+| 3.5 Range grid viewer | done |
 
 Stage 0 is complete. Update this table when you finish a substage.
 
@@ -273,6 +274,20 @@ Stage 0 is complete. Update this table when you finish a substage.
   an announced one is the moment the user feels looked after.
 - **The share grid is spoiler-free by construction** — grades only, no
   position, hand, action, board or EV. A test asserts each of those absent.
+
+**What 3.5 left you.**
+
+- **`/api/ranges` DOES return strategy and EV, deliberately.** The browser is a
+  reference tool for entitled users; a player looking up their own practice hand
+  is allowed to. The drill payload is a different endpoint with a different
+  contract. Read the reasoning block in `0001_auth_fks_rls.sql` before
+  "hardening" it.
+- **`cellBands()` is pure and exported** so "fills match the frequencies" is
+  arithmetic in a unit test rather than a pixel measurement.
+- **The grid uses the accent ramp, never the grade ramp.** Reference data is
+  not a graded decision.
+- **The 169-cell reveal is capped at 300ms** via `staggerDelay`, and an e2e
+  reads the real animation timings to prove it.
 
 **What 0.2 left you.** Anything a later substage needs to build on:
 

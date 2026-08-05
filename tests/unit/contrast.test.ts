@@ -103,6 +103,15 @@ function buildPairings(): Pairing[] {
     min: AA_TEXT,
   });
 
+  // Range grid cell labels sit on an accent fill or a bare surface depending on
+  // the hand, so the same colour has to clear both.
+  pairings.push({
+    fg: "--color-on-accent",
+    bg: "--color-surface-2",
+    use: "range grid label on an unfilled cell",
+    min: AA_TEXT,
+  });
+
   // Four-colour deck. These live on a white card face, never on the canvas.
   for (const suit of ["hearts", "diamonds", "clubs", "spades"]) {
     pairings.push({
