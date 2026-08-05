@@ -39,3 +39,19 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local env
+.env
+.env.local
+.env*.local
+
+# test output
+coverage/
+playwright-report/
+test-results/
+
+# solver pipeline output (large, regenerable)
+tools/solver/out/
+
+# build info
+*.tsbuildinfo
