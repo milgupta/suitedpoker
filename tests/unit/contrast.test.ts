@@ -11,9 +11,11 @@
  * and for non-text UI boundaries, per WCAG 2.1 AA.
  */
 
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { contrastRatio } from "../../src/lib/color";
-import { readColorTokens, requireColor } from "../support/tokens";
+import { readColorTokens, readRawTokens, requireColor } from "../support/tokens";
 
 const AA_TEXT = 4.5;
 const AA_LARGE = 3.0;
@@ -82,6 +84,25 @@ function buildPairings(): Pairing[] {
     min: AA_TEXT,
   });
 
+  // Danger is a UI colour, not a grade, and gets the same two-token treatment
+  // as the accent: a fill you put white on, and a brighter one for text.
+  pairings.push({
+    fg: "--color-on-accent",
+    bg: "--color-danger",
+    use: "label on a destructive fill",
+    min: AA_TEXT,
+  });
+  for (const bg of SURFACES) {
+    pairings.push({ fg: "--color-danger-bright", bg, use: "destructive text", min: AA_TEXT });
+  }
+  pairings.push({
+    fg: "--color-danger-bright",
+    bg: "--color-danger-fill",
+    backdrop: "--color-surface-1",
+    use: "destructive text on its own 12% fill",
+    min: AA_TEXT,
+  });
+
   // Grades as text, and as text on their own 12% fill.
   for (const grade of GRADES) {
     pairings.push({ fg: grade, bg: "--color-canvas", use: "grade text on canvas", min: AA_TEXT });
@@ -104,6 +125,27 @@ function buildPairings(): Pairing[] {
   // rather than the sole indicator of anything, so they are reported and not gated.
   return pairings;
 }
+
+describe("token extraction", () => {
+  // Cross-checks the parser against a different method. A declaration always
+  // starts a line; a comment line never does, because Prettier prefixes it with
+  // `*`. A mismatch means the parser lost or invented a token — which it once
+  // did, silently, by matching a token name written inside a comment.
+  it("finds every token that starts a line in globals.css", () => {
+    const css = readFileSync(resolve(process.cwd(), "src/app/globals.css"), "utf8");
+    const parsed = readRawTokens();
+
+    const declared = new Set<string>();
+    for (const match of css.matchAll(/^\s*(--[a-z0-9-]+)\s*:/gim)) {
+      const name = match[1];
+      if (name !== undefined) declared.add(name);
+    }
+
+    const missing = [...declared].filter((n) => !parsed.has(n));
+    expect(missing, `parser lost: ${missing.join(", ")}`).toEqual([]);
+    expect(declared.size).toBeGreaterThan(40);
+  });
+});
 
 describe("design system contrast", () => {
   const colors = readColorTokens();

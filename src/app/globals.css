@@ -1,6 +1,16 @@
 @import "tailwindcss";
 
 /*
+ * This product is dark-only — there is no light theme in v1 and `color-scheme`
+ * is pinned to dark. Tailwind's stock `dark:` variant keys off the OS
+ * preference, so on a light-mode machine shadcn's dark refinements would
+ * silently not apply to an interface that is dark regardless. Making the
+ * variant unconditional keeps generated components correct without editing the
+ * `dark:` classes out of each one.
+ */
+@custom-variant dark (&);
+
+/*
  * ─────────────────────────────────────────────────────────────────────────────
  * SuitedPoker design system — the implementation of DESIGN.md.
  *
@@ -103,6 +113,21 @@
 
   /* Sharp is `best` plus a glow — the only grade that gets one. */
   --color-grade-sharp-glow: color-mix(in srgb, var(--color-grade-sharp) 26%, transparent);
+
+  /*
+   * ── Danger — destructive actions, and NOT a grade ─────────────────────────
+   * Deliberately a different red from --grade-blunder: deeper and rotated
+   * toward crimson (OKLCh h=14 against blunder's 24.8). On a hand-review screen
+   * the same red meaning both "you blundered" and "this deletes your data"
+   * is a genuine misread, so the grade ramp keeps its red to itself.
+   *
+   * Destructive intent must also never be carried by colour alone — the label
+   * says what will happen, and anything irreversible confirms.
+   */
+  --color-danger: #d63055; /* fill; white label measures 4.76 */
+  --color-danger-bright: #e35a6f; /* destructive TEXT — 5.72 on canvas */
+  --color-danger-fill: color-mix(in srgb, var(--color-danger) 12%, transparent);
+  --color-danger-border: color-mix(in srgb, var(--color-danger) 30%, transparent);
 
   /* ── 1. Ambient violet — MARKETING AND ONBOARDING ONLY ──────────────────── */
   --color-ambient-violet: #2d0077;
@@ -308,6 +333,29 @@
   }
 
   /*
+   * Expands a small control's hit area to the 44px minimum without changing
+   * what it looks like.
+   *
+   * DESIGN.md rule 9 has no exceptions, and a checkbox is the case it exists
+   * for: a 20px box is the right visual weight and an unusable target. The
+   * pseudo-element carries the extra area, so measuring the target means
+   * measuring ::before, not the element's own box.
+   */
+  .tap-target {
+    position: relative;
+  }
+
+  .tap-target::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    translate: -50% -50%;
+    width: max(100%, var(--tap-min));
+    height: max(100%, var(--tap-min));
+  }
+
+  /*
    * ── 5.2 The lit button ────────────────────────────────────────────────────
    * Lit from BELOW: the gradient runs dark at the top to bright at the bottom
    * (most buttons do the reverse) and the specular highlight sits on the
@@ -315,18 +363,16 @@
    * light source rather than a rectangle.
    *
    * ONE PER SCREEN — the primary action. Everything else is ghost or outline.
+   *
+   * PAINT ONLY. Height, padding, radius and font come from the Button size
+   * variants, so the treatment can sit on any size without the two fighting
+   * over geometry.
    */
   .btn-accent {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    height: 48px;
-    padding-inline: 20px;
     background: linear-gradient(var(--color-accent-deep) 0%, var(--color-accent) 100%);
     border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: var(--radius-full);
     color: var(--color-on-accent);
-    font: 600 var(--text-body-lg) / 1 var(--font-sans);
+    font-weight: 600;
     box-shadow:
       inset 0 -1.5px 2px var(--color-accent-specular),
       inset 0 0 10px var(--color-accent),

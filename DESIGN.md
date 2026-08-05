@@ -151,6 +151,25 @@ to each other at every stop and between them.
 > ? Mistake, ?? Blunder. A screenshot rendered in greyscale must still be
 > readable.
 
+### Danger — destructive actions, and not a grade
+
+Added in 0.3. A `destructive` button needed a red, and borrowing `--grade-blunder`
+would have broken rule 2 — on a hand-review screen the same red meaning both
+"you blundered" and "this deletes your data" is a genuine misread.
+
+It is deeper than blunder and rotated toward crimson (OKLCh h=14 against
+blunder's 24.8), so the two never read as the same signal.
+
+| Token | Value | Use |
+|---|---|---|
+| `--danger` | `#D63055` | Destructive fill — white label measures 4.76 |
+| `--danger-bright` | `#E35A6F` | Destructive **text** — 5.72 on canvas |
+| `--danger-fill` | 12% of `--danger` | Tinted background |
+| `--danger-border` | 30% of `--danger` | Edge on that fill |
+
+Destructive intent is never carried by colour alone: the label says what will
+happen, and anything irreversible confirms first.
+
 ### Ambient violet — marketing and onboarding only
 
 Flighty builds its glow with **three different techniques at three scales**, which

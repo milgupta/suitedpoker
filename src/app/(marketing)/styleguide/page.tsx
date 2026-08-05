@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { ColorLab } from "./color-lab";
+import { ComponentsLab } from "./components-lab";
 import { MotionLab } from "./motion-lab";
 import { TypeLab } from "./type-lab";
 
@@ -180,9 +182,9 @@ export default function StyleguidePage() {
                 >
                   Ghost
                 </button>
-                <button type="button" className="btn-accent">
+                <Button variant="accent" size="default">
                   Search
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -195,12 +197,12 @@ export default function StyleguidePage() {
               Disabled reduces opacity of the enabled style, never a different fill.
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-3">
-              <button type="button" className="btn-accent">
+              <Button variant="accent" size="lg">
                 Deal next hand
-              </button>
-              <button type="button" className="btn-accent" disabled>
+              </Button>
+              <Button variant="accent" size="lg" disabled>
                 Disabled
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -232,111 +234,9 @@ export default function StyleguidePage() {
       <Section
         id="components"
         title="Components"
-        lead="White is the primary action colour — highest contrast on this canvas, and it never competes with data."
+        lead="White is the primary action colour — highest contrast on this canvas, and it never competes with data. Every component below is shadcn/ui rewritten onto these tokens, or built on them."
       >
-        <div className="flex flex-col gap-8">
-          <div>
-            <h3 className="text-heading-md">Buttons</h3>
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                className="bg-text-primary text-canvas text-body-lg inline-flex min-h-12 items-center rounded-full px-6 font-semibold"
-              >
-                Continue
-              </button>
-              <button type="button" className="btn-accent">
-                Accent
-              </button>
-              <button
-                type="button"
-                className="border-border text-text-secondary hover:text-text-primary hover:border-border-strong text-body-lg inline-flex min-h-12 items-center rounded-full border px-6 transition"
-              >
-                Ghost
-              </button>
-              <button
-                type="button"
-                className="bg-text-primary text-canvas text-body-lg inline-flex min-h-12 items-center rounded-full px-6 font-semibold opacity-40"
-                disabled
-              >
-                Disabled
-              </button>
-            </div>
-
-            <p className="text-overline text-text-tertiary mt-6 uppercase">Action bar</p>
-            <div className="mt-2 grid grid-cols-3 gap-3">
-              {["Fold", "Call", "Raise"].map((action) => (
-                <button
-                  key={action}
-                  type="button"
-                  className="border-border-strong bg-surface-2 text-text-primary hover:border-accent text-body-lg inline-flex min-h-14 items-center justify-center rounded-full border font-medium transition"
-                >
-                  {action}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <h3 className="text-heading-md">Card</h3>
-            <div
-              className="border-border bg-surface-1 mt-4 rounded-lg border"
-              style={{ padding: "var(--card-padding)" }}
-            >
-              <p className="text-heading-md">Surface-1, --border, radius-lg, 20px padding</p>
-              <p className="text-text-secondary text-body-md mt-3">
-                The default card. A gradient top hairline is available on marketing surfaces only.
-              </p>
-            </div>
-          </div>
-
-          <div>
-            <h3 className="text-heading-md">Segmented control</h3>
-            <div className="bg-surface-2 mt-4 inline-flex rounded-full p-1">
-              <span className="bg-surface-3 text-text-primary text-body-sm inline-flex min-h-11 items-center rounded-full px-5">
-                Preflop
-              </span>
-              <span className="border-border-subtle text-text-secondary text-body-sm inline-flex min-h-11 items-center border-l px-5">
-                Flop
-              </span>
-              <span className="border-border-subtle text-text-secondary text-body-sm inline-flex min-h-11 items-center border-l px-5">
-                Turn
-              </span>
-            </div>
-          </div>
-
-          <div>
-            <h3 className="text-heading-md">Input</h3>
-            <p className="text-text-secondary text-body-sm mt-2">
-              48px tall, radius-md, and never below 16px font size — below that, iOS Safari zooms on
-              focus.
-            </p>
-            <input
-              type="text"
-              placeholder="Search a spot"
-              aria-label="Search a spot"
-              className="bg-surface-3 border-border text-text-primary placeholder:text-text-tertiary text-body-lg mt-4 h-12 w-full max-w-sm rounded-md border px-4"
-            />
-          </div>
-
-          <div>
-            <h3 className="text-heading-md">Glass bar</h3>
-            <p className="text-text-secondary text-body-sm mt-2">
-              Floating, not pinned. The container-rounded-rect-holding-capsules contrast is what
-              makes the CTA read as interactive and the bar read as chrome.
-            </p>
-            <div className="bg-canvas-deep mt-4 rounded-xl p-4">
-              <div className="glass glass-blur border-border-strong flex h-14 items-center justify-between rounded-xl px-2">
-                <span className="text-text-secondary text-body-sm px-3">Today · 5 hands</span>
-                <button
-                  type="button"
-                  className="bg-text-primary text-canvas text-body-sm inline-flex min-h-11 items-center rounded-full px-5 font-semibold"
-                >
-                  Start
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ComponentsLab />
       </Section>
 
       <Section

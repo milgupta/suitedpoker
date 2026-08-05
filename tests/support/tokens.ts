@@ -19,9 +19,14 @@ export function readRawTokens(): Map<string, string> {
   const css = readFileSync(GLOBALS, "utf8");
   const tokens = new Map<string, string>();
 
+  // Comments come out FIRST. globals.css documents tokens by name, and a
+  // `--some-token:` written inside a comment would otherwise match as a
+  // declaration and swallow the real one that follows it.
+  const withoutComments = css.replace(/\/\*[\s\S]*?\*\//g, "");
+
   // Declarations are one-per-line except the few color-mix() calls Prettier
   // wraps, so join continuations before matching.
-  const flattened = css.replace(/\(\s*\n\s*/g, "(").replace(/,\s*\n\s*/g, ", ");
+  const flattened = withoutComments.replace(/\(\s*\n\s*/g, "(").replace(/,\s*\n\s*/g, ", ");
 
   for (const match of flattened.matchAll(/(--[a-z0-9-]+)\s*:\s*([^;]+);/gi)) {
     const [, name, value] = match;

@@ -109,9 +109,10 @@ sessions.
 | marketing landing page, terms, privacy | done (ahead of 8.4, for Stripe verification) |
 | `DESIGN.md` written from reference teardowns | done |
 | 0.2 Design system and motion language | done — implements `DESIGN.md` |
-| 0.3 Core UI component library | NEXT |
+| 0.3 Core UI component library | done |
+| 0.4 Redis, caching, rate-limit primitives | NEXT |
 
-Everything from 0.4 onward is untouched. Update this table when you finish a
+Everything from 0.5 onward is untouched. Update this table when you finish a
 substage.
 
 **What 0.2 left you.** Anything a later substage needs to build on:
@@ -132,6 +133,27 @@ substage.
   text and links, and `--on-accent` for a label on an accent fill.
 - Tailwind's default `text-*` sizes and `rounded-2xl` still exist. They are off
   the system — use the named scale steps.
+
+**What 0.3 left you.**
+
+- **`shadcn add` output is not ready to use.** shadcn ships its own colour
+  vocabulary (`bg-primary`, `text-muted-foreground`) and its `accent` is a hover
+  surface, which collides with our brand azure. Every generated component was
+  rewritten onto our tokens; rewrite any new one the same way before using it.
+  `scripts`-free reference: the mapping is documented in the 0.3 commit.
+- **`dark:` is unconditional** (`@custom-variant dark (&)`), because the app is
+  dark-only and the stock variant keys off an OS preference we ignore.
+- **Button** is white by default (`primary`), `accent` is the lit treatment and
+  is one per screen, and `action` is the poker decision bar. Every size clears
+  44px — that is why shadcn's `xs`/`sm` are gone.
+- **Small controls carry their hit area on `.tap-target`'s `::before`.** A
+  checkbox is 20px visually and 44px to a thumb, so measuring the target means
+  measuring the pseudo-element, not the element box.
+- **Blue is data and state, white is action.** Progress bars, checked
+  checkboxes, radios and switches are accent, not white. That distinction is
+  easy to lose when adding a component.
+- **Glossary content** is typed TS in `src/content/glossary/`. `StatInfoSheet`
+  only touches `getGlossaryEntry`, so the MDX swap later is one file.
 
 ## Environment
 
