@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { serverEnv, adminEmails, __resetServerEnvForTests } from "@/lib/env";
+import { serverEnv, adminEmails, __resetServerEnvForTests } from "@/lib/env.server";
 
 afterEach(() => {
   vi.unstubAllEnvs();

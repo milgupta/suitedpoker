@@ -95,8 +95,20 @@ function Button({
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     >
-      {loading && <LoaderIcon className="animate-spin" aria-hidden="true" />}
-      {children}
+      {/*
+        With asChild, Radix's Slot requires exactly ONE element child — and
+        `{loading && ...}{children}` is two nodes even when loading is false.
+        Passing children straight through keeps asChild working; a slotted
+        button is a link or a trigger and never has a loading state anyway.
+      */}
+      {asChild ? (
+        children
+      ) : (
+        <>
+          {loading && <LoaderIcon className="animate-spin" aria-hidden="true" />}
+          {children}
+        </>
+      )}
     </Comp>
   );
 }

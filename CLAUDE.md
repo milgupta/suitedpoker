@@ -118,7 +118,8 @@ sessions.
 | 0.3 Core UI component library | done |
 | 0.4 Redis, caching, rate-limit primitives | done |
 | 1.1 Supabase project and schema | done — applied and verified against live Supabase |
-| 1.2 Auth flows | NEXT |
+| 1.2 Auth flows | done — verified against live Supabase, Google OAuth live |
+| 1.3 Entitlement scaffold and route gating | NEXT |
 
 Stage 0 is complete. Update this table when you finish a substage.
 
@@ -138,6 +139,26 @@ Stage 0 is complete. Update this table when you finish a substage.
   grading, seeding and webhooks. Anything acting on behalf of a user goes
   through the Supabase client so policies apply.
 - Dev user: `dev@suitedpoker.com` / `devpassword123`, onboarding complete.
+
+**What 1.2 left you.**
+
+- **`middleware.ts` must live in `src/`**, not the repo root, because the app
+  uses a `src` directory. At the root it is silently ignored — the app still
+  works because the `(app)` layout guards too, but the `?next=` redirect and
+  the session refresh both vanish.
+- **Auth has two callback paths.** `/auth/callback` exchanges a PKCE `?code=`
+  server-side. `/auth/confirm` handles the implicit flow, where tokens arrive
+  in the URL *fragment* — which the server can never see. Admin-generated links
+  always take the second path.
+- **Never render `<Button asChild>` with more than one child.** Radix's Slot
+  needs exactly one element, and a silent crash blanks the whole page.
+- **`getUser()`, never `getSession()`, on the server.** getSession trusts the
+  cookie without verifying it.
+- **Supabase's built-in SMTP is rate-limited to a few emails an hour.** The
+  signup e2e skips loudly when that budget is gone rather than going green.
+  Resend (7.3) fixes this properly.
+- **Before spending on ads, move e2e to a second Supabase project.** Test users
+  land in the production auth table and will corrupt signup metrics.
 
 **What 0.2 left you.** Anything a later substage needs to build on:
 

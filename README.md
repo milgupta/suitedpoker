@@ -109,6 +109,26 @@ unverified until `npm run test:rls` has actually run.**
    It is deliberately NOT part of `npm run verify`, because CI has no
    credentials. Re-run it by hand whenever an RLS policy changes.
 
+7. Auth end to end:
+
+   ```bash
+   npm run test:e2e
+   ```
+
+   Creates throwaway users (`e2e+<timestamp>@suitedpoker.com`) and deletes them
+   afterwards. Skips when credentials are absent.
+
+### Auth notes
+
+- **Google OAuth** needs a Google Cloud OAuth client and the provider enabled
+  under **Authentication → Sign In / Providers → Google**. Until then the button
+  is wired but returns "That sign-in method isn't switched on yet."
+- **Email rate limits.** Supabase's built-in SMTP sends only a few messages an
+  hour on the free tier, and every signup sends a confirmation. The signup e2e
+  skips with an explanation when that budget is exhausted.
+- **Test users go into the production auth table.** Before running ads, create a
+  second free Supabase project for tests so signup metrics stay clean.
+
 ## Architecture
 
 ```

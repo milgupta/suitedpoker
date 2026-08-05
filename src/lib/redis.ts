@@ -1,7 +1,7 @@
 import "server-only";
 
 import { Redis } from "@upstash/redis";
-import { serverEnv } from "@/lib/env";
+import { serverEnv } from "@/lib/env.server";
 
 /**
  * The shared Redis layer.
