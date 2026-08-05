@@ -12,11 +12,15 @@
  * user step is skipped with a warning.
  */
 
+import { loadEnvConfig } from "@next/env";
 import { createClient } from "@supabase/supabase-js";
 import { eq } from "drizzle-orm";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import * as schema from "../src/db/schema";
+
+// Run outside Next, so .env.local has to be loaded explicitly.
+loadEnvConfig(process.cwd());
 
 const TEST_EMAIL = "dev@suitedpoker.com";
 const TEST_PASSWORD = "devpassword123";

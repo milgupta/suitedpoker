@@ -106,6 +106,9 @@ unverified until `npm run test:rls` has actually run.**
    zero of user B's profile, drill attempts and subscriptions. It skips loudly
    when credentials are absent — a skipped security test proves nothing.
 
+   It is deliberately NOT part of `npm run verify`, because CI has no
+   credentials. Re-run it by hand whenever an RLS policy changes.
+
 ## Architecture
 
 ```

@@ -117,17 +117,27 @@ sessions.
 | 0.2 Design system and motion language | done — implements `DESIGN.md` |
 | 0.3 Core UI component library | done |
 | 0.4 Redis, caching, rate-limit primitives | done |
-| 1.1 Supabase project and schema | done — schema + RLS written, **not yet applied to a live DB** |
+| 1.1 Supabase project and schema | done — applied and verified against live Supabase |
 | 1.2 Auth flows | NEXT |
 
 Stage 0 is complete. Update this table when you finish a substage.
 
-> ⚠️ **1.1 is code-complete but unverified against a real database.** No Supabase
-> project existed when it was built. Before 1.2, follow the Database setup steps
-> in `README.md` and run `npm run db:migrate`, `npm run db:seed` and
-> **`npm run test:rls`**. Until that last one runs, row-level security is
-> untested — the static audit in `tests/unit/rls-policy.test.ts` proves the
-> policies were written, not that they work.
+**What 1.1 left you.**
+
+- **Migration applied and verified live**: 21 tables, RLS on every one, 41
+  policies, 10 FKs to `auth.users`, the `handle_new_user` trigger, and the
+  cross-user security test passing against real Supabase.
+- **`npm run test:rls` must be re-run whenever a policy changes.** It is not in
+  `npm run verify`, because it needs credentials CI does not have. The static
+  audit in `tests/unit/rls-policy.test.ts` runs everywhere but only proves the
+  policies were *written*.
+- **`@next/env` skips `.env.local` when `NODE_ENV=test`** — which Vitest sets.
+  Any test needing real credentials must call `loadLocalEnv()` from
+  `tests/support/load-local-env.ts`, or it will silently skip forever.
+- **`getDb()` bypasses RLS** — it connects as the database owner. Use it for
+  grading, seeding and webhooks. Anything acting on behalf of a user goes
+  through the Supabase client so policies apply.
+- Dev user: `dev@suitedpoker.com` / `devpassword123`, onboarding complete.
 
 **What 0.2 left you.** Anything a later substage needs to build on:
 

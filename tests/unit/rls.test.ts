@@ -18,6 +18,14 @@
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { loadLocalEnv } from "../support/load-local-env";
+
+// Loaded here rather than in a global setup file: pulling real credentials into
+// every unit test would change what the env and redis suites observe.
+//
+// NOT via @next/env — it skips .env.local when NODE_ENV is "test", which is
+// exactly what Vitest sets, so this test would have silently skipped forever.
+loadLocalEnv();
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
