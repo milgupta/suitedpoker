@@ -317,10 +317,16 @@ export function rangeFromNode(node: PreflopNode, action: PreflopActionName): Ran
 
 // ── Scenario specs ────────────────────────────────────────────────────────────
 
+/**
+ * Sizes must be expressible in POSTFLOP_ACTIONS (bet_33 / bet_66 / bet_100).
+ * The first draft used 0.75 and 1.25, which the solver would happily solve and
+ * the bucketer could then never name — every template would have failed schema
+ * validation after hours of compute.
+ */
 const DEFAULT_BET_TREE = {
-  flop: [0.33, 0.75],
-  turn: [0.5, 1],
-  river: [0.5, 1.25],
+  flop: [0.33, 0.66],
+  turn: [0.66, 1],
+  river: [0.66, 1],
   raiseSizes: [2.5],
   allowAllIn: true,
 };

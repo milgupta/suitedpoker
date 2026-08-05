@@ -28,8 +28,11 @@ import {
   buildSolverInput,
   hashJobInput,
   isComplete,
+  lastNumber,
+  normaliseAction,
   planBatch,
   runBatch,
+  solverRange,
 } from "../../../tools/solver/run-batch";
 import { type SolveJob, type SolveResult, type SolverRunner } from "../../../tools/solver/types";
 
@@ -149,14 +152,70 @@ describe("planning", () => {
     record("input hashing", "board, ranges, pot, targets, bet tree and rake all change the hash");
   });
 
-  it("builds a solver input containing the board, ranges and both bounds", () => {
+  it("builds a solver input matching the sample's structure and order", () => {
     const [job] = planBatch(scenarios, { limit: 1 });
     const input = buildSolverInput(job!, "/work/out.json");
     expect(input).toContain(`set_board ${job!.board.replace(/\s+/g, ",")}`);
-    expect(input).toContain(job!.heroRange);
     expect(input).toContain(`set_accuracy ${job!.accuracyTargetPctPot}`);
     expect(input).toContain(`set_max_iteration ${job!.maxIterations}`);
     expect(input).toContain("start_solve");
+    // Order matters to the solver: sizes before build_tree, solve before dump.
+    expect(input.indexOf("set_bet_sizes")).toBeLessThan(input.indexOf("build_tree"));
+    expect(input.indexOf("start_solve")).toBeLessThan(input.indexOf("dump_result"));
+  });
+
+  it("expands ranges to the explicit form the solver parses", () => {
+    // Verified against resources/text/commandline_sample_input.txt: the solver
+    // enumerates every hand. Handing it our `22-88` / `A2s+` shorthand yields a
+    // silently wrong or empty range, not a parse error.
+    expect(solverRange("77+,AKs")).toBe("AA,AKs,KK,QQ,JJ,TT,99,88,77");
+    expect(solverRange("AKs:0.5,AA")).toBe("AA,AKs:0.5");
+    const [job] = planBatch(scenarios, { limit: 1 });
+    const input = buildSolverInput(job!, "/work/out.json");
+    expect(input).not.toMatch(/set_range_(ip|oop) [^\n]*[+-]/);
+    record("range expansion", "shorthand is expanded; no + or - reaches the solver");
+  });
+
+  it("puts hero's range on the correct side of the table", () => {
+    // Hero is BTN here — in position. Feeding heroRange to set_range_oop
+    // solves a hand nobody plays, and it did until a real solve exposed it.
+    const job = planBatch(scenarios, { limit: 1 })[0]!;
+    expect(job.heroPos).toBe("BTN");
+    const input = buildSolverInput(job, "/work/out.json");
+    const ip = /set_range_ip (.+)/.exec(input)?.[1];
+    expect(ip).toBe(solverRange(job.heroRange));
+    record("position assignment", "the in-position seat gets the in-position range");
+  });
+
+  it("normalises solver action names by pot fraction", () => {
+    // Real names from commit 42313c9c: "CHECK", "BET 3.000000".
+    expect(normaliseAction("CHECK", 5.5)).toBe("check");
+    expect(normaliseAction("CALL", 5.5)).toBe("call");
+    expect(normaliseAction("BET 3.000000", 5.5)).toBe("bet_66");
+    expect(normaliseAction("BET 1.815", 5.5)).toBe("bet_33");
+    expect(normaliseAction("BET 5.5", 5.5)).toBe("bet_100");
+    expect(normaliseAction("BET 97.000000", 5.5)).toBe("allin");
+    expect(normaliseAction("RAISE 32.000000", 5.5)).toBe("raise_pot");
+    expect(() => normaliseAction("SHRUG", 5.5)).toThrow();
+    record("action normalisation", "solver action names map onto the 2.5 vocabulary");
+  });
+
+  it("reads the LAST stdout match, not the first", () => {
+    // stdout prints a per-player exploitability line before each total, and one
+    // block per iteration. Reading the first match reported 0 iterations and
+    // the wrong exploitability from a real run.
+    const stdout = [
+      "Iter: 21",
+      "player 0 exploitability 1.8136742",
+      "Total exploitability 28.572405 precent",
+      "Iter: 31",
+      "player 0 exploitability 1.1003702",
+      "Total exploitability 15.751698 precent",
+    ].join("\n");
+    expect(lastNumber(stdout, /Iter:\s*(\d+)/gi)).toBe(31);
+    expect(lastNumber(stdout, /Total\s+exploitability\s+(-?[\d.]+)/gi)).toBe(15.751698);
+    expect(lastNumber(stdout, /nothing(\d+)/gi)).toBeUndefined();
+    record("stdout parsing", "last match wins — validated against a real solver log");
   });
 });
 

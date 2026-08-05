@@ -187,6 +187,18 @@ export function toPostflopTemplate(
   const flaggedCount = report.flagged.length;
   const suspect = result.stopReason === "iteration-cap";
 
+  // A template whose EVs are all zero is worse than no template: it passes the
+  // schema, it looks solved, and the grader then scores every action as a
+  // perfect play because every EV loss is zero. Refuse rather than emit it.
+  const hasEv = report.rows.some((row) => Object.values(row.ev).some((value) => value !== 0));
+  if (report.rows.length > 0 && !hasEv) {
+    throw new Error(
+      `${scenario.id}: every EV is zero, so this dump carries no EV data. Emitting it would ` +
+        `stamp "solver-verified" on a template the grader reads as all-actions-equal. ` +
+        `See the EV gap noted in tools/solver/README.md.`,
+    );
+  }
+
   return {
     id: `${scenario.id}--${report.board.replace(/\s+/g, "")}`,
     solutionSet: options.solutionSet ?? "suitedpoker-6max-100bb-v1",

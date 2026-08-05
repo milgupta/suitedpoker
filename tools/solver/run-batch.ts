@@ -16,8 +16,11 @@ import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
 import { parsePreflopNode, type PreflopNode } from "@/poker/solutions";
+import { Range } from "@/poker/range";
 import { buildMatrix } from "@/content/solver/matrix";
 import { type Scenario } from "@/content/solver/schema";
+
+import { type PostflopActionName } from "@/poker/solutions";
 
 import { bucketSolve, formatVarianceReport, toPostflopTemplate, type BucketReport } from "./bucket";
 import { draftAll, type RationaleClient } from "./rationales";
@@ -28,6 +31,9 @@ import {
   type SolveResult,
   type SolverRunner,
 } from "./types";
+
+/** Later index acts last postflop, i.e. is in position. */
+const POSTFLOP_ORDER = ["SB", "BB", "UTG", "MP", "CO", "BTN"];
 
 const DEFAULT_MAX_ITERATIONS = 200;
 const SMOKE_MAX_ITERATIONS = 40;
@@ -68,7 +74,7 @@ export function planBatch(scenarios: readonly Scenario[], options: PlanOptions =
     // to produce usable strategy.
     const boards = options.smoke ? scenario.boards.slice(0, 1) : scenario.boards;
     const betTree = options.smoke
-      ? { ...scenario.betTree, flop: [0.5], turn: [0.75], river: [0.75], raiseSizes: [2.5] }
+      ? { ...scenario.betTree, flop: [0.66], turn: [0.66], river: [0.66], raiseSizes: [2.5] }
       : scenario.betTree;
     const accuracy = options.smoke ? SMOKE_ACCURACY_PCT_POT : scenario.accuracyTargetPctPot;
     const maxIterations =
@@ -255,12 +261,18 @@ export async function bucketAndEmit(
       client,
     );
 
-    const template = toPostflopTemplate(scenario, report, result, {
-      rationaleFor: (row) => {
-        const rationale = rationales.get(row.handClass);
-        return { text: rationale?.text ?? "", reviewed: rationale?.reviewed ?? false };
-      },
-    });
+    let template;
+    try {
+      template = toPostflopTemplate(scenario, report, result, {
+        rationaleFor: (row) => {
+          const rationale = rationales.get(row.handClass);
+          return { text: rationale?.text ?? "", reviewed: rationale?.reviewed ?? false };
+        },
+      });
+    } catch (error) {
+      console.error(`  ✗ ${scenarioId}: ${error instanceof Error ? error.message : String(error)}`);
+      continue;
+    }
     writeFileSync(
       join(outDir, "templates", `${template.id}.json`),
       `${JSON.stringify(template, null, 2)}\n`,
@@ -295,35 +307,100 @@ export interface RawSolveOutput {
   memoryHighWaterMb: number;
 }
 
+/**
+ * TexasSolver's action names carry their size in chips: "BET 3.000000".
+ * Translate to our vocabulary by pot fraction, snapping to the nearest name
+ * the 2.5 schema knows. An unrecognised action throws rather than being
+ * dropped — a silently discarded action would renormalise the remaining
+ * frequencies and produce a strategy nobody solved.
+ */
+export function normaliseAction(raw: string, potBb: number): PostflopActionName {
+  const upper = raw.trim().toUpperCase();
+  if (upper === "CHECK") return "check";
+  if (upper === "FOLD") return "fold";
+  if (upper === "CALL") return "call";
+
+  const match = /^(BET|RAISE|ALLIN|ALL_IN)\s*([\d.]*)$/.exec(upper);
+  if (match === null) throw new RangeError(`cannot read solver action "${raw}"`);
+  const [, verb, sizeText] = match;
+  const size = Number(sizeText);
+  if (verb === "ALLIN" || verb === "ALL_IN") return "allin";
+  if (!Number.isFinite(size) || potBb <= 0)
+    throw new RangeError(`no size in solver action "${raw}"`);
+
+  const fraction = size / potBb;
+  if (verb === "RAISE") return fraction >= 1.5 ? "raise_pot" : "raise_small";
+
+  // An "all-in" arrives as a BET larger than the pot by a wide margin.
+  if (fraction > 1.6) return "allin";
+  const candidates: Array<[PostflopActionName, number]> = [
+    ["bet_33", 0.33],
+    ["bet_66", 0.66],
+    ["bet_100", 1],
+  ];
+  let best = candidates[0]!;
+  for (const candidate of candidates) {
+    if (Math.abs(candidate[1] - fraction) < Math.abs(best[1] - fraction)) best = candidate;
+  }
+  return best[0];
+}
+
+/**
+ * Parses a real TexasSolver dump. VERIFIED against actual output from commit
+ * 42313c9c — see tools/solver/README.md.
+ *
+ * The shape is a game tree. The root node is the first decision on the street,
+ * and its `strategy` block holds `{ actions: [...], strategy: { combo: [freq,
+ * ...] } }`, where each combo's array is POSITIONAL against `actions`.
+ *
+ * NOTE: this dump contains NO EV data — frequencies only. `evs` is therefore
+ * left empty and the caller must decide what to do about it. Inventing EVs
+ * here would be the worst possible outcome: numbers nobody computed, stamped
+ * `solver-verified`.
+ */
 export function parseSolverOutput(
   job: SolveJob,
   raw: RawSolveOutput,
   solverCommit: string,
 ): SolveResult {
-  const parsed = JSON.parse(raw.strategyJson) as Record<string, unknown>;
-
-  const strategy = (parsed.strategy ?? parsed.player_0 ?? parsed) as Record<string, unknown>;
-  const actions = extractActions(parsed, strategy);
-
-  const hero: SolveResult["hero"] = [];
-  for (const [combo, value] of Object.entries(strategy)) {
-    if (!/^[2-9TJQKA][cdhs][2-9TJQKA][cdhs]$/i.test(combo)) continue;
-    const record = value as Record<string, unknown>;
-    const frequencies: Record<string, number> = {};
-    const evs: Record<string, number> = {};
-    for (const action of actions) {
-      const cell = record[action] as Record<string, unknown> | number | undefined;
-      if (typeof cell === "number") frequencies[action] = cell;
-      else if (cell !== undefined) {
-        frequencies[action] = Number(cell.frequency ?? cell.freq ?? 0);
-        evs[action] = Number(cell.ev ?? 0);
-      }
-    }
-    hero.push({ combo, frequencies, evs });
+  const root = JSON.parse(raw.strategyJson) as {
+    strategy?: { actions?: string[]; strategy?: Record<string, number[]> };
+  };
+  const block = root.strategy;
+  if (block?.actions === undefined || block.strategy === undefined) {
+    throw new SyntaxError(
+      `solver output for ${job.id} has no root strategy block — the dump format changed`,
+    );
   }
 
-  const exploitability = readNumber(raw.stdout, /exploitability[^0-9-]*(-?[\d.]+)/i) ?? Number.NaN;
-  const iterations = readNumber(raw.stdout, /iteration[s]?[^0-9]*(\d+)/i) ?? 0;
+  const actions = block.actions.map((raw) => normaliseAction(raw, job.potBb));
+  const hero: SolveResult["hero"] = [];
+  for (const [combo, frequencies] of Object.entries(block.strategy)) {
+    if (frequencies.length !== actions.length) {
+      throw new SyntaxError(
+        `${job.id}: combo ${combo} has ${frequencies.length} frequencies for ${actions.length} actions`,
+      );
+    }
+    hero.push({
+      combo,
+      frequencies: Object.fromEntries(actions.map((action, i) => [action, frequencies[i] ?? 0])),
+      evs: {},
+    });
+  }
+  if (hero.length === 0) {
+    throw new SyntaxError(`${job.id}: solver output contained no combos`);
+  }
+
+  // Both are read from the LAST match, not the first. stdout emits a
+  // per-player exploitability line before each total and one block per
+  // iteration, so `exec` on the first match reports a player's figure from
+  // iteration one — which is how this silently reported 0 iterations and the
+  // wrong exploitability the first time round.
+  const exploitability =
+    lastNumber(raw.stdout, /Total\s+exploitability\s+(-?[\d.]+)/gi) ??
+    lastNumber(raw.stdout, /exploitability[^0-9-]*(-?[\d.]+)/gi) ??
+    Number.NaN;
+  const iterations = lastNumber(raw.stdout, /Iter:\s*(\d+)/gi) ?? 0;
 
   return {
     jobId: job.id,
@@ -339,31 +416,20 @@ export function parseSolverOutput(
   };
 }
 
-function extractActions(
-  parsed: Record<string, unknown>,
-  strategy: Record<string, unknown>,
-): string[] {
-  if (Array.isArray(parsed.actions)) return parsed.actions.map(String);
-  const first = Object.values(strategy)[0];
-  if (first !== null && typeof first === "object") return Object.keys(first as object);
-  return [];
-}
-
-function readNumber(text: string, pattern: RegExp): number | undefined {
-  const match = pattern.exec(text);
-  return match?.[1] === undefined ? undefined : Number(match[1]);
+/** The last capture of a global pattern, or undefined if it never matched. */
+export function lastNumber(text: string, pattern: RegExp): number | undefined {
+  let value: number | undefined;
+  for (const match of text.matchAll(pattern)) {
+    if (match[1] !== undefined) value = Number(match[1]);
+  }
+  return value;
 }
 
 // ── The Docker-backed runner ──────────────────────────────────────────────────
 
 export const SOLVER_IMAGE = "suitedpoker/texassolver:pinned";
-/**
- * The artifact the repo's own .pro produces. There is no separate
- * `console_solver` target in master — main.cpp dispatches to console mode from
- * argv, and the binary needs an offscreen Qt platform to start without a
- * display.
- */
-export const SOLVER_BINARY = "TexasSolverGui";
+/** Built from the `console` branch and run from its install dir (WORKDIR). */
+export const SOLVER_BINARY = "/opt/solver/console_solver";
 
 export class DockerSolverRunner implements SolverRunner {
   readonly solverCommit: string;
@@ -379,7 +445,7 @@ export class DockerSolverRunner implements SolverRunner {
     mkdirSync(this.workDir, { recursive: true });
     const inputPath = join(this.workDir, `${job.id}.txt`);
     const outputPath = join(this.workDir, `${job.id}.solve.json`);
-    writeFileSync(inputPath, buildSolverInput(job, "/work/out.json"), "utf8");
+    writeFileSync(inputPath, buildSolverInput(job, `/work/${job.id}.solve.json`), "utf8");
 
     const started = Date.now();
     const proc = spawnSync(
@@ -390,7 +456,7 @@ export class DockerSolverRunner implements SolverRunner {
         "-v",
         `${resolve(this.workDir)}:/work`,
         SOLVER_IMAGE,
-        "console_solver",
+        SOLVER_BINARY,
         "-i",
         `/work/${job.id}.txt`,
       ],
@@ -406,6 +472,7 @@ export class DockerSolverRunner implements SolverRunner {
     const producedAt = existsSync(outputPath) ? outputPath : join(this.workDir, "out.json");
     if (!existsSync(producedAt)) throw new Error(`solver produced no output for ${job.id}`);
 
+    writeFileSync(join(this.workDir, `${job.id}.stdout.txt`), proc.stdout ?? "", "utf8");
     return parseSolverOutput(
       job,
       {
@@ -428,23 +495,52 @@ function readSolverCommit(): string {
   return (proc.stdout ?? "").trim() || "unknown";
 }
 
+/**
+ * Expands our range notation into the explicit comma-separated form
+ * TexasSolver's parser accepts.
+ *
+ * This is NOT cosmetic. Our notation uses `+` and `-` shorthand (`22-88`,
+ * `K7s-KTs`, `A2s+`); the solver's sample input enumerates every hand
+ * (`AA,KK,QQ,99:0.75`). Handing it the shorthand gets a range that is silently
+ * wrong or empty rather than a parse error.
+ */
+export function solverRange(notation: string): string {
+  return Range.parse(notation)
+    .entries()
+    .map(([key, weight]) => (weight === 1 ? key : `${key}:${weight}`))
+    .join(",");
+}
+
+/**
+ * Mirrors resources/text/commandline_sample_input.txt exactly in structure and
+ * order. The solver is order-sensitive: bet sizes must precede `build_tree`,
+ * and `start_solve` must precede `dump_result`.
+ */
 export function buildSolverInput(job: SolveJob, outputPath: string): string {
-  const sizes = (fractions: readonly number[]) =>
-    fractions.map((f) => Math.round(f * 100)).join(",");
-  return [
+  const pct = (fractions: readonly number[]) => fractions.map((f) => Math.round(f * 100)).join(",");
+  const raise = pct(job.betTree.raiseSizes);
+  // Postflop, the later seat acts last and is in position. Feeding hero's range
+  // to set_range_oop when hero is the button solves a hand nobody plays.
+  const heroIsIp = POSTFLOP_ORDER.indexOf(job.heroPos) > POSTFLOP_ORDER.indexOf(job.villainPos);
+
+  const lines: string[] = [
     `set_pot ${job.potBb}`,
     `set_effective_stack ${job.effStackBb}`,
     `set_board ${job.board.replace(/\s+/g, ",")}`,
-    `set_range_ip ${job.heroPos === job.villainPos ? job.heroRange : job.villainRange}`,
-    `set_range_oop ${job.heroRange}`,
-    `set_bet_sizes oop,flop,bet,${sizes(job.betTree.flop)}`,
-    `set_bet_sizes ip,flop,bet,${sizes(job.betTree.flop)}`,
-    `set_bet_sizes oop,turn,bet,${sizes(job.betTree.turn)}`,
-    `set_bet_sizes ip,turn,bet,${sizes(job.betTree.turn)}`,
-    `set_bet_sizes oop,river,bet,${sizes(job.betTree.river)}`,
-    `set_bet_sizes ip,river,bet,${sizes(job.betTree.river)}`,
-    `set_bet_sizes oop,flop,raise,${sizes(job.betTree.raiseSizes)}`,
-    `set_bet_sizes ip,flop,raise,${sizes(job.betTree.raiseSizes)}`,
+    `set_range_ip ${solverRange(heroIsIp ? job.heroRange : job.villainRange)}`,
+    `set_range_oop ${solverRange(heroIsIp ? job.villainRange : job.heroRange)}`,
+  ];
+
+  for (const street of ["flop", "turn", "river"] as const) {
+    const sizes = pct(job.betTree[street]);
+    for (const seat of ["oop", "ip"] as const) {
+      lines.push(`set_bet_sizes ${seat},${street},bet,${sizes}`);
+      lines.push(`set_bet_sizes ${seat},${street},raise,${raise}`);
+      if (job.betTree.allowAllIn) lines.push(`set_bet_sizes ${seat},${street},allin`);
+    }
+  }
+
+  lines.push(
     `set_allin_threshold 0.67`,
     `build_tree`,
     `set_thread_num 8`,
@@ -456,7 +552,8 @@ export function buildSolverInput(job: SolveJob, outputPath: string): string {
     `set_dump_rounds 2`,
     `dump_result ${outputPath}`,
     ``,
-  ].join("\n");
+  );
+  return lines.join("\n");
 }
 
 // ── CLI ───────────────────────────────────────────────────────────────────────
