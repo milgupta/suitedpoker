@@ -55,6 +55,13 @@ async function login(page: Page, email: string): Promise<void> {
 }
 
 test.describe("daily challenge", () => {
+  /**
+   * Every test here does a real login and several API round-trips, and the
+   * login alone can take ten seconds under parallel workers. At the 30s
+   * default the budget was gone before the assertions ran — the two failures
+   * this fixes both passed in isolation and failed only in a full-suite pass.
+   */
+  test.describe.configure({ timeout: 90_000 });
   test.skip(!CONFIGURED, "Supabase credentials absent");
 
   test.beforeAll(() => {
@@ -232,7 +239,11 @@ test.describe("daily challenge", () => {
     await page.getByLabel("Email").fill(email);
     await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
     await page.getByRole("button", { name: "Log in" }).click();
-    await expect(page).toHaveURL(/\/paywall/);
+    // 30s, like the login() helper above. Under parallel workers the
+    // login → gate → paywall chain regularly takes ten seconds, and the 5s
+    // default made a real pass look like a product failure. The helper was
+    // given this treatment; this inline login was missed.
+    await expect(page).toHaveURL(/\/paywall/, { timeout: 30_000 });
 
     expect((await page.request.get("/api/daily/today")).status()).toBe(402);
   });

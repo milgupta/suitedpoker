@@ -27,6 +27,19 @@ export default defineConfig({
    */
   workers: process.env.CI ? 1 : 2,
   reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",
+  /**
+   * 15s, not Playwright's 5s default.
+   *
+   * That default assumes a fast local component render. Every assertion here
+   * waits on a real Next server, a real Postgres round-trip and a real Supabase
+   * auth call, and a login → gate → redirect chain regularly takes ten seconds
+   * under parallel workers. Two daily-challenge tests failed a full-suite run
+   * on exactly that and passed in isolation — a load-dependent flake reads as a
+   * product bug, and chasing one costs a twenty-minute run each time.
+   *
+   * Still tight enough to catch a navigation that genuinely never happens.
+   */
+  expect: { timeout: 15_000 },
   use: {
     baseURL,
     trace: "on-first-retry",
