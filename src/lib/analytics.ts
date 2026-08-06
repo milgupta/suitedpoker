@@ -10,7 +10,8 @@
  * one convention beats two.
  */
 
-export type Plan = "monthly" | "yearly";
+/** Matches the Stripe products and STRIPE_PRICE_* env vars — one vocabulary. */
+export type Plan = "monthly" | "annual";
 export type SignupMethod = "email" | "google";
 export type Grade = "sharp" | "best" | "solid" | "inaccuracy" | "mistake" | "blunder";
 

@@ -1,27 +1,32 @@
 import type { Metadata } from "next";
-import { Button } from "@/components/ui/button";
+import { Suspense } from "react";
 import { SignOutButton } from "../sign-out-button";
 import { TrackView } from "@/components/track-view";
+import { PaywallClient } from "./paywall-client";
+import { PLANS } from "@/lib/stripe/plans";
 
 export const metadata: Metadata = { title: "Subscribe", robots: { index: false, follow: false } };
 
 /**
- * PLACEHOLDER — 7.2 builds the real paywall. It exists now so the entitlement
- * gate has somewhere to send people, and so 1.3's tests assert a real
- * destination rather than a 404.
+ * The paywall.
+ *
+ * Exempt from the entitlement gate for the obvious reason. The diagnosis scrim
+ * is a slot: 7.2 builds the diagnosis and passes it in, and until then the page
+ * opens on the benefits rather than on an empty blurred box.
  */
 export default function PaywallPage() {
   return (
-    <div>
+    <div className="mx-auto flex w-full max-w-[34rem] flex-col gap-8 pb-16">
       {/* annualCost is the price, not a results claim — see the note in analytics.ts. */}
-      <TrackView event="paywall_viewed" properties={{ annualCost: 149.99 }} />
-      <h1 className="text-display-md">Subscribe to keep going</h1>
-      <p className="text-text-secondary text-body-lg mt-3 max-w-[45ch]">
-        Placeholder. 7.2 builds this. Checkout arrives with Stripe in 7.3.
-      </p>
-      <Button variant="accent" size="lg" className="mt-8" disabled>
-        Checkout coming in 7.3
-      </Button>
+      <TrackView
+        event="paywall_viewed"
+        properties={{ annualCost: PLANS.annual.amountCents / 100 }}
+      />
+
+      <Suspense fallback={null}>
+        <PaywallClient />
+      </Suspense>
+
       <SignOutButton />
     </div>
   );

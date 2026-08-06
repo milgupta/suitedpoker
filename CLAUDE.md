@@ -132,8 +132,47 @@ sessions.
 | 4.1 Gemini integration and prompt architecture | done — **20-spot adversarial run unverified (no Gemini key)** |
 | 4.2 Hint system | done — 7 hint e2e green, 50-hint leak test green |
 | 4.3 Post-hand explanation | done — streaming, 36-explanation matrix green |
+| 7.3 Stripe setup and checkout | code + paywall done — ⚠️ **every Stripe-touching test is BLOCKED: `.env.local` holds LIVE keys** |
 
 Stage 0 is complete. Update this table when you finish a substage.
+
+**What 7.3 left you.**
+
+- 🛑 **`.env.local` contains LIVE Stripe keys** (`sk_live_`, `pk_live_`), not test
+  keys. `tests/e2e/checkout.spec.ts` refuses to run on anything but `sk_test_`
+  and skips with a loud message, because those tests complete real purchases and
+  open real subscriptions. Nothing in 7.3 has been verified against Stripe. Swap
+  in test-mode keys AND test-mode price ids — price ids differ between modes —
+  then run `npx playwright test tests/e2e/checkout.spec.ts`.
+- **Price ids are server-only** (`STRIPE_PRICE_MONTHLY`, `STRIPE_PRICE_ANNUAL`).
+  The old `NEXT_PUBLIC_STRIPE_PRICE_*` vars are gone. The client sends
+  `plan: "monthly" | "annual"` and the server picks the price; a client that can
+  name its own price can name a cheap one. A test asserts no `PRICE` key reaches
+  `clientEnv`.
+- **The plan vocabulary is `monthly | annual` everywhere** — the Stripe products,
+  the env vars, `PlanId`, and the analytics `Plan` type, which was `yearly`.
+  One vocabulary, because two is how a funnel ends up split across two labels.
+- **`ensureCustomer()` searches Stripe by `metadata.userId` before creating.**
+  The database lookup is first, but if that row is ever lost, creating a fresh
+  customer would give one person two — which splits billing history and breaks
+  the portal. The row is written BEFORE checkout with no status, which the
+  entitlement rule reads as "not entitled", so it cannot let anyone in early.
+- **Checkout and portal use `withAuth`, NOT `withEntitlement`.** The person
+  hitting them is by definition unsubscribed, or has a failed card.
+- **Plan switching is disabled in the Stripe portal on purpose.** The only
+  plan-change path is `/api/stripe/switch-plan`, monthly→annual only, because
+  7.5 uses it as a save offer and its conversion has to be measurable.
+- **The plan's "$340 a year leak" loss framing was NOT implemented as written.**
+  A dollar figure attached to a poker result violates the non-negotiable rule 5
+  and the AI content rules. The paywall states the leak in bb/100 instead, and an
+  e2e asserts no dollar-denominated results claim appears on the page. Prices in
+  dollars are fine — those are prices, not results.
+- **The diagnosis scrim is a slot** (`PaywallClient`'s `diagnosis` prop). 7.2
+  fills it; until then the page opens on the benefits rather than an empty box.
+- **Do not put `.tap-target` on a large control.** Its `::before` overlay sits on
+  top of the element's own children — on the plan card it intercepted clicks to
+  the radio inside it. The class is for controls smaller than 44px.
+- Dashboard checklist: `docs/STRIPE-SETUP.md`.
 
 **What 4.3 left you.**
 

@@ -21,6 +21,10 @@ const serverSchema = z.object({
 
   STRIPE_SECRET_KEY: z.string().min(1).optional().or(z.literal("")),
   STRIPE_WEBHOOK_SECRET: z.string().min(1).optional().or(z.literal("")),
+  // Server-only on purpose. The client sends a plan id and the server chooses
+  // the price — a client that can name its own price can name a cheap one.
+  STRIPE_PRICE_MONTHLY: z.string().optional().or(z.literal("")),
+  STRIPE_PRICE_ANNUAL: z.string().optional().or(z.literal("")),
 
   GOOGLE_GENERATIVE_AI_API_KEY: z.string().min(1).optional().or(z.literal("")),
 
