@@ -138,6 +138,7 @@ sessions.
 | 8.4 Landing page and SEO | done — Lighthouse mobile 99/100/100/100, scan clean |
 | 8.5 Product assets, icons, capture | done — 7 shots, 82% smaller, clean loop seam |
 | 9.1 / 9.2 Motion, mobile, PWA pass | done — CLS 0.0000 everywhere, axe clean, 4 device sizes |
+| 9.3 / 9.4 Test suite, perf, launch readiness | done — 6/6 mutations caught, build gate live |
 | 4.1 Gemini integration and prompt architecture | done — **20-spot adversarial run unverified (no Gemini key)** |
 | 4.2 Hint system | done — 7 hint e2e green, 50-hint leak test green |
 | 4.3 Post-hand explanation | done — streaming, 36-explanation matrix green |
@@ -897,6 +898,34 @@ Stage 0 is complete. Update this table when you finish a substage.
 - Safe-area insets, `user-select: none` on cards and action buttons, and
   `overscroll-behavior` are in `globals.css`. Inputs were already 16px on
   mobile (no iOS zoom) and nothing used `100vh`.
+
+**What 9.3 / 9.4 left you.**
+
+- **`npm run mutation` is the answer to "are the tests real?"** It breaks the
+  entitlement rule, the API guard, the chat number guard and the hint guard one
+  at a time and asserts the suite FAILS each time. **6/6 caught.** A green suite
+  proves the tests pass; this proves they would notice. It restores every file
+  in a `finally`, and refuses to run stale — if a mutated line no longer exists
+  it errors rather than reporting a false pass.
+- **`next.config.ts` refuses a PRODUCTION deploy that cannot take money.** Ten
+  required vars, plus four forbidden values (a test-mode Stripe key, a lingering
+  `META_TEST_EVENT_CODE`, `DEV_BYPASS_ENTITLEMENT=true`). Gated on
+  `VERCEL_ENV === "production"` — NODE_ENV cannot tell production from preview,
+  and failing previews would block the branch that fixes the missing variable.
+  Verified: `VERCEL_ENV=production npm run build` exits 1.
+- **`/api/health` returns 503, not 200-with-a-body, when a dependency is down.**
+  Verified both ways against a real broken DATABASE_URL. It checks rather than
+  reports liveness — a check that only proves Node is running goes green through
+  a total outage. Redis is probed with a write AND a read, because `get` alone
+  succeeds against a read-only Redis, which is not a healthy rate limiter.
+- **`tests/unit/bundle.test.ts` walks the import graph and STOPS at
+  `server-only`.** The first version flagged the whole engine as "in the
+  marketing bundle" because the landing page reads three numbers off
+  `methodology-server.ts` at render — a false alarm, and a check that cries wolf
+  gets deleted. A module importing `server-only` cannot reach a browser.
+- **`src/poker` coverage: 92.27% statements, 94.97% lines** — above the 90% bar.
+- **`docs/LAUNCH.md`** is ordered so nothing on it can silently undo something
+  above it, and leads with the solver-claim decision.
 
 **What 0.2 left you.** Anything a later substage needs to build on:
 

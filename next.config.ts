@@ -1,5 +1,26 @@
 import createMDX from "@next/mdx";
 import type { NextConfig } from "next";
+import { formatProblems, isProductionDeploy, productionEnvProblems } from "./src/lib/env-required";
+
+/**
+ * THE BUILD REFUSES A PRODUCTION DEPLOY THAT CANNOT TAKE MONEY.
+ *
+ * Every env var is optional in the schemas so a fresh clone and CI both work
+ * with an empty .env.local. That is right for development and wrong for
+ * production: a deploy missing STRIPE_WEBHOOK_SECRET accepts payments and never
+ * grants access, and nothing surfaces it until a customer emails.
+ *
+ * Gated on VERCEL_ENV === "production" specifically. NODE_ENV cannot tell a
+ * production deploy from a preview — both are "production" — and failing
+ * previews would block every branch.
+ */
+if (isProductionDeploy(process.env)) {
+  const problems = productionEnvProblems(process.env);
+  if (problems.length > 0) {
+    console.error(formatProblems(problems));
+    process.exit(1);
+  }
+}
 
 const POSTHOG_HOST = process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com";
 const POSTHOG_ASSETS = POSTHOG_HOST.replace("us.i.posthog.com", "us-assets.i.posthog.com");

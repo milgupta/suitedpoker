@@ -29,6 +29,8 @@ const PUBLIC_ROUTES: Record<string, string> = {
     "Stripe is the caller and has no session. Authenticated by signature instead — the constructEvent call IS the guard.",
   "email/dunning/route.ts":
     "A Vercel cron is the caller and has no session. Authenticated by CRON_SECRET, which fails closed in production.",
+  "health/route.ts":
+    "An uptime monitor is the caller and has no session. Returns only up/down per dependency — never a connection string, a version, or a provider error.",
   "meta/retry/route.ts":
     "A Vercel cron is the caller and has no session. Authenticated by CRON_SECRET, which fails closed in production.",
   "daily/generate/route.ts":
