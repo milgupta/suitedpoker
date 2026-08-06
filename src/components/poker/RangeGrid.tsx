@@ -99,6 +99,7 @@ export function RangeGrid({
           return (
             <motion.button
               key={key}
+              data-cell={key}
               type="button"
               role="gridcell"
               aria-label={key}

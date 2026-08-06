@@ -26,7 +26,10 @@
     "test:rls": "vitest run --project unit tests/unit/rls.test.ts",
     "test:ai": "vitest run --config vitest.live.config.mts tests/unit/coach-live.test.ts",
     "test:stripe": "vitest run --config vitest.live.config.mts tests/unit/stripe-webhook-live.test.ts",
-    "test:chat": "vitest run --config vitest.live.config.mts tests/unit/chat-live.test.ts"
+    "test:chat": "vitest run --config vitest.live.config.mts tests/unit/chat-live.test.ts",
+    "screenshots": "tsx scripts/capture-screenshots.ts",
+    "optimize:assets": "tsx scripts/optimize-assets.ts",
+    "hero:video": "tsx scripts/capture-hero-video.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.34",

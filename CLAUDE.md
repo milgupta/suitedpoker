@@ -136,6 +136,7 @@ sessions.
 | 8.2 Meta Pixel and Conversions API | done — dedup wired end to end, hash hand-verified |
 | 8.3 Transactional email | done — 8 emails read, dunning schedule exact |
 | 8.4 Landing page and SEO | done — Lighthouse mobile 99/100/100/100, scan clean |
+| 8.5 Product assets, icons, capture | done — 7 shots, 82% smaller, clean loop seam |
 | 4.1 Gemini integration and prompt architecture | done — **20-spot adversarial run unverified (no Gemini key)** |
 | 4.2 Hint system | done — 7 hint e2e green, 50-hint leak test green |
 | 4.3 Post-hand explanation | done — streaming, 36-explanation matrix green |
@@ -827,6 +828,42 @@ Stage 0 is complete. Update this table when you finish a substage.
 - **`src/emails/theme.ts` is now the palette for next/og as well as email** —
   both rasterise without a document. Still the only file outside globals.css
   allowed a colour literal.
+
+**What 8.5 left you.**
+
+- **`npm run screenshots` is the deliverable, not the images.** It reseeds a
+  fixed fixture account and recaptures all seven at 2x/390px. When the UI
+  changes, re-run it — never hand-edit a PNG.
+- **Shot ORDER matters.** The drill and sim shots play real hands and write
+  attempt rows; captured before the dashboard they moved its counts and no two
+  runs matched. Read-only screens go first.
+- **4/7 are byte-identical across runs. The other three cannot be, correctly.**
+  Making a dealt hand reproducible would mean letting the client choose the
+  spot seed, and 3.2's whole design is that the seed is server-side — a client
+  that picks the seed can pick a spot it knows the answer to. Not worth a hole
+  in the grading boundary for a screenshot.
+- **The loop seam is MEASURED, in pixels.** The first version scraped a PSNR
+  line out of ffmpeg's stderr and reported "unknown" when the filter chain was
+  wrong — a check that cannot fail is not a check. Decoding both frames caught
+  a real 23/255 jump.
+- **The seam is a fade, because "Next hand" deals a DIFFERENT hand** — the last
+  frame can never match the first by construction. Fading both ends to the
+  canvas colour gets it to 0.74/255 and reads as deliberate.
+- **The poster comes from the MIDDLE of the clip**, since frame 0 is now
+  deliberately black.
+- **`npm run optimize:assets`: 1485KB → 265KB AVIF (82% smaller).** UI
+  screenshots are flat colour on a dark ground, which is AVIF's best case.
+- **`src/emails/theme.ts` now also feeds `next/og` AND the PWA manifest** —
+  three renderers that resolve no CSS variable. Still the only file outside
+  globals.css allowed a colour literal.
+- **The icon is two unequal frequency-bar segments, never a card or a chip.**
+  A card reads as gambling to Meta's reviewers and the App Store — the two
+  gatekeepers this product must pass — and says nothing about what it does.
+- **`tests/unit/assets.test.ts` fails the build on a referenced-but-missing
+  asset.** Next does not check a string `src`, and neither does TypeScript.
+- Hooks added for capture, in the existing `data-*` convention: `data-action`
+  on the arena's action buttons, `data-cell` on range-grid cells,
+  `data-testid="start-session"` on the table setup.
 
 **What 0.2 left you.** Anything a later substage needs to build on:
 

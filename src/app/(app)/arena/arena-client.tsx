@@ -289,6 +289,7 @@ export function ArenaClient() {
             {spot.legalActions.map((action) => (
               <Button
                 key={action}
+                data-action={action}
                 variant="action"
                 size="action"
                 disabled={result !== null}

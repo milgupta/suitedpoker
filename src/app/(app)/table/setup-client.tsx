@@ -118,6 +118,7 @@ export function TableSetupClient() {
       )}
 
       <Button
+        data-testid="start-session"
         variant="accent"
         size="lg"
         className="w-full"

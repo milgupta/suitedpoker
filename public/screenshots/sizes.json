@@ -1,0 +1,51 @@
+{
+  "rows": [
+    {
+      "name": "dashboard",
+      "png": 191890,
+      "webp": 53442,
+      "avif": 29246
+    },
+    {
+      "name": "diagnosis",
+      "png": 74670,
+      "webp": 23180,
+      "avif": 12393
+    },
+    {
+      "name": "drill",
+      "png": 46324,
+      "webp": 14582,
+      "avif": 10186
+    },
+    {
+      "name": "feedback-frequency-bar",
+      "png": 113839,
+      "webp": 32818,
+      "avif": 19089
+    },
+    {
+      "name": "lesson",
+      "png": 767964,
+      "webp": 296818,
+      "avif": 161296
+    },
+    {
+      "name": "range-grid",
+      "png": 102047,
+      "webp": 37868,
+      "avif": 18602
+    },
+    {
+      "name": "table-sim",
+      "png": 223800,
+      "webp": 33752,
+      "avif": 20312
+    }
+  ],
+  "total": {
+    "png": 1520534,
+    "webp": 492460,
+    "avif": 271124
+  }
+}

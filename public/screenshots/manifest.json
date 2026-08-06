@@ -1,0 +1,38 @@
+{
+  "capturedAt": null,
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "deviceScaleFactor": 2,
+  "shots": [
+    {
+      "name": "dashboard",
+      "file": "/screenshots/dashboard.png"
+    },
+    {
+      "name": "diagnosis",
+      "file": "/screenshots/diagnosis.png"
+    },
+    {
+      "name": "range-grid",
+      "file": "/screenshots/range-grid.png"
+    },
+    {
+      "name": "lesson",
+      "file": "/screenshots/lesson.png"
+    },
+    {
+      "name": "drill",
+      "file": "/screenshots/drill.png"
+    },
+    {
+      "name": "feedback-frequency-bar",
+      "file": "/screenshots/feedback-frequency-bar.png"
+    },
+    {
+      "name": "table-sim",
+      "file": "/screenshots/table-sim.png"
+    }
+  ]
+}
