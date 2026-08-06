@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import type { Grade } from "@/poker/grader";
 import { GradeBadge } from "@/components/ui/grade-badge";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,12 @@ export interface FeedbackProps {
   result: Grade;
   ratingDelta?: number;
   onNext: () => void;
+  /**
+   * The AI explanation slot. Passed in rather than fetched here so this stays a
+   * presentational component — the styleguide renders it with nothing, and the
+   * arena renders it with a live stream.
+   */
+  explanation?: ReactNode;
   className?: string;
 }
 
@@ -82,7 +88,13 @@ function RatingDelta({ delta }: { delta: number }) {
   );
 }
 
-export function Feedback({ result, ratingDelta = 0, onNext, className }: FeedbackProps) {
+export function Feedback({
+  result,
+  ratingDelta = 0,
+  onNext,
+  explanation,
+  className,
+}: FeedbackProps) {
   const reduced = useReducedMotion() ?? false;
   const segments = toSegments(result);
   const [mixOpen, setMixOpen] = useState(result.displayMode === "mixed");
@@ -178,11 +190,13 @@ export function Feedback({ result, ratingDelta = 0, onNext, className }: Feedbac
       {/* 4. One line of why, always present */}
       <p className="text-text-secondary text-body-md">{whyLine(result)}</p>
 
-      {/* 5. AI explanation slot — Stage 4 fills this */}
-      <div className="flex flex-col gap-2" aria-hidden="true">
-        <Shimmer className="h-3 w-full" />
-        <Shimmer className="h-3 w-4/5" />
-      </div>
+      {/* 5. AI explanation slot */}
+      {explanation ?? (
+        <div className="flex flex-col gap-2" aria-hidden="true">
+          <Shimmer className="h-3 w-full" />
+          <Shimmer className="h-3 w-4/5" />
+        </div>
+      )}
 
       {/* 7. Next */}
       <Button variant="primary" size="lg" className="w-full" onClick={onNext}>

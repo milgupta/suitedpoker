@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { generateText } from "ai";
+import { generateText, streamText } from "ai";
 import { serverEnv } from "@/lib/env.server";
 
 /**
@@ -109,6 +109,72 @@ export async function generateCoached(options: GenerateOptions): Promise<Generat
   }
 
   return { ok: false, reason: lastReason };
+}
+
+/* ── Streaming ───────────────────────────────────────────────────────────── */
+
+export interface StreamHandle {
+  readonly ok: true;
+  /** Chunks as the model produces them. */
+  readonly chunks: AsyncIterable<string>;
+  /** Resolves once the stream is finished. */
+  usage(): Promise<{ inputTokens: number; outputTokens: number }>;
+  readonly model: string;
+}
+
+export type StreamResult = StreamHandle | GenerateFailed;
+
+/**
+ * The streaming sibling of `generateCoached`.
+ *
+ * Streaming is not a performance detail here — watching the explanation arrive
+ * is part of what the subscription feels like it is buying, so a buffered dump
+ * would be a worse product at the same cost.
+ *
+ * Same contract as the non-streaming path: it never throws. A failure BEFORE
+ * the first chunk comes back as a typed result; a failure mid-stream ends the
+ * iterator, and the caller decides what to do with the partial text.
+ */
+export async function streamCoached(options: GenerateOptions): Promise<StreamResult> {
+  if (!isAiConfigured()) return { ok: false, reason: "not_configured" };
+
+  const google = createGoogleGenerativeAI({
+    apiKey: serverEnv().GOOGLE_GENERATIVE_AI_API_KEY,
+  });
+
+  try {
+    const result = streamText({
+      model: google(COACH_MODEL),
+      system: options.system,
+      prompt: options.prompt,
+      maxOutputTokens: options.maxOutputTokens ?? 220,
+      temperature: options.temperature ?? 0.4,
+      abortSignal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+
+    return {
+      ok: true,
+      chunks: result.textStream,
+      model: COACH_MODEL,
+      usage: async () => {
+        try {
+          const usage = await result.usage;
+          return {
+            inputTokens: usage?.inputTokens ?? 0,
+            outputTokens: usage?.outputTokens ?? 0,
+          };
+        } catch {
+          return { inputTokens: 0, outputTokens: 0 };
+        }
+      },
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      ok: false,
+      reason: /rate.?limit|429|quota/i.test(message) ? "rate_limited" : "api_error",
+    };
+  }
 }
 
 /* ── Cost ────────────────────────────────────────────────────────────────── */

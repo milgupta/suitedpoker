@@ -85,10 +85,17 @@ describe("the redact guard", () => {
 
 describe("the template fallback", () => {
   it("states the ground truth for a clear spot", () => {
-    const text = templateExplanation(makeGrade());
-    expect(text).toContain("raise");
-    expect(text).toContain("71%");
-    expect(text).toContain("0.80bb");
+    // Default tier is `never` — the fallback obeys the same zero-jargon rule
+    // the model does, because with no key it IS what the user reads.
+    const novice = templateExplanation(makeGrade());
+    expect(novice).toContain("raise");
+    expect(novice).toContain("71%");
+    expect(novice).toContain("0.80 big blinds");
+    expect(novice).not.toContain("EV");
+
+    const studied = templateExplanation(makeGrade(), "solver");
+    expect(studied).toContain("highest-EV");
+    expect(studied).toContain("0.80bb");
   });
 
   it("explains a mix as a mix rather than as an error", () => {
@@ -158,7 +165,7 @@ describe("the context block", () => {
       actionHistory: ["folded to BTN"],
     },
     makeGrade(),
-    { skillTier: "beginner", leaks: ["blind_defense", "3bet_pots", "ignored"] },
+    { skillTier: "never", leaks: ["blind_defense", "3bet_pots", "ignored"] },
   );
 
   it("supplies the full mix and the EV table as ground truth", () => {
@@ -179,7 +186,7 @@ describe("the context block", () => {
         actionHistory: [],
       },
       makeGrade({ displayMode: "mixed" }),
-      { skillTier: "beginner", leaks: [] },
+      { skillTier: "never", leaks: [] },
     );
     expect(mixed.text).toContain("GENUINE MIX");
   });
@@ -241,7 +248,7 @@ describe("graceful degradation", () => {
         actionHistory: [],
       },
       grade,
-      { skillTier: "beginner", leaks: [] },
+      { skillTier: "never", leaks: [] },
     );
 
     expect(result.source).toBe("template");

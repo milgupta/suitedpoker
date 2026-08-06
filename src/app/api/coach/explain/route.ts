@@ -1,16 +1,18 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { withEntitlement } from "@/lib/api-guard";
 import { limit, RULES } from "@/lib/ratelimit";
 import { getSession } from "@/lib/sessionstore";
 import { getDb } from "@/db";
-import { aiUsage, profiles } from "@/db/schema";
+import { aiUsage, coachMessages, drillAttempts, profiles } from "@/db/schema";
 import { loadSolutionData } from "@/lib/solution-data";
 import { generateSpot } from "@/poker/generator";
 import { grade as gradePreflop } from "@/poker/grader";
 import { nodeRefOf, type PreflopActionName } from "@/poker/solutions";
-import { explainDecision } from "@/lib/ai/coach";
+import { streamExplanation, type ExplainEvent } from "@/lib/ai/coach";
+import { COACH_MODEL } from "@/lib/ai/client";
+import { tierOf } from "@/lib/explain-policy";
 import { spotConfigSchema } from "@/lib/arena-preset";
 
 const bodySchema = z.object({
@@ -27,10 +29,19 @@ interface StoredSpot {
 }
 
 /**
- * Explains a decision the user has ALREADY made.
+ * Explains a decision the user has ALREADY made, as a stream.
  *
  * The spot must be answered first — explaining before the user acts would hand
  * them the answer, which is what /api/coach/hint exists to do safely.
+ *
+ * The wire format is newline-delimited JSON rather than SSE: the client needs
+ * three message kinds (text, reset, done) and NDJSON expresses that in a few
+ * lines of parsing, where SSE would add a framing layer for no benefit.
+ *
+ * `reset` matters. The guard runs server-side before any sentence is emitted,
+ * so a wrong claim is never rendered — but if the guard trips partway, the
+ * already-sent sentences are true yet the explanation is now half of one. The
+ * server sends `reset` and then the template, and the client discards.
  */
 export const POST = withEntitlement(async (request, auth) => {
   const gate = await limit(auth.userId, RULES.COACH_EXPLAIN);
@@ -61,41 +72,121 @@ export const POST = withEntitlement(async (request, auth) => {
   const node = data.preflop.find((n) => nodeRefOf(n.heroPos, n.actionSeq) === spot.nodeRef);
   if (node === undefined) return NextResponse.json({ error: "node_missing" }, { status: 500 });
 
-  const result = gradePreflop(node, spot.handKey, parsed.data.action as PreflopActionName);
-
-  const [profile] = await getDb()
-    .select({ skillTier: profiles.skillTier, primaryLeak: profiles.primaryLeakKey })
-    .from(profiles)
-    .where(eq(profiles.id, auth.userId))
-    .limit(1);
-
-  const explanation = await explainDecision(
-    spot,
-    result,
-    {
-      skillTier: profile?.skillTier ?? "beginner",
-      leaks: profile?.primaryLeak == null ? [] : [profile.primaryLeak],
-    },
-    node.notes,
-  );
-
-  // Usage is recorded even for a cache hit, at zero cost, so the hit rate is
-  // measurable from the same table as the spend.
-  try {
-    await getDb()
-      .insert(aiUsage)
-      .values({
-        userId: auth.userId,
-        endpoint: "coach_explain",
-        model: explanation.source === "model" ? "gemini-2.0-flash" : explanation.source,
-        inputTokens: explanation.inputTokens,
-        outputTokens: explanation.outputTokens,
-        costUsd: explanation.costUsd.toFixed(6),
-        cached: explanation.source === "cache",
-      });
-  } catch {
-    // Telemetry must never cost the user their explanation.
+  if (!spot.legalActions.includes(parsed.data.action)) {
+    return NextResponse.json({ error: "illegal_action" }, { status: 400 });
   }
 
-  return NextResponse.json({ text: explanation.text, source: explanation.source });
+  const result = gradePreflop(node, spot.handKey, parsed.data.action as PreflopActionName);
+
+  let skillTier = tierOf(null);
+  let leaks: string[] = [];
+  try {
+    const [profile] = await getDb()
+      .select({ skillTier: profiles.skillTier, primaryLeak: profiles.primaryLeakKey })
+      .from(profiles)
+      .where(eq(profiles.id, auth.userId))
+      .limit(1);
+    skillTier = tierOf(profile?.skillTier);
+    leaks = profile?.primaryLeak == null ? [] : [profile.primaryLeak];
+  } catch {
+    // A missing profile is not a reason to withhold the explanation, and every
+    // default here is the careful end of its scale.
+  }
+
+  const encoder = new TextEncoder();
+
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const send = (event: ExplainEvent): void => {
+        controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
+      };
+
+      let full = "";
+
+      try {
+        for await (const event of streamExplanation(
+          spot,
+          result,
+          { skillTier, leaks },
+          node.notes,
+        )) {
+          if (event.type === "text") full += event.text;
+          if (event.type === "reset") full = "";
+          send(event);
+
+          if (event.type === "done") await persist(auth.userId, full.trim(), event);
+        }
+      } catch {
+        // The generator is written not to throw, but a stream that ends without
+        // a `done` leaves the client spinning forever.
+        send({
+          type: "done",
+          source: "template",
+          redactedFor: "stream_failed",
+          inputTokens: 0,
+          outputTokens: 0,
+          costUsd: 0,
+        });
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "content-type": "application/x-ndjson; charset=utf-8",
+      "cache-control": "no-store, no-transform",
+      // Without this a proxy may buffer the whole body and deliver it in one
+      // lump, which looks exactly like streaming being broken.
+      "x-accel-buffering": "no",
+    },
+  });
 });
+
+/**
+ * History and telemetry. Best-effort on purpose: the user has already read the
+ * explanation by the time this runs, and a failed insert must not surface.
+ */
+async function persist(
+  userId: string,
+  text: string,
+  event: Extract<ExplainEvent, { type: "done" }>,
+): Promise<void> {
+  const db = getDb();
+
+  try {
+    // The attempt row is written by /api/drills/answer moments earlier. Link to
+    // the most recent one when it is there, and keep the message when it is not.
+    const [attempt] = await db
+      .select({ id: drillAttempts.id })
+      .from(drillAttempts)
+      .where(eq(drillAttempts.userId, userId))
+      .orderBy(desc(drillAttempts.createdAt))
+      .limit(1);
+
+    await db.insert(coachMessages).values({
+      userId,
+      attemptId: attempt?.id ?? null,
+      role: "assistant",
+      content: text,
+      tokens: event.outputTokens,
+    });
+  } catch {
+    // History is a nicety; the explanation was already delivered.
+  }
+
+  try {
+    await db.insert(aiUsage).values({
+      userId,
+      endpoint: "coach_explain",
+      model: event.source === "model" ? COACH_MODEL : event.source,
+      inputTokens: event.inputTokens,
+      outputTokens: event.outputTokens,
+      costUsd: event.costUsd.toFixed(6),
+      cached: event.source === "cache",
+    });
+  } catch {
+    // Same. Telemetry never costs the user their explanation.
+  }
+}

@@ -414,7 +414,7 @@ describe.skipIf(!HAS_KEY)("live adversarial run against Gemini", () => {
           actionHistory: [...spec.actionHistory],
         },
         grade,
-        { skillTier: "beginner", leaks: [] },
+        { skillTier: "never", leaks: [] },
       );
       results.push({
         spec,
@@ -500,7 +500,7 @@ describe.skipIf(!HAS_KEY)("live adversarial run against Gemini", () => {
     };
 
     const started = performance.now();
-    const repeat = await explainDecision(spot, grade, { skillTier: "beginner", leaks: [] });
+    const repeat = await explainDecision(spot, grade, { skillTier: "never", leaks: [] });
     const elapsed = performance.now() - started;
 
     console.log(`\nCACHE HIT: ${Math.round(elapsed)}ms (source: ${repeat.source})\n`);

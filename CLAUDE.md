@@ -131,8 +131,44 @@ sessions.
 | 3.6 Hand-history format and question types | done |
 | 4.1 Gemini integration and prompt architecture | done — **20-spot adversarial run unverified (no Gemini key)** |
 | 4.2 Hint system | done — 7 hint e2e green, 50-hint leak test green |
+| 4.3 Post-hand explanation | done — streaming, 36-explanation matrix green |
 
 Stage 0 is complete. Update this table when you finish a substage.
+
+**What 4.3 left you.**
+
+- **The stream is SENTENCE-GATED, and that is a correctness decision.** A
+  sentence is held until it is complete, checked by `redact()` against the ground
+  truth, and only then emitted. Token-by-token streaming would put a wrong claim
+  on screen and retract it 200ms later — worse than not streaming at all in a
+  product whose whole claim is accuracy. Do not "optimise" this to per-token.
+- **The wire format is NDJSON with three event kinds:** `text`, `reset`, `done`.
+  `reset` means discard everything received so far; the client must honour it or
+  a redacted explanation stays on screen.
+- **`shouldAutoExplain()` in `src/lib/explain-policy.ts` is where ~60% of the AI
+  bill is decided.** `best` and `solid` never open a stream — they get the
+  template line plus a "Why?" button. `sharp` always does. One copy, imported by
+  both the client and the tests; a second copy on the server is how the bill
+  quietly doubles.
+- **`skillTier` is a typed union, not a string** (`never | videos | charts |
+  solver`), and it is the same vocabulary as `ExperienceAnswer` in `rating.ts`.
+  7.1 must write one of those four. `tierOf()` narrows anything else to `never`,
+  the zero-jargon end — being wrong towards "explain everything" is the right way
+  to be wrong.
+- **`templateExplanation()` is tier-aware and grade-aware.** With no Gemini key
+  it is not a stub, it is the product: it says "wins the most in the long run"
+  rather than "highest-EV" to a beginner, praises a `sharp` specifically, and
+  leads a `blunder` with the strategy rather than the criticism.
+- **`PROMPT_VERSION` is now `v2`.** It is part of the cache key. Editing a prompt
+  without bumping it serves stale explanations for thirty days.
+- **Route-warming in `tests/e2e/explain.spec.ts` `beforeAll` is load-bearing.**
+  The first hit on a route pays ~9s for Turbopack to compile it, which blows past
+  the request timeout in whichever parallel test arrives first.
+- ⚠️ **Two e2e tests are flaky under full-suite load** and pass in isolation:
+  the 169-cell reveal timing in `ranges.spec.ts`, and the signup test in
+  `auth.spec.ts` (which is supposed to skip loudly when Supabase's SMTP budget is
+  gone, but times out instead). Neither is a 4.x regression. The signup skip
+  detection is worth fixing when 7.3's Resend work lands.
 
 **What 4.2 left you.**
 

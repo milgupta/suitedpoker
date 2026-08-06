@@ -1,4 +1,5 @@
 import type { Grade } from "@/poker/grader";
+import { isNoviceTier, type SkillTier } from "@/lib/explain-policy";
 
 /**
  * The structural enforcement of "the AI never determines strategy".
@@ -52,12 +53,23 @@ const CLAIMS_SOLVER = /\bwe (?:are|use) a solver\b|\bthis is a solver\b|\bi solv
  * Used when the model fails, times out, or trips the guard. It is deliberately
  * plain: a slightly dull explanation that is definitely true beats a fluent one
  * that might be wrong, in a product whose entire claim is accuracy.
+ *
+ * It obeys the SAME jargon rule as the model. With no Gemini key this template
+ * is what every user actually reads, so a fallback that says "highest-EV" to
+ * someone who has never studied poker is not a fallback — it is the product,
+ * failing at the one thing it promised.
  */
-export function templateExplanation(grade: Grade): string {
+export function templateExplanation(grade: Grade, tier: SkillTier = "never"): string {
   const topPct = Math.round(grade.topFreq * 100);
+  const novice = isNoviceTier(tier);
+  /** "the highest-EV action" for a studied user, plain English for everyone else. */
+  const bestPhrase = novice ? "wins the most in the long run" : "is the highest-EV action";
 
   if (grade.displayMode === "mixed") {
     const parts = Object.entries(grade.frequencies)
+      // A "raise 0%" in the list is noise, and on a mixed spot the list IS the
+      // lesson — every entry in it has to be an action the strategy takes.
+      .filter(([, freq]) => Math.round(freq * 100) > 0)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3)
       .map(([action, freq]) => `${action} ${Math.round(freq * 100)}%`)
@@ -67,14 +79,39 @@ export function templateExplanation(grade: Grade): string {
 
   if (grade.isBalancedAlternative) {
     const chosenPct = Math.round((grade.frequencies[grade.chosenAction] ?? 0) * 100);
-    return `${grade.bestAction} is the most common action here at ${topPct}%, but ${grade.chosenAction} is taken ${chosenPct}% of the time — a real part of the strategy rather than an error.`;
+    return `${grade.bestAction} is the most common action here at ${topPct}%, but ${grade.chosenAction} is taken ${chosenPct}% of the time — a real part of the strategy in its own right.`;
+  }
+
+  // `sharp` is not a band — it is `best` on a node most real players get wrong.
+  // That is a specific, true thing to say, and specific praise is the only kind
+  // worth giving.
+  if (grade.grade === "sharp") {
+    return `${grade.bestAction} ${bestPhrase} here, taken ${topPct}% of the time — and most players do not find it. You did.`;
   }
 
   if (grade.evLoss === 0) {
-    return `${grade.bestAction} is the highest-EV action here, taken ${topPct}% of the time.`;
+    return `${grade.bestAction} ${bestPhrase} here, taken ${topPct}% of the time.`;
   }
 
-  return `${grade.bestAction} is the highest-EV action here, taken ${topPct}% of the time. ${grade.chosenAction} gives up ${grade.evLoss.toFixed(2)}bb against it.`;
+  const cost = novice
+    ? `${grade.chosenAction} costs ${grade.evLoss.toFixed(2)} big blinds against it.`
+    : `${grade.chosenAction} gives up ${grade.evLoss.toFixed(2)}bb against it.`;
+
+  // A blunder leads with the strategy, not the criticism. It is the same two
+  // facts in the other order, and the order is what stops a beginner quitting.
+  if (grade.grade === "blunder") {
+    const perHundred = (grade.evLoss * 100).toFixed(0);
+    return `The strategy here is heavily one-sided: ${grade.bestAction} ${topPct}% of the time. ${cost} Over a hundred spots like this one, that is ${perHundred} big blinds.`;
+  }
+
+  // A mistake gets the number it costs at volume — the concrete thing to carry
+  // into the next hand, and arithmetic rather than invention.
+  if (grade.grade === "mistake") {
+    const perHundred = (grade.evLoss * 100).toFixed(0);
+    return `${grade.bestAction} ${bestPhrase} here, taken ${topPct}% of the time. ${cost} Repeated over a hundred spots that is ${perHundred} big blinds.`;
+  }
+
+  return `${grade.bestAction} ${bestPhrase} here, taken ${topPct}% of the time. ${cost}`;
 }
 
 /**
@@ -85,8 +122,8 @@ export function templateExplanation(grade: Grade): string {
  * another action is fine and often necessary — "folding is close here" is
  * exactly the explanation a mixed spot needs.
  */
-export function redact(text: string, grade: Grade): RedactResult {
-  const fallback = templateExplanation(grade);
+export function redact(text: string, grade: Grade, tier: SkillTier = "never"): RedactResult {
+  const fallback = templateExplanation(grade, tier);
   const trimmed = text.trim();
 
   if (trimmed === "") return { safe: false, reason: "empty", text: fallback };

@@ -8,7 +8,13 @@ import { Button } from "@/components/ui/button";
 import { GradeBadge } from "@/components/ui/grade-badge";
 import { Shimmer } from "@/components/motion";
 import { AnimatedNumber } from "@/components/motion";
-import { Feedback, FrequencyCapsules, HintButton, PlayingCard } from "@/components/poker";
+import {
+  Explanation,
+  Feedback,
+  FrequencyCapsules,
+  HintButton,
+  PlayingCard,
+} from "@/components/poker";
 import type { HintLine } from "@/components/poker";
 import type { HintLevel } from "@/lib/hints";
 import { parseArenaPreset, type ArenaPreset } from "@/lib/arena-preset";
@@ -44,7 +50,8 @@ export function ArenaClient() {
 
   const [spotId, setSpotId] = useState<string | null>(null);
   const [spot, setSpot] = useState<ClientSpot | null>(null);
-  const [result, setResult] = useState<Grade | null>(null);
+  const [result, setResult] = useState<(Grade & { ratingDelta?: number }) | null>(null);
+  const [answeredAction, setAnsweredAction] = useState<string | null>(null);
   const [history, setHistory] = useState<Answered[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -57,6 +64,7 @@ export function ArenaClient() {
     setLoading(true);
     setError("");
     setResult(null);
+    setAnsweredAction(null);
 
     try {
       const response = await fetch("/api/drills/next", {
@@ -118,6 +126,7 @@ export function ArenaClient() {
       hintsUsed?: number;
     };
     setResult(graded);
+    setAnsweredAction(action);
     setHistory((h) => [...h, { spot, result: graded, action }]);
 
     capture("drill_answered", {
@@ -303,7 +312,23 @@ export function ArenaClient() {
             />
           )}
 
-          {result !== null && <Feedback result={result} ratingDelta={0} onNext={next} />}
+          {result !== null && (
+            <Feedback
+              result={result}
+              ratingDelta={result.ratingDelta ?? 0}
+              onNext={next}
+              explanation={
+                spotId === null ? undefined : (
+                  <Explanation
+                    key={spotId}
+                    spotId={spotId}
+                    action={answeredAction ?? ""}
+                    grade={result.grade}
+                  />
+                )
+              }
+            />
+          )}
         </>
       )}
     </div>

@@ -131,7 +131,7 @@ describe("explainDecision degrades to the template", () => {
     generateTextMock.mockRejectedValue(error);
 
     const result = await explainDecision({ ...spot, nodeRef: `degrade:${_label}` }, grade, {
-      skillTier: "beginner",
+      skillTier: "never",
       leaks: [],
     });
 
@@ -151,14 +151,14 @@ describe("explainDecision degrades to the template", () => {
     });
 
     const first = await explainDecision({ ...spot, nodeRef: "degrade:poisoned" }, grade, {
-      skillTier: "beginner",
+      skillTier: "never",
       leaks: [],
     });
     expect(first.source).toBe("template");
     expect(first.redactedFor).toBe("contradicts_best_action");
 
     const second = await explainDecision({ ...spot, nodeRef: "degrade:poisoned" }, grade, {
-      skillTier: "beginner",
+      skillTier: "never",
       leaks: [],
     });
     expect(second.source, "a redacted explanation was cached").not.toBe("cache");
@@ -172,14 +172,14 @@ describe("explainDecision degrades to the template", () => {
     });
 
     const first = await explainDecision({ ...spot, nodeRef: "degrade:clean" }, grade, {
-      skillTier: "beginner",
+      skillTier: "never",
       leaks: [],
     });
     expect(first.source).toBe("model");
 
     const startedAt = performance.now();
     const second = await explainDecision({ ...spot, nodeRef: "degrade:clean" }, grade, {
-      skillTier: "beginner",
+      skillTier: "never",
       leaks: [],
     });
     const elapsed = performance.now() - startedAt;

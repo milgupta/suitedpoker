@@ -6,7 +6,10 @@
  * testing two versions later is a constant swap.
  */
 
-export const PROMPT_VERSION = "v1";
+import type { DisplayMode, GradeName } from "@/poker/grader";
+import type { SkillTier } from "@/lib/explain-policy";
+
+export const PROMPT_VERSION = "v2";
 
 /**
  * THE GOVERNING RULE, stated first and repeated: the model explains ground
@@ -61,6 +64,75 @@ Name the action CATEGORY only — for example "this is a checking hand".
 Do NOT give the sizing and do NOT give the frequency. One sentence.`,
 };
 
-export function explanationInstruction(): string {
-  return `Explain this decision. The user has already acted and seen their grade.`;
+/**
+ * What the explanation is FOR, per grade.
+ *
+ * Six grades, six different jobs. Collapsing them into one instruction produces
+ * the same paragraph with the verdict swapped, which is exactly the tone a
+ * beginner reads as a machine talking at them.
+ */
+export const GRADE_INSTRUCTIONS: Record<GradeName, string> = {
+  sharp: `The user found a hard, rare line. Name EXPLICITLY what made it hard and why most players miss it.
+This is the one place praise is earned — make it specific to this spot. Generic praise wastes it.`,
+
+  best: `The user played the most common action. Reinforce WHY it is right in one concrete idea,
+then add ONE adjacent insight so this is not just applause.`,
+
+  solid: `The user's action is a real part of the strategy. Affirm it, then explain the tradeoff
+with the most common action. NEVER phrase this as a near-miss or a small error — it is not one.`,
+
+  inaccuracy: `Name the specific error and the concept behind it. One idea, not a list.
+No scolding — they were close.`,
+
+  mistake: `Name the specific error and the concept behind it, then give ONE concrete rule of thumb
+they can carry into the next hand.`,
+
+  blunder: `START with the concept, not the criticism. Explain what the spot is actually about first,
+and only then what went wrong. Never make them feel stupid — beginners quit when they do.`,
+};
+
+/** Mixed spots get a different job entirely, whatever the grade. */
+export const MIXED_INSTRUCTION = `This spot is a GENUINE MIX. Your job is NOT to justify one action.
+Explain why BOTH actions exist and what makes a solver split between them. This is the single most
+valuable thing you can teach, and almost nobody teaches it.`;
+
+/**
+ * Tier instructions.
+ *
+ * The two extremes are what the tests check, because the middle is a blend of
+ * them and a prompt that gets both ends right gets the middle right too.
+ */
+export const TIER_INSTRUCTIONS: Record<SkillTier, string> = {
+  never: `The user has NEVER studied poker. Use ZERO jargon.
+Do not use the words range, equity, polarized, blocker, GTO, EV, c-bet or ICM at all —
+not even defined. Say "the hands they could have", "how often you win", "a bet on the flop".
+Talk about hands and situations, never about abstractions.`,
+
+  videos: `The user has watched some poker content. A term like "range" is fine if you define it in
+four words inside the sentence. Avoid solver vocabulary entirely.`,
+
+  charts: `The user has studied preflop charts. Range and position language is fine without definition.
+Postflop concepts still need a short gloss.`,
+
+  solver: `The user has used a solver. Range-versus-range language is expected — talk about which
+part of each range this hand belongs to, and what the strategy is protecting.
+Do not over-explain the basics; it reads as condescension.`,
+};
+
+export function explanationInstruction(
+  grade: GradeName,
+  displayMode: DisplayMode,
+  tier: SkillTier,
+): string {
+  return [
+    `Explain this decision. The user has already acted and seen their grade.`,
+    ``,
+    displayMode === "mixed" ? MIXED_INSTRUCTION : GRADE_INSTRUCTIONS[grade],
+    ``,
+    TIER_INSTRUCTIONS[tier],
+    ``,
+    // The hard ceiling. A beginner scrolling on a phone abandons a wall of text,
+    // and the model will happily write one if not told otherwise.
+    `Maximum FOUR sentences. Fewer is better.`,
+  ].join("\n");
 }

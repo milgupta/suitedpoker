@@ -1,5 +1,6 @@
 import type { Grade } from "@/poker/grader";
 import type { ClientSpot, Spot } from "@/poker/generator";
+import type { SkillTier } from "@/lib/explain-policy";
 
 /**
  * The context block handed to the model.
@@ -10,7 +11,12 @@ import type { ClientSpot, Spot } from "@/poker/generator";
  */
 
 export interface CoachProfile {
-  skillTier: string;
+  /**
+   * The onboarding answer, verbatim. Typed rather than a loose string so 7.1
+   * cannot invent a second vocabulary — the prompt, the template and the cache
+   * key all branch on this value.
+   */
+  skillTier: SkillTier;
   /** Top two, at most — more is noise and costs tokens. */
   leaks: readonly string[];
 }
