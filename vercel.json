@@ -5,6 +5,14 @@
     {
       "path": "/api/daily/generate",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/email/dunning",
+      "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/api/meta/retry",
+      "schedule": "*/15 * * * *"
     }
   ]
 }
