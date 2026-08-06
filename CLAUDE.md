@@ -135,6 +135,7 @@ sessions.
 | 4.5 Cost guards and abuse protection | done — breaker verified, product usable with AI fully off |
 | 8.2 Meta Pixel and Conversions API | done — dedup wired end to end, hash hand-verified |
 | 8.3 Transactional email | done — 8 emails read, dunning schedule exact |
+| 8.4 Landing page and SEO | done — Lighthouse mobile 99/100/100/100, scan clean |
 | 4.1 Gemini integration and prompt architecture | done — **20-spot adversarial run unverified (no Gemini key)** |
 | 4.2 Hint system | done — 7 hint e2e green, 50-hint leak test green |
 | 4.3 Post-hand explanation | done — streaming, 36-explanation matrix green |
@@ -793,6 +794,39 @@ Stage 0 is complete. Update this table when you finish a substage.
 - **`npx vitest run --project unit tests/unit/emails.test.ts --reporter=verbose`**
   prints all eight rendered emails. Read them.
 - Setup: `docs/META-SETUP.md` and `docs/EMAIL-SETUP.md`.
+
+**What 8.4 left you.**
+
+- 🛑 **THE STRATEGY DATA IS NOT SOLVER-VERIFIED.** All 51 solution files carry
+  `authored-approximation`. The plan's 8.4 asks for "the solver used, the solve
+  count, and the exploitability threshold" inline on the landing page — there is
+  no solver run, so `/methodology` states exactly that instead. Claiming
+  otherwise would be the same false claim the plan criticises the competitor for.
+  `provenanceHeadline()` switches copy automatically when the DATA changes.
+- **`methodologyFacts()` counts from the files.** A methodology page with typed
+  numbers is the same failure as one that 404s, just slower to notice.
+- **`tests/e2e/landing.spec.ts` is the ad-account guard.** It scans the RENDERED
+  text, because copy arrives from three modules and a string that is fine alone
+  can read as a winnings claim once assembled. "Gambling" is allowed only inside
+  a denial, checked by looking at the surrounding 200 characters.
+- **The legal pages are scanned with negation allowed** — they exist to DISCLAIM
+  what the landing page must never claim, and "No guarantee of results" is the
+  sentence that protects us.
+- **Geist Sans was downloading 68KB on every page load and rendering nothing.**
+  It sat behind Inter in `--font-sans`, and Inter always wins. Removed.
+- **Inter now loads through `next/font/local`, not the fontsource CSS import.**
+  The import shipped a plain stylesheet, so the woff2 was discovered only after
+  CSS parse and layout: FCP 1.2s → 0.8s from the preload alone.
+- ⚠️ **Lighthouse's SIMULATED throttling reports LCP 3.6-3.8s; every real
+  measurement says otherwise.** Real throttling: 1.6s. A direct
+  PerformanceObserver run under Slow-4G + 4× CPU: **856ms**. The simulated
+  number is a lantern estimate, not a measurement — do not chase it.
+- **Final mobile Lighthouse (devtools throttling): perf 99, a11y 100, best
+  practices 100, SEO 100, CLS 0.** The last a11y point was a missing `<main>`
+  landmark on the landing page.
+- **`src/emails/theme.ts` is now the palette for next/og as well as email** —
+  both rasterise without a document. Still the only file outside globals.css
+  allowed a colour literal.
 
 **What 0.2 left you.** Anything a later substage needs to build on:
 

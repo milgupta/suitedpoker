@@ -1,11 +1,11 @@
 /**
- * The email palette, copied deliberately.
+ * The palette for renderers that cannot resolve a CSS variable.
  *
- * Email clients do not read stylesheets, cannot resolve CSS variables, and
- * Gmail strips `:root`. So the tokens from globals.css are duplicated here as
- * literals — the ONE place in the codebase where a colour literal is correct,
- * and `tests/unit/emails.test.ts` asserts every value still matches its token
- * so the duplication cannot drift.
+ * Two of them: email clients (no stylesheets, and Gmail strips `:root`) and
+ * `next/og`, which rasterises without a document. So the tokens from
+ * globals.css are duplicated here as literals — the ONE place in the codebase
+ * where a colour literal is correct, and `tests/unit/emails.test.ts` asserts
+ * every value still matches its token so the duplication cannot drift.
  *
  * DARK MODE IS NOT OPTIONAL HERE. A dark email in a light client is fine; a
  * light email with light text is unreadable. Every background is set explicitly
@@ -16,6 +16,7 @@
 export const email = {
   canvas: "#07060d",
   surface: "#0e0d16",
+  surface2: "#15141f",
   border: "rgba(255, 255, 255, 0.09)",
   textPrimary: "#f4f5f8",
   // Solid rather than the token's rgba(): Outlook does not support alpha

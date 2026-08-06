@@ -157,8 +157,10 @@
   --color-glass: #0d1016;
 
   /* ── 2. Typography ──────────────────────────────────────────────────────── */
-  --font-sans:
-    "Inter Variable", "Inter", var(--font-geist-sans), -apple-system, system-ui, sans-serif;
+  /* Geist Sans used to sit between Inter and the system stack. It was
+     downloaded on every page load (68KB) and rendered nothing, because Inter
+     always loads and wins — 68KB of font that only ever pushed LCP out. */
+  --font-sans: var(--font-inter), -apple-system, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", monospace;
 
   /*

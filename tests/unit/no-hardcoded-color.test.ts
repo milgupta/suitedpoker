@@ -22,8 +22,8 @@ const TOKENS_FILE = join("src", "app", "globals.css");
  * `tests/unit/emails.test.ts` asserts every one of them still equals the token
  * it was copied from, so the duplication cannot drift.
  *
- * Only theme.ts. A literal in a template or the layout is still a failure —
- * they must all read from the theme.
+ * Only theme.ts. A literal in a template, the layout, or the OG image is still
+ * a failure — they must all read from the theme.
  */
 const EMAIL_PALETTE = join("src", "emails", "theme.ts");
 

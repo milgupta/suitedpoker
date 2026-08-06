@@ -169,6 +169,7 @@ describe("dark-mode rendering", () => {
     const pairs: [string, string][] = [
       ["--color-canvas", palette.canvas],
       ["--color-surface-1", palette.surface],
+      ["--color-surface-2", palette.surface2],
       ["--color-text-primary", palette.textPrimary],
       ["--color-accent-500", palette.accent],
       ["--color-accent-400", palette.accentBright],
