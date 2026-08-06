@@ -931,6 +931,23 @@ if you add one.
 
 **What 9.6 left you.**
 
+- 🔴 **A CARELESS EDIT SILENTLY BROKE PASSWORD RESET.** Adding `ageConfirmed`
+  anchored on a line that appears in BOTH `signupSchema` and `resetSchema`, so
+  a `str.replace()` without a count put it in both. The reset form renders no
+  checkbox, so validation failed with nowhere to show an error: the button spun
+  forever and nobody resetting a password could get in. `npm run verify` was
+  green throughout — only the e2e caught it. **A schema must never require a
+  field its form does not render**, and `tests/unit/compliance.test.ts` now
+  checks that behaviourally for reset and forgot.
+- **Sign-out existed ONLY on /paywall**, so a subscribed user had no way to log
+  out anywhere in the product. Now on /account. Found by an auth e2e whose own
+  assertion had been stale since 5.3 replaced the dashboard header with the
+  greeting — a broken test hiding a real gap.
+- **`tests/e2e/auth.spec.ts` had three assertions on a heading named
+  "Dashboard"** that 5.3 removed. They now match `[data-section='greeting']`.
+- **The signup e2e drivers need `page.getByTestId("age-confirm").check()`** —
+  auth.spec.ts and analytics.spec.ts both create accounts through the form.
+
 - **The table-sim preset was literally named `casino`** and rendered as "The
   Casino". Renamed to `cardroom` / "The Cardroom" — the same table to a player,
   and what a poker room is actually called, but "casino" is a word Meta's ad

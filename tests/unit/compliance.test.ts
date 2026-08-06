@@ -148,6 +148,50 @@ describe("the age gate", () => {
     expect(signupSchema.safeParse(base).success).toBe(false);
     expect(signupSchema.safeParse({ ...base, ageConfirmed: true }).success).toBe(true);
   });
+
+  it("does NOT leak into the password-reset schema", async () => {
+    /*
+     * It did, and it silently broke password reset.
+     *
+     * The edit that added `ageConfirmed` anchored on a line that appears in
+     * BOTH schemas, so it landed in `resetSchema` too — where the form renders
+     * no checkbox. Validation failed, no error surfaced (the field has no
+     * input to attach one to), and the button simply spun forever. Nobody
+     * resetting a password could get in.
+     *
+     * Password reset has nothing to do with age. Anyone resetting one already
+     * confirmed at signup.
+     */
+    const { resetSchema } = await import("../../src/lib/auth-schemas");
+    const valid = { password: "correct-horse-9", confirmPassword: "correct-horse-9" };
+    expect(resetSchema.safeParse(valid).success).toBe(true);
+  });
+
+  it("requires nothing the reset or forgot forms do not render", async () => {
+    /*
+     * The general shape of the bug above: a schema field with no input to hold
+     * it fails validation with nowhere to show the error, so the button spins
+     * forever and the user sees nothing at all.
+     *
+     * Checked behaviourally rather than by introspecting Zod's internals — a
+     * schema that accepts exactly what its form can produce is the property
+     * that matters, and it survives a Zod upgrade.
+     */
+    const { resetSchema, forgotSchema } = await import("../../src/lib/auth-schemas");
+
+    // Exactly what reset-form.tsx registers.
+    expect(
+      resetSchema.safeParse({ password: "correct-horse-9", confirmPassword: "correct-horse-9" })
+        .success,
+      "the reset form cannot satisfy its own schema",
+    ).toBe(true);
+
+    // Exactly what forgot-form.tsx registers.
+    expect(
+      forgotSchema.safeParse({ email: "a@b.com" }).success,
+      "the forgot form cannot satisfy its own schema",
+    ).toBe(true);
+  });
 });
 
 describe("geo-blocking", () => {

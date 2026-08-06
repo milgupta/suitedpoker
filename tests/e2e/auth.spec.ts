@@ -103,7 +103,10 @@ test.describe("auth", () => {
     await page.getByRole("button", { name: "Log in" }).click();
 
     await expect(page).toHaveURL(/\/dashboard/);
-    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+    // The dashboard's h1 is the GREETING ("Evening, Alex"), not the word
+    // "Dashboard" — 5.3 replaced it and this assertion was never updated.
+    // Matched on the section, which is stable across a copy change.
+    await expect(page.locator("[data-section='greeting']")).toBeVisible();
   });
 
   test("a wrong password shows friendly copy, never a raw error", async ({ page }) => {
@@ -127,7 +130,7 @@ test.describe("auth", () => {
     await expect(page).toHaveURL(/\/dashboard/);
 
     await page.reload();
-    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+    await expect(page.locator("[data-section='greeting']")).toBeVisible();
     await expect(page).toHaveURL(/\/dashboard/);
   });
 
@@ -138,6 +141,10 @@ test.describe("auth", () => {
     await login(page, email);
     await expect(page).toHaveURL(/\/dashboard/);
 
+    // Sign-out lives on /account. It used to be on /paywall only, which meant
+    // a subscribed user had no way to log out at all — this assertion is what
+    // surfaced that.
+    await page.goto("/account");
     await page.getByRole("button", { name: "Log out" }).click();
     await expect(page).toHaveURL(/\/login/);
 
@@ -168,6 +175,9 @@ test.describe("auth", () => {
     await page.getByLabel("Email").fill(email);
     await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
     await page.getByLabel("Confirm password").fill(PASSWORD);
+    // 9.6 made the 18+ confirmation required. Without it the form never
+    // submits, and the failure reads as "signup is broken".
+    await page.getByTestId("age-confirm").check();
     await page.getByRole("button", { name: "Create account" }).click();
 
     // Supabase's built-in SMTP allows only a handful of confirmation emails an

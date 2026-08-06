@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getUser } from "@/lib/supabase/server";
 import { loadAccount } from "@/lib/account-server";
 import { AccountClient } from "./account-client";
+import { SignOutButton } from "../sign-out-button";
 
 export const metadata: Metadata = { title: "Account", robots: { index: false, follow: false } };
 
@@ -19,5 +20,18 @@ export default async function AccountPage() {
   if (user === null) redirect("/login");
 
   const account = await loadAccount(user.id, user.email ?? "");
-  return <AccountClient account={account} />;
+  return (
+    <>
+      <AccountClient account={account} />
+      {/*
+        The ONLY way a subscribed user can log out.
+        SignOutButton lived on /paywall alone, so anyone who had paid had no
+        sign-out control anywhere in the product — found by an auth e2e whose
+        assertion had been stale since 5.3 replaced the dashboard header.
+      */}
+      <div className="mx-auto max-w-lg">
+        <SignOutButton />
+      </div>
+    </>
+  );
 }

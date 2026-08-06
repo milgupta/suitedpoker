@@ -1,7 +1,6 @@
 import { ImageResponse } from "next/og";
 import { email as palette } from "@/emails/theme";
 
-export const runtime = "edge";
 export const alt = "SuitedPoker — stop guessing, start knowing";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
