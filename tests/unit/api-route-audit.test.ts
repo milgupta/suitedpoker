@@ -43,6 +43,9 @@ const AUTH_ONLY_ROUTES: Record<string, string> = {
   "stripe/portal/route.ts": "A cancelled user must still be able to manage billing.",
   "entitlement/status/route.ts": "/welcome polls this before the webhook lands.",
   "onboarding/route.ts": "Onboarding runs before the paywall.",
+  "onboarding/hand/route.ts":
+    "7.2b's demo hand is played BEFORE anyone pays — that is the point. Bounded to one hand by a deterministic seed plus a profile record.",
+  "onboarding/hand/answer/route.ts": "Same flow; refuses a spot that is not a demo spot.",
   "guard-probe/authed/route.ts": "Test fixture for the guard itself.",
   "meta/capi/route.ts":
     "Attribution events fire before anyone has paid — Lead is sent from onboarding and InitiateCheckout from the paywall itself.",

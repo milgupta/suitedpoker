@@ -24,6 +24,14 @@ export interface EventMap {
   /** Fired PER QUESTION — the whole point is seeing which one loses people. */
   onboarding_question_answered: { question: string; answer: string; index: number };
   onboarding_completed: { skillTier: string; primaryLeak: string; rating: number };
+  /**
+   * 7.2b's demo hand. `demo_hand_answered` carries the grade because
+   * correlating it against purchase rate is the first question you will have —
+   * whether people who play badly convert better than people who play well.
+   */
+  demo_hand_shown: Record<string, never>;
+  demo_hand_answered: { grade: string; evLoss: number; timeMs: number };
+  demo_hand_completed: { secondsAdded: number };
   diagnosis_viewed: { primaryLeak: string; annualCost: number };
   paywall_viewed: { annualCost: number };
   checkout_started: { plan: Plan };
@@ -69,6 +77,9 @@ export const EVENT_NAMES = [
   "onboarding_started",
   "onboarding_question_answered",
   "onboarding_completed",
+  "demo_hand_shown",
+  "demo_hand_answered",
+  "demo_hand_completed",
   "diagnosis_viewed",
   "paywall_viewed",
   "checkout_started",

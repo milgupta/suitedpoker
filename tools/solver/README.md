@@ -3,7 +3,34 @@
 Turns the 2.8 scenario matrix into solved postflop data. Three parts: **run**,
 **bucket**, **explain**.
 
-> ## ⚠️ The parser is unverified until a real solve has run
+> ## ✅ The parser is VERIFIED — and the dump has no EVs
+>
+> Run on 2026-08-06 against TexasSolver commit `42313c9c`, one `--smoke` solve
+> (`srp-btn-vs-bb-flop-pfr--AcKdTh`). `parseSolverOutput` read 355 hero combos
+> with plausible non-round frequencies — 0.3713 check / 0.6282 bet_66 / 0.0005
+> allin — so the format guess was right.
+>
+> **But `evs` came back empty for every single combo, and that is the solver,
+> not the parser.** `dump_result` emits frequencies only. `bucket.ts` correctly
+> refused to write a template rather than stamp `solver-verified` on data the
+> grader would read as all-actions-equal.
+>
+> **2.10 cannot complete until EVs exist.** The grading bands are defined in EV
+> lost, so a postflop template without EVs cannot be graded against. The options
+> are: invoke the solver differently if a mode that emits EVs exists; compute
+> EVs ourselves in a second pass over the solved strategy; or keep postflop on
+> authored approximations. Deriving EVs from frequencies is NOT an option —
+> that is inventing numbers and stamping them solver-verified.
+>
+> Two other measurements from that run:
+>
+> - **273 seconds for 31 iterations**, stopping on the iteration cap at 15.75%
+>   exploitability against a 0.3% target. The 200-iteration cap looks far too
+>   low to converge.
+> - At that rate a 230-solve batch at 200 iterations is on the order of **100+
+>   hours** on one machine. Plan for parallelism or a longer horizon.
+>
+> ## The original warning, kept for context
 >
 > `parseSolverOutput` in `run-batch.ts` is the only component here with no test,
 > deliberately. The only test that could exist would assert it parses a fixture

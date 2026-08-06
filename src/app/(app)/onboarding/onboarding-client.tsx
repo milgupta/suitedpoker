@@ -120,7 +120,9 @@ export function OnboardingClient({ initialAnswers }: OnboardingClientProps) {
 
       // 7.2 builds the diagnosis. Until it exists this lands on the paywall,
       // which is where the funnel goes next either way.
-      router.push("/diagnosis");
+      // 7.2b: one real hand before the wall. The diagnosis opens with it, so
+      // it has to come first — the hand is the evidence, the quiz is context.
+      router.push("/onboarding/hand");
     } finally {
       setBusy(false);
     }

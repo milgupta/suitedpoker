@@ -20,6 +20,8 @@ export interface FeedbackProps {
    * that interrupts the loop stops being used by the people who need it.
    */
   chat?: ReactNode;
+  /** Overrides "Next hand" — the demo hand's one CTA leads to the diagnosis. */
+  nextLabel?: string;
   /**
    * The AI explanation slot. Passed in rather than fetched here so this stays a
    * presentational component — the styleguide renders it with nothing, and the
@@ -99,6 +101,7 @@ export function Feedback({
   ratingDelta = 0,
   onNext,
   chat,
+  nextLabel,
   explanation,
   className,
 }: FeedbackProps) {
@@ -210,8 +213,8 @@ export function Feedback({
 
       {/* 7. Next */}
       <Button variant="primary" size="lg" className="w-full" onClick={onNext}>
-        Next hand
-        <span className="text-caption opacity-60">Space</span>
+        {nextLabel ?? "Next hand"}
+        {nextLabel === undefined && <span className="text-caption opacity-60">Space</span>}
       </Button>
     </motion.section>
   );

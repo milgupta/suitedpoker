@@ -7,6 +7,7 @@ import { profiles } from "@/db/schema";
 import { buildDiagnosis } from "@/lib/diagnosis";
 import { resumeIndex, TOTAL_STEPS, type Answers } from "@/lib/onboarding";
 import { DiagnosisClient } from "./diagnosis-client";
+import type { DemoHandRecord } from "@/lib/demo-hand";
 
 export const metadata: Metadata = { title: "Your leak", robots: { index: false, follow: false } };
 
@@ -27,6 +28,7 @@ export default async function DiagnosisPage() {
   if (user === null) redirect("/login");
 
   let answers: Answers = {};
+  let demoHand: DemoHandRecord | null = null;
   try {
     const [row] = await getDb()
       .select({ onboarding: profiles.onboarding })
@@ -34,6 +36,9 @@ export default async function DiagnosisPage() {
       .where(eq(profiles.id, user.id))
       .limit(1);
     answers = (row?.onboarding ?? {}) as Answers;
+    // 7.2b writes this. Absent for anyone who dropped out mid-funnel and came
+    // back, which the screen is built to survive.
+    demoHand = (row?.onboarding as { demoHand?: DemoHandRecord } | null)?.demoHand ?? null;
   } catch {
     redirect("/onboarding");
   }
@@ -43,7 +48,7 @@ export default async function DiagnosisPage() {
 
   return (
     <div className="mx-auto w-full max-w-[30rem] pb-16">
-      <DiagnosisClient diagnosis={buildDiagnosis(answers)} />
+      <DiagnosisClient diagnosis={buildDiagnosis(answers)} demoHand={demoHand} />
     </div>
   );
 }

@@ -140,6 +140,7 @@ sessions.
 | 9.1 / 9.2 Motion, mobile, PWA pass | done — CLS 0.0000 everywhere, axe clean, 4 device sizes |
 | 9.3 / 9.4 Test suite, perf, launch readiness | done — 6/6 mutations caught, build gate live |
 | 9.6 Compliance hardening | done — age gate, geo-block, 251-file string audit clean |
+| 7.2b The demo hand | done — one hand before the wall, 2.8s added to the funnel |
 | 4.1 Gemini integration and prompt architecture | done — **20-spot adversarial run unverified (no Gemini key)** |
 | 4.2 Hint system | done — 7 hint e2e green, 50-hint leak test green |
 | 4.3 Post-hand explanation | done — streaming, 36-explanation matrix green |
@@ -928,6 +929,32 @@ if you add one.
 - **`src/poker` coverage: 92.27% statements, 94.97% lines** — above the 90% bar.
 - **`docs/LAUNCH.md`** is ordered so nothing on it can silently undo something
   above it, and leads with the solver-claim decision.
+
+**What 7.2b left you.**
+
+- **The quiz now hands off to `/onboarding/hand`, not `/diagnosis`.** The hand
+  is the evidence; the questionnaire is the context, and the diagnosis opens
+  with the hand when one exists.
+- 🔴 **`displayMode === "preferred"` DOES NOT MEAN the frequencies are split.**
+  `displayModeFor` returns "preferred" for a 100%-frequency spot whose EV gap
+  is small — correct for the grader, catastrophic for the demo. The first
+  version trusted it and shipped a screen reading "a solver raises it 100% of
+  the time", which demonstrates the right/wrong app this feature exists to
+  disprove. `isDemoWorthy` now checks `topFreq <= 0.8` directly.
+  **Found by reading the e2e output, not by a failing assertion.**
+- **"that fold costs", not "that folded costs".** Same read-the-output catch.
+- **Positions are spelled out** — "from the button", never "from the BTN". The
+  audience knows the rules and nothing after them.
+- **The abuse surface is bounded three ways**: the seed is derived from the user
+  id so a refresh deals the identical hand, the profile record refuses a second
+  deal, and there is a rate limit on top. `withAuth`, never `withEntitlement` —
+  nobody here has paid, and that is the point.
+- **The answer route refuses a spot that is not a demo spot**, or the unpaid
+  route becomes a free grader for the whole product.
+- **A `useRef(Date.now())` initialiser is impure** — React's compiler rejects
+  it, correctly, because a ref initialiser runs during render. Timing uses
+  `performance.now()` set in an effect.
+- Measured: **2.8s added to the funnel** against a 45s budget.
 
 **What the full e2e passes left you.**
 

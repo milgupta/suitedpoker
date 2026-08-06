@@ -1,4 +1,4 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { expect, test, type Page } from "@playwright/test";
 import { loadLocalEnv } from "../support/load-local-env";
 import { adminClient, isConfigured } from "../support/e2e-supabase";
@@ -114,7 +114,9 @@ test.describe("onboarding", () => {
     await page.getByRole("textbox").fill("Folded top pair to a river shove and it still bugs me.");
     await page.getByRole("button", { name: "Show me my leak" }).click();
 
-    await expect(page).toHaveURL(/\/diagnosis/);
+    // 7.2b: the quiz now hands off to the demo hand, which is what the
+    // diagnosis opens with. The hand is the evidence; the quiz is the context.
+    await expect(page).toHaveURL(/\/onboarding\/hand/);
 
     const { data } = await admin
       .from("profiles")
@@ -314,7 +316,9 @@ test.describe("onboarding", () => {
     await pick(page, "5");
     await page.waitForTimeout(300);
     await page.getByRole("button", { name: "Skip" }).click();
-    await expect(page).toHaveURL(/\/diagnosis/);
+    // 7.2b: the quiz now hands off to the demo hand, which is what the
+    // diagnosis opens with. The hand is the evidence; the quiz is the context.
+    await expect(page).toHaveURL(/\/onboarding\/hand/);
 
     const elapsed = (Date.now() - startedAt) / 1000;
     console.log(`QUIZ COMPLETED IN ${elapsed.toFixed(1)}s`);
@@ -337,7 +341,9 @@ test.describe("onboarding", () => {
     await page.waitForTimeout(400);
 
     await page.getByRole("button", { name: "Skip" }).click();
-    await expect(page).toHaveURL(/\/diagnosis/);
+    // 7.2b: the quiz now hands off to the demo hand, which is what the
+    // diagnosis opens with. The hand is the evidence; the quiz is the context.
+    await expect(page).toHaveURL(/\/onboarding\/hand/);
 
     // Skipping still completes the derivation — it is optional, not required.
     const { data } = await admin

@@ -9,6 +9,7 @@ import { trackDeduplicated } from "@/lib/meta-client";
 import { SPRING } from "@/lib/motion";
 import type { Diagnosis } from "@/lib/diagnosis";
 import { cn } from "@/lib/utils";
+import { demoHandDetail, demoHandHeadline, type DemoHandRecord } from "@/lib/demo-hand";
 
 /**
  * The diagnosis, staged.
@@ -25,9 +26,11 @@ export const REVEAL_TOTAL_MS = 2400;
 
 export interface DiagnosisClientProps {
   diagnosis: Diagnosis;
+  /** 7.2b's hand. Null for anyone who reached here without playing one. */
+  demoHand?: DemoHandRecord | null;
 }
 
-export function DiagnosisClient({ diagnosis }: DiagnosisClientProps) {
+export function DiagnosisClient({ diagnosis, demoHand = null }: DiagnosisClientProps) {
   const reduced = useReducedMotion() ?? false;
   const [analyzing, setAnalyzing] = useState(!reduced);
 
@@ -80,6 +83,27 @@ export function DiagnosisClient({ diagnosis }: DiagnosisClientProps) {
       </div>
 
       {/* 1 · The leak */}
+      {/*
+        THE HAND COMES FIRST, and it is the whole argument of this screen.
+        "You folded AJo from the button" is evidence about something the user
+        just did; "you may be too passive" is a horoscope derived from a
+        questionnaire. The quiz result follows underneath as context.
+
+        Degrades to the questionnaire-only version when no hand exists — a user
+        who dropped out and resumed still gets a coherent screen.
+      */}
+      {demoHand !== null && (
+        <motion.section {...stage(0)} className="flex flex-col gap-1" data-demo-hand>
+          <h2 className="text-overline text-text-tertiary uppercase">The hand you just played</h2>
+          <p className="text-display-md" data-demo-headline>
+            {demoHandHeadline(demoHand)}
+          </p>
+          <p className="text-text-secondary text-body-md mt-1" data-demo-detail>
+            {demoHandDetail(demoHand)}
+          </p>
+        </motion.section>
+      )}
+
       <motion.section {...stage(0)} className="flex flex-col gap-1">
         <h2 className="text-overline text-text-tertiary uppercase">Primary leak</h2>
         <p className="text-display-md" data-leak-headline>
