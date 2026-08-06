@@ -1,0 +1,78 @@
+---
+title: Position is everything
+slug: position-is-everything
+module: "before-the-flop"
+order: 1
+estMinutes: 6
+concepts: ["position", "acting last", "the button"]
+drillFilter: { "type": "preflop", "actionSeq": "rfi" }
+prerequisites: []
+---
+
+You're dealt king-jack. Nice hand. Is it a good hand?
+
+Wrong question. The real question is: where are you sitting?
+
+<HandExample hole="Kh Js" label="King-jack. Good hand or trouble hand? Depends where you sit." />
+
+Here's the same hand in two seats. On the button — the seat with the dealer disc — king-jack is a clear raise. First to act, three seats earlier, it's close to a fold. Same two cards. Completely different decision.
+
+That feels strange at first. A hand is a hand, right? But poker isn't a contest of who holds better cards. It's a contest of who makes better decisions, and decisions get easier the later you act.
+
+## Acting last is a superpower
+
+Position means your place in the betting order. Act early, and you decide first with no information. Act last, and you've watched everyone else move before you spend a chip.
+
+Think about how much that's worth. The player on the button sees every check, every bet, every hesitation before choosing. The player first to act — called under the gun — sees nothing. They're guessing. The button is reading.
+
+And this edge repeats on every street. The flop, the turn, the river — the button acts last on all of them. That's three more streets of free information, every single hand.
+
+<TableExample
+  hero="BTN"
+  pot={1.5}
+  lines={[
+    "Everyone folds to you on the button.",
+    "Only the two blinds are left to beat.",
+    "This is the best spot in poker.",
+  ]}
+/>
+
+## Why the button prints money
+
+Watch where the money goes over thousands of hands. Every serious player wins the most from the button and loses the most from the blinds. Not because the button gets better cards — the deck doesn't know where you sit. It's because the same cards make more money when you act last.
+
+So the button gets to play far more hands. Look at how wide a solid button opening range is:
+
+<RangeGridEmbed
+  node="BTN:rfi"
+  caption="Hands worth opening from the button when everyone folds to you."
+/>
+
+That's a lot of hands — roughly four in ten. From under the gun, the same chart shrinks to about the top sixth of hands. Every seat between them sits somewhere in the middle.
+
+<RangeGridEmbed
+  node="UTG:rfi"
+  caption="First to act, with five players still to come. The range tightens hard."
+/>
+
+The rule that connects them: the later you act, the more hands you can play. Not because the rules change. Because your information does.
+
+<Checkpoint
+  question="You get the same king-jack in two different seats. Where does it make more money?"
+  options={[
+    "First to act, because you get in before anyone else",
+    "On the button, because you act last with more information",
+    "It makes the same either way — cards are cards",
+  ]}
+  answer={1}
+  explain="The deck doesn't care where you sit, but your decisions do. Acting last means deciding with more information, and better decisions are the whole game."
+/>
+
+## What to do with this
+
+Two habits, starting today. First: before you look at your cards, look at your seat. Your position sets the price of entry, and your cards only decide if you pay it. Second: when in doubt in an early seat, fold. The hand that feels barely playable up front becomes genuinely playable two seats later — let it go and wait.
+
+<KeyIdea>
+  Your seat decides more than your cards do. Play tight up front, open up on the button, and let
+  position do the winning.
+</KeyIdea>

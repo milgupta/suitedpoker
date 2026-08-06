@@ -374,7 +374,7 @@ describe("derivation", () => {
 
   it("routes a studied player to the module for their pain", () => {
     expect(deriveCurriculumEntry({ venue: "live_1_2", study: "charts", pain: "bluffed_off" })).toBe(
-      "calling-down",
+      "ranges-not-hands",
     );
   });
 

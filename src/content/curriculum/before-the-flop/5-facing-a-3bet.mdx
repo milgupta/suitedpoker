@@ -1,0 +1,62 @@
+---
+title: Facing a 3-bet
+slug: facing-a-3bet
+module: "before-the-flop"
+order: 5
+estMinutes: 6
+concepts: ["3-bet defense", "4-betting", "position in big pots"]
+drillFilter: { "type": "preflop", "tags": ["3bet"] }
+prerequisites: ["facing-a-raise"]
+---
+
+You open king-queen offsuit from the cutoff. Feels routine. Then the button re-raises — a 3-bet — and suddenly the routine hand has a hard decision attached to it.
+
+Two picture cards. You raised first. Folding feels like backing down. But watch what calling actually buys you: a bloated pot, out of position, with a hand that's dominated by exactly the range that 3-bets you.
+
+<HandExample hole="Kc Qd" label="King-queen offsuit facing a 3-bet: fold it, and don't feel bad." />
+
+## The pot just got expensive
+
+A 3-bet changes the economics of the hand. The pot is suddenly three or four times bigger, which means every mistake you make from here costs three or four times more. Big pots amplify whatever edge exists — and against a 3-betting range, king-queen doesn't have one. It has the opposite: every ace-king and every big pair in their range has you crushed, and the hands you beat mostly fold before showdown.
+
+This is domination again, at triple the stakes. That's why the fold that felt weak is actually the discipline that separates winners from callers.
+
+## The three answers, and when to give each
+
+Fold the hands that got you here on looks: king-queen, ace-jack, king-jack, most offsuit broadways. They were fine opens. They are not fine calls of a 3-bet. Opening a hand does not obligate you to defend it.
+
+Call with the hands that keep their value when called: big pairs like tens and jacks that aren't quite worth a 4-bet, ace-queen suited, strong suited broadways. Position matters enormously here — hands you'd call in position become folds when you'd have to play the whole hand acting first.
+
+4-bet — re-raise again — with two groups. Your monsters: aces, kings, and usually queens and ace-king. And a small set of bluffs, with suited wheel aces like ace-five suited the standard pick: when called, they make disguised straights and flushes, and holding an ace makes it slightly less likely they hold the aces that snap you off.
+
+<TableExample
+  hero="CO"
+  pot={12}
+  lines={[
+    "You open 2.5bb from the cutoff with pocket tens.",
+    "The button 3-bets to 8bb.",
+    "Tens plays fine as a call here — flop a set and stack them; miss and proceed with care.",
+  ]}
+/>
+
+## Position decides the borderline hands
+
+Two identical hands, two different answers, depending on who acts last. Pocket tens facing a 3-bet from the button — where you'll be in position all hand — is a comfortable call. The same tens from the small blind, out of position against a button 3-bet, is much closer to a fold. You'll be guessing first on every street in a pot three times the usual size, and that tax falls on exactly the marginal hands.
+
+So when a spot feels genuinely close, let position break the tie. In position, lean toward continuing. Out of position, lean toward folding and waiting for a cleaner one.
+
+<Checkpoint
+  question="You open ace-jack offsuit from middle position and the small blind 3-bets. What's the play?"
+  options={[
+    "Call — you have an ace and position",
+    "Fold — their range dominates you and the pot is now big",
+    "4-bet — make them pay for the aggression",
+  ]}
+  answer={1}
+  explain="A small-blind 3-bet against an early open is one of the strongest ranges in the game. Ace-jack offsuit is exactly the hand it preys on. Position doesn't fix domination in a big pot."
+/>
+
+<KeyIdea>
+  When you face a 3-bet, the pot got big and mistakes got expensive: fold the dominated hands, call
+  with the ones that keep their value, and 4-bet monsters plus a few suited-ace bluffs.
+</KeyIdea>

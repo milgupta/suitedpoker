@@ -1,0 +1,59 @@
+---
+title: Someone raised — now what?
+slug: facing-a-raise
+module: "before-the-flop"
+order: 3
+estMinutes: 7
+concepts: ["3-betting", "cold calling", "domination"]
+drillFilter: { "type": "preflop", "actionSeq": "vs_rfi_UTG" }
+prerequisites: ["starting-hands"]
+---
+
+The player under the gun raises. You're on the button with ace-jack offsuit. An ace and a picture card — surely you're not folding?
+
+Watch what you're actually up against. An under-the-gun raise means the tightest range in the game: big pairs, ace-king, ace-queen, the best suited hands. Now play ace-jack against that lineup. Every ace that calls you down has you beat. When you make a pair of jacks, ace-jack is fine — but when the ace comes and they bet three times, you're the one paying them off.
+
+<HandExample hole="Ah Jd" label="Ace-jack offsuit facing an early raise: pretty, and dominated." />
+
+That situation has a name: domination. Your hand shares its best card with their hands, but loses the tie. Dominated hands don't lose small — they make second-best pairs that feel too good to fold.
+
+## Your three options, honestly ranked
+
+When someone has raised in front of you, calling is not the default. Here's the actual pecking order.
+
+Fold is the quiet winner. Most hands that look tempting against a raise — ace-ten, king-jack, queen-ten — are dominated by the raiser's range and should go in the muck. Folding costs you nothing. It's the one move at the table with no downside.
+
+The 3-bet — re-raising the raiser — is your aggressive option. You 3-bet your monsters: queens, kings, aces, ace-king. And you mix in some hands that play well when called but aren't strong enough to just call — suited aces like ace-five suited are the classic. Now you can win two ways: they fold, or you flop something worth stacking off with.
+
+Calling is the smallest slice, not the biggest. You call with hands that are clearly profitable but don't want to bloat the pot: middle pairs hoping to flop a set — three of a kind using both your cards — and the best suited, connected hands.
+
+<Checkpoint
+  question="A tight player raises under the gun. You have king-jack offsuit on the button. What's the play?"
+  options={[
+    "Call — two picture cards is too pretty to fold",
+    "3-bet — put the pressure back on them",
+    "Fold — their range dominates you",
+  ]}
+  answer={2}
+  explain="King-jack runs straight into ace-king, king-queen, and every big pair. When you hit a king, you're often out-kicked. That's how domination bleeds money — one second-best pair at a time."
+/>
+
+## The question that does the work
+
+Before you ever call a raise, ask: who raised, and from where? A raise from under the gun is a tight, scary range. The same raise from the button covers half the deck. Ace-jack is a fold against the first and a comfortable 3-bet against the second. The raise size is the same. The seat behind it changes everything.
+
+<RangeGridEmbed
+  node="BTN:vs_rfi_CO"
+  caption="The button facing a cutoff open: mostly folds, a real 3-bet slice, a thin band of calls."
+/>
+
+## Why calling is the smallest slice
+
+New players get this backwards, so it's worth being blunt about why. When you call a raise, you enter the pot as the underdog in a hand someone else defined, and you invite everyone still to act behind you to squeeze — re-raise both of you and win the pot right there. When you 3-bet, you take the hand back: you set the price, you represent the strongest range, and you can win without seeing a card.
+
+That's why the calling band on that chart is thin. It isn't timidity that gets punished — it's the middle. Fold the hands that can't fight, raise the hands that can, and be very suspicious of the ones that just want to tag along.
+
+<KeyIdea>
+  Against a raise, fold the pretty-but-dominated hands, 3-bet your strongest ones plus a few suited
+  aces, and save flat calls for hands that truly want a flop.
+</KeyIdea>

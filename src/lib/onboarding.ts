@@ -351,17 +351,18 @@ export function deriveLeakTags(answers: Answers): string[] {
 }
 
 /**
- * Where the curriculum starts.
+ * Where the curriculum starts: a LESSON slug from 5.1's curriculum.
  *
- * 5.1 must use these same keys for its module slugs. Written here because the
- * entry point is a property of the answers, not of the lesson list.
+ * These must exist in src/content/curriculum — tests/unit/curriculum.test.ts
+ * checks every value against the real lesson list, so a renamed lesson fails
+ * the build here rather than 404ing a new user's first click.
  */
-const LEAK_TO_MODULE: Record<string, string> = {
-  overcalling: "when-to-fold",
-  postflop_fundamentals: "flop-fundamentals",
+export const LEAK_TO_LESSON: Record<string, string> = {
+  overcalling: "when-to-give-up",
+  postflop_fundamentals: "board-texture",
   preflop_ranges: "starting-hands",
-  bluff_catching: "calling-down",
-  tilt_control: "playing-your-best",
+  bluff_catching: "ranges-not-hands",
+  tilt_control: "the-hands-that-cost-you",
 };
 
 export const DEFAULT_MODULE = "starting-hands";
@@ -371,7 +372,7 @@ export function deriveCurriculumEntry(answers: Answers): string {
   // Someone who has never studied starts at the start whatever they picked —
   // dropping a complete beginner into bluff-catching teaches nothing.
   if (deriveSkillTier(answers) === "never") return DEFAULT_MODULE;
-  return leak === null ? DEFAULT_MODULE : (LEAK_TO_MODULE[leak] ?? DEFAULT_MODULE);
+  return leak === null ? DEFAULT_MODULE : (LEAK_TO_LESSON[leak] ?? DEFAULT_MODULE);
 }
 
 /** Minutes per day, for the daily challenge target. */

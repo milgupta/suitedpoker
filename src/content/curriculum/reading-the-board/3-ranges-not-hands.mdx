@@ -1,0 +1,57 @@
+---
+title: Ranges, not hands
+slug: ranges-not-hands
+module: "reading-the-board"
+order: 3
+estMinutes: 7
+concepts: ["range thinking", "combinations", "narrowing"]
+drillFilter: { "type": "preflop", "heroPos": "BB", "actionSeq": "vs_rfi_BTN" }
+prerequisites: ["who-does-the-board-favor"]
+---
+
+"I put him on ace-king."
+
+You'll hear this at every table. A player squints, decides their opponent holds exactly ace-king, and plays the rest of the hand against that one guess. When the guess is wrong — which is most of the time — every decision built on it is wrong too.
+
+Strong players never guess one hand. They track all of them at once. This is the single biggest mental shift in poker, and once it happens you can't go back.
+
+## Every player is a chart, not a hand
+
+You've already been using ranges for two modules — every preflop chart you've studied is one. The shift is realizing your opponent is a chart too. When the button raises, they aren't "ace-king or bluffing." They're this:
+
+<RangeGridEmbed
+  node="BTN:rfi"
+  caption="A button raise isn't a hand. It's this entire grid, all at once."
+/>
+
+Every hand in that grid raised the same way. Until they act again, your opponent is all of those hands simultaneously — a few big pairs, a lot of medium stuff, plenty of suited junk. You're not playing against two hidden cards. You're playing against a weighted crowd.
+
+## Every action shrinks the crowd
+
+Here's what makes range thinking practical: each street, their actions erase parts of the grid.
+
+They raised the button: the grid above. They bet the king-high flop: erase nothing yet — they'd bet most hands here. They bet big again on a blank turn: now erase the junk; the crowd shrinks to kings, better pairs, and a modest set of draws. They shove the river when the flush comes in: the crowd is now flushes, sets... and the rare bluff.
+
+Notice what you never did: guess. You just kept subtracting. By the river the question isn't "do they have it?" — it's "how much of what's left beats me?" That's a counting problem, not a mind-reading problem.
+
+<Checkpoint
+  question="A tight player raises under the gun, then checks the flop, checks the turn, and checks the river on ace-nine-four-two-two. What does their range look like?"
+  options={[
+    "They have nothing — three checks means weakness",
+    "Mostly medium strength — hands that want a cheap showdown, plus some give-ups",
+    "It's impossible to say anything",
+  ]}
+  answer={1}
+  explain="Three checks erased the strong hands (they'd bet) but not the medium ones (they want showdown, cheap). Range thinking doesn't tell you their exact cards — it tells you the shape of what's left, and that's enough to act on."
+/>
+
+## How to practice this without a headache
+
+Nobody tracks all one-hundred-plus hand types in real time. You track buckets. After each action, sort their range into three: hands that beat you, hands you beat that keep paying, and draws. Rough counts are fine — "mostly worse pairs, a few monsters" is a range read, and it's ninety percent of the value.
+
+Do it out loud when you review your sessions. "What raises there? What calls the flop? What shoves?" The day you catch yourself asking those questions mid-hand instead of "what do they have?" — that's the day this lesson finished installing.
+
+<KeyIdea>
+  Nobody has a hand — they have a range that shrinks with every action. Stop guessing the card and
+  start counting the crowd.
+</KeyIdea>
