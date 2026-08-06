@@ -3,32 +3,68 @@
 Turns the 2.8 scenario matrix into solved postflop data. Three parts: **run**,
 **bucket**, **explain**.
 
-> ## ✅ The parser is VERIFIED — and the dump has no EVs
+> ## 2.10 IS DEFERRED — read this before restarting it
 >
-> Run on 2026-08-06 against TexasSolver commit `42313c9c`, one `--smoke` solve
-> (`srp-btn-vs-bb-flop-pfr--AcKdTh`). `parseSolverOutput` read 355 hero combos
-> with plausible non-round frequencies — 0.3713 check / 0.6282 bet_66 / 0.0005
-> allin — so the format guess was right.
+> **Status: the pipeline works, the data set does not ship. Postflop stays on
+> authored approximations, and `/methodology` keeps its honest wording.** That
+> is a deliberate decision, not an unfinished task.
 >
-> **But `evs` came back empty for every single combo, and that is the solver,
-> not the parser.** `dump_result` emits frequencies only. `bucket.ts` correctly
-> refused to write a template rather than stamp `solver-verified` on data the
-> grader would read as all-actions-equal.
+> ### What the smoke run established (2026-08-06, TexasSolver `42313c9c`)
 >
-> **2.10 cannot complete until EVs exist.** The grading bands are defined in EV
-> lost, so a postflop template without EVs cannot be graded against. The options
-> are: invoke the solver differently if a mode that emits EVs exists; compute
-> EVs ourselves in a second pass over the solved strategy; or keep postflop on
-> authored approximations. Deriving EVs from frequencies is NOT an option —
-> that is inventing numbers and stamping them solver-verified.
+> One `--smoke` solve of `srp-btn-vs-bb-flop-pfr--AcKdTh`:
 >
-> Two other measurements from that run:
+> - ✅ **`parseSolverOutput` is VERIFIED.** It read 355 hero combos with
+>   plausible non-round frequencies — 0.3713 check / 0.6282 bet_66 / 0.0005
+>   allin. This was the one component with no test, by design, and the format
+>   guess was right.
+> - ❌ **`evs` is empty for every combo**, and `bucket.ts` correctly refused to
+>   emit a template rather than stamp `solver-verified` on data the grader would
+>   read as all-actions-equal.
+> - ⚠️ **15.75% exploitability after 31 iterations**, stopping on the iteration
+>   cap against a 0.3% target.
+> - ⏱ **273 seconds** for those 31 iterations.
 >
-> - **273 seconds for 31 iterations**, stopping on the iteration cap at 15.75%
->   exploitability against a 0.3% target. The 200-iteration cap looks far too
->   low to converge.
-> - At that rate a 230-solve batch at 200 iterations is on the order of **100+
->   hours** on one machine. Plan for parallelism or a longer horizon.
+> ### The three things that must be true before a batch is worth running
+>
+> **1. The solve settings need rework.** 15.75% after 31 iterations is nowhere
+> near the 0.3% target, and raising `DEFAULT_MAX_ITERATIONS` alone is unlikely
+> to close a fifty-fold gap. Investigate the bet tree width, the accuracy
+> target, and the abstraction before spending compute. **A batch run at today's
+> settings would produce 230 unconverged solves and burn the hardware budget
+> proving it.**
+>
+> **2. EVs must be computed HERE, in a second pass.** TexasSolver's console
+> `dump_result` emits strategy only — there is no EV flag, and the GUI computes
+> EVs client-side rather than exporting them. So the options are down to one:
+> walk the solved strategy tree and compute the EV of each action ourselves.
+> That is legitimate and well-defined — the strategy is the hard part and it is
+> already solved — but it is real work and it needs its own tests.
+>
+> **Deriving EVs from frequencies is NOT an option.** A frequency is not an EV,
+> and numbers nobody computed, stamped `solver-verified`, is the precise failure
+> the provenance system exists to prevent.
+>
+> **3. It is a rented-hardware job measured in days.** 273s bought 31
+> iterations, so a converged 230-solve batch is on the order of 100+ hours on
+> one machine — and that is the optimistic reading, since convergence will need
+> far more than the 200-iteration cap. Plan for parallel machines and a multi-day
+> window, not an afternoon.
+>
+> ### The order to resume in
+>
+> 1. Fix the settings until ONE solve converges to target. Measure it.
+> 2. Extrapolate the real batch cost from that converged solve, not from the
+>    smoke number above.
+> 3. Build and test the EV pass.
+> 4. Rent the hardware and run the batch.
+> 5. Only then does `/methodology` change — and it changes because
+>    `provenanceHeadline()` reads the data, not because anyone edits the copy.
+>
+> ### What is true in the meantime
+>
+> Every solution file carries `authored-approximation`, `/methodology` says so
+> in those words, and the landing page derives its claim from the data. Nothing
+> here is blocking launch. Do not hand-edit that copy to claim a solver.
 >
 > ## The original warning, kept for context
 >

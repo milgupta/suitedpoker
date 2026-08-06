@@ -141,6 +141,7 @@ sessions.
 | 9.3 / 9.4 Test suite, perf, launch readiness | done — 6/6 mutations caught, build gate live |
 | 9.6 Compliance hardening | done — age gate, geo-block, 251-file string audit clean |
 | 7.2b The demo hand | done — one hand before the wall, 2.8s added to the funnel |
+| 2.10 Solver run and methodology | **DEFERRED** — pipeline verified, batch not run. See `tools/solver/README.md` |
 | 4.1 Gemini integration and prompt architecture | done — **20-spot adversarial run unverified (no Gemini key)** |
 | 4.2 Hint system | done — 7 hint e2e green, 50-hint leak test green |
 | 4.3 Post-hand explanation | done — streaming, 36-explanation matrix green |
@@ -929,6 +930,26 @@ if you add one.
 - **`src/poker` coverage: 92.27% statements, 94.97% lines** — above the 90% bar.
 - **`docs/LAUNCH.md`** is ordered so nothing on it can silently undo something
   above it, and leads with the solver-claim decision.
+
+**What 2.10 left you (DEFERRED, deliberately).**
+
+- **Postflop stays on authored approximations and `/methodology` keeps its
+  honest wording.** A decision, not an unfinished task. Do not hand-edit that
+  copy to claim a solver — it is derived from the data and will change itself.
+- ✅ **`parseSolverOutput` is verified** against real output from TexasSolver
+  `42313c9c`: 355 combos, plausible non-round frequencies. That was the one
+  untested component in the pipeline.
+- ❌ **TexasSolver's console `dump_result` emits strategy ONLY — there is no EV
+  flag, the GUI computes EVs client-side.** So EVs have to be computed here, in
+  a second pass over the solved tree. Legitimate work, well-defined, not yet
+  done. Deriving them from frequencies is never an option.
+- ⚠️ **The solve settings are wrong**: 15.75% exploitability after 31 iterations
+  against a 0.3% target. A batch at today's settings would produce 230
+  unconverged solves and burn the hardware budget proving it. Fix the settings
+  until ONE solve converges before extrapolating anything.
+- ⏱ **Rented hardware, measured in days** — 273s bought 31 iterations, so a
+  converged 230-solve batch is 100+ hours on one machine, optimistically.
+- The full resume plan, in order, is in `tools/solver/README.md`.
 
 **What 7.2b left you.**
 
