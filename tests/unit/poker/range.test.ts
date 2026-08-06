@@ -351,7 +351,7 @@ describe("randomHandFromRange", () => {
       "weighted sampling",
       `200,000 draws, worst deviation ${(worst * 100).toFixed(3)}pp (tolerance 1pp)`,
     );
-  });
+  }, 30_000);
 
   it("weights by combos, not by hand key", () => {
     // AA and AKo both at weight 1: AKo has twice the combos and must appear

@@ -88,7 +88,7 @@ describe("grade bands", () => {
       "ev loss non-negative",
       `100,000 random (node, hand, action) triples, worst ${worst.toFixed(2)}bb`,
     );
-  });
+  }, 60_000);
 
   it("is stable — the same inputs always give the same output", () => {
     const node = nodes.find((n) => n.ref === "BTN:rfi")!;

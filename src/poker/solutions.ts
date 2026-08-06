@@ -344,6 +344,19 @@ const postflopStrategySchema = z.object({
   strategy: z.record(z.string(), z.number()),
   ev: z.record(z.string(), z.number()),
   rationale: z.string().min(20),
+  /**
+   * Whether a human has checked the rationale. Absent on hand-authored
+   * templates (a person wrote them, so the question does not arise); false on
+   * anything a model drafted, until 2.10 flips it.
+   */
+  reviewed: z.boolean().optional(),
+  /**
+   * Standard deviation of the top action's frequency across the combos that
+   * were averaged into this row. Above ~0.15 the hand class is too coarse for
+   * the spot and the average describes neither half.
+   */
+  topActionStdDev: z.number().min(0).optional(),
+  comboCount: z.number().int().nonnegative().optional(),
 });
 
 export const postflopTemplateSchema = z
