@@ -1,5 +1,49 @@
 # The solver scenario matrix
 
+> ## STATUS — the solver track is PARKED
+>
+> | Substage | State |
+> |---|---|
+> | **2.8** scenario matrix | **Complete.** 46 scenarios, 230 solves, validated. |
+> | **2.9** batch pipeline | **Verified through solve → parse → bucket. Blocked at write.** |
+> | **2.10** run and publish | **Deferred until after launch.** |
+>
+> A real solve ran end to end against TexasSolver (`console` branch, commit
+> `42313c9c`): 229s for one deliberately cheap smoke solve — one bet size, a
+> 40-iteration cap, a 2% accuracy target — which did **not** converge, stopping
+> at 15.75% exploitability.
+>
+> **Why it is blocked.** The solver's dump carries **strategy frequencies
+> only — no EV data**. A template with all-zero EVs passes the 2.5 schema and
+> looks solved, but the grader reads every action as costing nothing and scores
+> them all as perfect play. `toPostflopTemplate` therefore refuses to emit
+> rather than stamping `solver-verified` on it. That refusal is the correct
+> behaviour and should stay.
+>
+> **What it would take to resume**, cheapest first:
+>
+> 1. **Find EVs in the solver.** Check whether another dump command, or a
+>    different `set_dump_rounds` depth, emits them. If it does, this is a
+>    parser change and nothing else — the rest of the pipeline is verified.
+> 2. **Compute EVs ourselves** with a best-response pass over the dumped
+>    tree. Real work, and it needs its own verification, because a wrong EV is
+>    exactly as invisible as a wrong parse was.
+> 3. **Accept frequency-only templates** and change the grader to handle a
+>    missing EV table. This alters 2.7's contract and is a product decision,
+>    not an engineering one.
+>
+> **Budget before running 2.10.** The smoke solve did 31 iterations in 229s —
+> about 7s per iteration — and never reached its target. The real batch is 200
+> iterations at a 0.3% target with a two-size tree, which is several times more
+> work per iteration. That extrapolates to roughly **30–90 minutes per solve
+> and 150–350 hours for all 230** on the machine it was measured on. It is not
+> an overnight job. Get one solve to actually converge before trusting any
+> estimate, then either cut the matrix, loosen the target, or use a much
+> bigger box.
+>
+> Everything below describes the matrix as designed and is unaffected.
+
+
 This guide is for a poker consultant reviewing or editing what we solve. You do
 not need to write code to read it, and most of the review work is reading, not
 typing.
@@ -68,7 +112,7 @@ parses and survives card removal on every board, and prints the solve budget.
   "heroRangeRef": "BTN:rfi#raise",
   "villainRangeRef": "BB:vs_rfi_BTN#call",
   "boards": ["Ah 7d 2c", "..."],
-  "betTree": { "flop": [0.33, 0.75], "turn": [0.5, 1], "river": [0.5, 1.25],
+  "betTree": { "flop": [0.33, 0.66], "turn": [0.66, 1], "river": [0.66, 1],
                "raiseSizes": [2.5], "allowAllIn": true },
   "rake": { "percent": 0.05, "capBb": 3 },
   "accuracyTargetPctPot": 0.3
@@ -128,10 +172,15 @@ improve.
 Two sizes per street, one raise size, all-in allowed:
 
 ```
-flop  33%  75%
-turn  50%  100%
-river 50%  125%
+flop  33%  66%
+turn  66%  100%
+river 66%  100%
 ```
+
+Every size must be nameable in `POSTFLOP_ACTIONS` (`bet_33` / `bet_66` /
+`bet_100`). The first draft used 75% and 125%, which the solver would have
+solved happily and the bucketer could then never label — every template would
+have failed schema validation *after* the compute was spent.
 
 **This is deliberately small.** The solver output is bucketed into ~12 hand
 classes downstream, so a six-size tree produces precision that the bucketing
