@@ -369,6 +369,35 @@
    * pseudo-element carries the extra area, so measuring the target means
    * measuring ::before, not the element's own box.
    */
+  /*
+   * ── Lesson prose ──────────────────────────────────────────────────────────
+   * MDX renders plain HTML, so the reading rhythm is set here rather than by
+   * decorating every element in the component. Generous leading and a bounded
+   * measure: a lesson is read, not scanned, and 38rem at this size lands
+   * around 70 characters a line.
+   */
+  .prose-lesson h2 {
+    color: var(--color-text-primary);
+    font-size: var(--text-heading-lg);
+    line-height: var(--text-heading-lg--line-height);
+    font-weight: var(--text-heading-lg--font-weight);
+    letter-spacing: var(--text-heading-lg--letter-spacing);
+    margin-top: 0.75rem;
+  }
+
+  .prose-lesson p {
+    line-height: 1.7;
+  }
+
+  .prose-lesson strong {
+    color: var(--color-text-primary);
+    font-weight: 600;
+  }
+
+  .prose-lesson em {
+    color: var(--color-text-primary);
+  }
+
   .tap-target {
     position: relative;
   }

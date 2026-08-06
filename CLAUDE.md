@@ -138,8 +138,48 @@ sessions.
 | 7.2 The diagnosis screen | done — 25-combo table green, 20 e2e green |
 | 6.2 Table sim session play | done — leak test + 50-hand session green on both projects |
 | 6.3 Post-session review | done — planted leak found, one AI call enforced |
+| 5.1 Curriculum content system | done — 14 lessons, prose measured |
+| 5.2 Lesson player and progress | done — server-side lock verified, 20 e2e green |
 
 Stage 0 is complete. Update this table when you finish a substage.
+
+**What 5.2 left you.**
+
+- 🔴 **Lessons compile at BUILD time, through Next's own MDX pipeline.** Runtime
+  MDX was tried twice and failed twice: `next-mdx-remote/rsc` renders client
+  components WITHOUT their props (every `<Checkpoint options={[…]}/>` arrived
+  empty), and its legacy client path dies under React 19 with a null `useState`.
+  `next.config.ts` wires `@next/mdx` + `remark-frontmatter`; without the latter,
+  MDX parses the frontmatter's `{ "type": … }` as JSX and dies in acorn.
+- **`src/content/curriculum/registry.ts` maps slug → `import()`.** Explicit, not
+  globbed — a dynamic `import(variable)` cannot be statically analysed. A test
+  asserts the registry and the files on disk match exactly.
+- **`src/lib/curriculum-modules.ts` exists so clients can read the module list**
+  without dragging `node:fs` into a browser chunk. Turbopack's error for that
+  ("does not support external modules") points at the chunker, not the import.
+- **Lesson components are SERVER components except `Checkpoint` and
+  `RangeGridEmbed`.** A reading page should not ship a bundle to render a card.
+  Every prop is optional with a default: MDX is authored content, and a typo
+  must degrade one figure, not blank the lesson.
+- **`/api/ranges` returns the WHOLE node list**, not a single node — there is no
+  `?node=` param. `RangeGridEmbed` finds its node client-side. Getting this
+  wrong crashed the entire lesson through the error boundary.
+- **`saveProgress` UPSERTS.** Opening a lesson fires two writes at once
+  ("reading" from mount, a scroll position from the first scroll); both read an
+  empty row and both inserted, racing the unique index. The database settles it.
+- **The scroll restore retries until the document is tall enough.** A single
+  `scrollTo` lands while MDX is still laying out and the browser clamps it to 0.
+  Saving is suppressed until the restore finishes, or the restore's own
+  intermediate positions overwrite the place it was restoring to.
+- **Completion is server-judged.** `status: "completed"` from a client is a 403;
+  it is reached only through a graded practice set or the 3-attempt override.
+  The lock is checked on the write path too, so a locked lesson cannot be
+  completed without being opened.
+- **`text-display-sm` never existed.** Tailwind silently drops an unresolvable
+  utility, so four headings rendered at body size across three substages.
+  `tests/unit/type-scale.test.ts` is now the counterpart to the colour-literal
+  guard — it scans class attributes only, because prose legitimately contains
+  phrases like "text-sized".
 
 **What 6.3 left you.**
 

@@ -486,7 +486,17 @@ function SessionSummary({
           Play again
         </Button>
         {returnTo !== undefined && (
-          <Button variant="ghost" size="lg" onClick={() => onReturn(returnTo)}>
+          <Button
+            variant="ghost"
+            size="lg"
+            onClick={() => {
+              // The accuracy travels back with them. A lesson's practice set is
+              // graded by the SERVER on arrival — this is the report, not the
+              // verdict, and the route recomputes and judges it.
+              const separator = returnTo.includes("?") ? "&" : "?";
+              onReturn(`${returnTo}${separator}accuracy=${Math.round(accuracy)}`);
+            }}
+          >
             Back
           </Button>
         )}

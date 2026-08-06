@@ -1,3 +1,4 @@
+import createMDX from "@next/mdx";
 import type { NextConfig } from "next";
 
 const POSTHOG_HOST = process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com";
@@ -21,6 +22,33 @@ const nextConfig: NextConfig = {
 
   // The proxy above needs the trailing slash preserved or PostHog 404s.
   skipTrailingSlashRedirect: true,
+
+  /**
+   * `.mdx` is a MODULE type, not a page type — `pageExtensions` deliberately
+   * excludes it. Lessons are imported by a registry and rendered inside the
+   * lesson shell, never routed to directly.
+   */
+  pageExtensions: ["ts", "tsx"],
 };
 
-export default nextConfig;
+/**
+ * Lessons compile at BUILD time.
+ *
+ * Runtime MDX was tried twice and failed twice: next-mdx-remote/rsc renders
+ * client components without their props (every Checkpoint arrived empty), and
+ * its legacy client path dies under React 19 with a null useState. Compiling
+ * through Next's own pipeline makes a lesson an ordinary component — props
+ * work because nothing crosses a boundary it was not designed for.
+ */
+const withMDX = createMDX({
+  options: {
+    /**
+     * Without this, MDX tries to parse the frontmatter's `{ "type": ... }` as a
+     * JSX expression and dies with "Could not parse expression with acorn".
+     * The block is metadata — src/lib/curriculum.ts owns it — so MDX skips it.
+     */
+    remarkPlugins: [["remark-frontmatter", ["yaml"]]],
+  },
+});
+
+export default withMDX(nextConfig);

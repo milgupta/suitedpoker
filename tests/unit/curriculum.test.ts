@@ -70,6 +70,15 @@ describe("the curriculum graph", () => {
     }
   });
 
+  it("has a build-time module registered for every lesson", async () => {
+    // The registry is explicit rather than globbed, so a renamed file has to
+    // be renamed in two places. This is the test that says so out loud.
+    const { LESSON_MODULES } = await import("../../src/content/curriculum/registry");
+    const registered = Object.keys(LESSON_MODULES).sort();
+    const onDisk = LESSONS.map((l) => l.slug).sort();
+    expect(registered, "the registry and the files on disk disagree").toEqual(onDisk);
+  });
+
   it("covers every onboarding entry point with a real lesson", () => {
     const slugs = new Set(LESSONS.map((l) => l.slug));
     expect(slugs.has(DEFAULT_MODULE), `default entry ${DEFAULT_MODULE} missing`).toBe(true);

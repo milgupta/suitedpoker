@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 import type { SpotConfig } from "@/poker/generator";
+import { MODULES, moduleOrder, type ModuleSlug } from "@/lib/curriculum-modules";
 
 /**
  * The curriculum's index: parses lesson frontmatter, orders modules and
@@ -14,14 +15,9 @@ import type { SpotConfig } from "@/poker/generator";
 
 export const CURRICULUM_ROOT = "src/content/curriculum";
 
-export const MODULES = [
-  { slug: "before-the-flop", title: "Before the Flop", order: 1 },
-  { slug: "reading-the-board", title: "Reading the Board", order: 2 },
-  { slug: "betting-with-a-plan", title: "Betting With a Plan", order: 3 },
-  { slug: "not-losing-money", title: "Not Losing Money", order: 4 },
-] as const;
-
-export type ModuleSlug = (typeof MODULES)[number]["slug"];
+// The module list lives in curriculum-modules.ts so client components can read
+// it without dragging node:fs into a browser chunk.
+export { MODULES, moduleOrder, type ModuleSlug } from "@/lib/curriculum-modules";
 
 const spotConfigLoose = z.object({
   type: z.enum(["preflop", "postflop"]),
@@ -118,10 +114,6 @@ export function loadLessons(root = CURRICULUM_ROOT): Lesson[] {
   }
 
   return lessons.sort((a, b) => moduleOrder(a.module) - moduleOrder(b.module) || a.order - b.order);
-}
-
-export function moduleOrder(slug: ModuleSlug): number {
-  return MODULES.find((m) => m.slug === slug)?.order ?? 99;
 }
 
 export function getLesson(slug: string, root = CURRICULUM_ROOT): Lesson | null {

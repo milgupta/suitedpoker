@@ -188,7 +188,7 @@ export function PaywallClient({ diagnosis, leakBb100, leakLabel }: PaywallClient
       </div>
 
       <section className="border-border flex flex-col gap-3 border-t pt-6">
-        <h2 className="text-display-sm">Why it works</h2>
+        <h2 className="text-heading-lg">Why it works</h2>
         <p className="text-text-secondary text-body-md max-w-[52ch]">
           Every spot you see is a real solved decision, not an opinion. You act, you are graded
           against the solution, and the coach explains the part you could not see. Repeat that a few
@@ -197,7 +197,7 @@ export function PaywallClient({ diagnosis, leakBb100, leakLabel }: PaywallClient
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-display-sm">What players say</h2>
+        <h2 className="text-heading-lg">What players say</h2>
         {/* Deliberately empty. Fabricated testimonials are the fastest way to
             make a numerate audience discount every other claim on the page. */}
         {[0, 1, 2].map((i) => (
@@ -266,7 +266,7 @@ function PlanCard({
           )}
         </span>
 
-        <span className="text-display-sm mt-1 font-mono tabular-nums">
+        <span className="text-heading-lg mt-1 font-mono tabular-nums">
           {formatUsd(perWeekCents(plan))}
           <span className="text-text-tertiary text-body-sm font-sans"> per week</span>
         </span>

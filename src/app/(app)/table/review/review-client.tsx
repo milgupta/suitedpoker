@@ -119,7 +119,7 @@ export function ReviewClient() {
       {/* 3 · Leaks, each with a next action */}
       {review.leaks.length > 0 && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-display-sm">Detected leaks</h2>
+          <h2 className="text-heading-lg">Detected leaks</h2>
           {review.leaks.map((leak) => (
             <div
               key={leak.key}
@@ -145,7 +145,7 @@ export function ReviewClient() {
       {/* 4 · Worst decisions, expandable into replays */}
       {review.worst.length > 0 && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-display-sm">Your most expensive decisions</h2>
+          <h2 className="text-heading-lg">Your most expensive decisions</h2>
           {review.worst.map((decision) => (
             <div key={decision.handNumber} className="border-border bg-surface-1 rounded-lg border">
               <button
