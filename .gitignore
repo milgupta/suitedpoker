@@ -62,3 +62,4 @@ tools/solver/out/
 # them. Ignore rather than discover them in a diff.
 * [0-9].*
 * [0-9]/
+.next-trash-*

@@ -71,6 +71,11 @@ const eslintConfig = defineConfig([
 
   globalIgnores([
     ".next/**",
+    // Deleting .next in place loses a race with iCloud sync, which keeps
+    // recreating "name 2" duplicates inside it mid-delete. The workaround is
+    // to mv it aside and rm in the background — so half-deleted trash dirs
+    // can exist while lint runs, and must not be walked.
+    ".next-trash-*/**",
     "out/**",
     "build/**",
     "coverage/**",

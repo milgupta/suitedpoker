@@ -135,8 +135,41 @@ sessions.
 | 7.3 Stripe setup and checkout | code + paywall done — ⚠️ **every Stripe-touching test is BLOCKED: `.env.local` holds LIVE keys** |
 | 2.8, 2.9, 6.1 (Track C) | done — merged from `track/engine`, worktree removed |
 | 7.1 Onboarding quiz | done — 20 e2e green, derivation table printed |
+| 7.2 The diagnosis screen | done — 25-combo table green, 20 e2e green |
 
 Stage 0 is complete. Update this table when you finish a substage.
+
+**What 7.2 left you.**
+
+- **`src/lib/diagnosis.ts` is pure and owns the cost model.** `BB_VALUE_USD`,
+  `HANDS_PER_YEAR`, `LEAK_BB100` are the only inputs; the tooltip prints the
+  same arithmetic the headline used, and a test recomputes one from the other.
+- **The dollar figure is a COST estimate, never a winning** — the plan draws
+  this line explicitly, and it is the line that keeps the Meta ad account
+  alive. A regex test runs every venue × pain × goal combination over every
+  rendered string and fails on winnings framing. Do not add copy to the
+  diagnosis without extending that scan.
+- **Play-money and just-starting users NEVER see dollars** — `annualUsd` is
+  null and the screen prints big blinds per year. Their `BB_VALUE_USD` is 0 on
+  purpose; a fabricated $340 for a play-money user loses a numerate audience
+  permanently.
+- **Every one of the eight quiz answers moves the diagnosis**, and there is a
+  per-question test asserting it. Q6 required adding `alsoFixing` (their own
+  leak picks reflected back, primary excluded) — if you add a question to the
+  quiz, wire it into the diagnosis or the test names it as dead weight.
+- **The projection is "where the material sits", not a promised rating.**
+  `CURRICULUM_CEILING_RATING = 1133` is difficulty 5 on the rating scale, and
+  the caption on screen says exactly that.
+- **The reveal is stage-delayed opacity, ~2.4s total.** Playwright counts
+  `opacity: 0` as visible, so the e2e polls computed opacity — remember that
+  when testing anything staged.
+- **The paywall now pulls `leakBb100`/`leakLabel` from the profile** via
+  `LEAK_BB100`/`LEAK_HEADLINE`, so the loss framing appears once a diagnosis
+  exists (bb/100, never dollars, per rule 5).
+- **iCloud vs `.next`:** deleting `.next` in place loses a race with iCloud
+  sync recreating `name 2` duplicates mid-delete. `mv .next .next-trash-$$ &&
+  rm -rf` in the background wins it; eslint/prettier now ignore
+  `.next-trash-*`.
 
 **What 7.1 left you.**
 

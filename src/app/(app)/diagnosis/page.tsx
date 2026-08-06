@@ -1,23 +1,49 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { redirect } from "next/navigation";
+import { eq } from "drizzle-orm";
+import { createClient } from "@/lib/supabase/server";
+import { getDb } from "@/db";
+import { profiles } from "@/db/schema";
+import { buildDiagnosis } from "@/lib/diagnosis";
+import { resumeIndex, TOTAL_STEPS, type Answers } from "@/lib/onboarding";
+import { DiagnosisClient } from "./diagnosis-client";
 
 export const metadata: Metadata = { title: "Your leak", robots: { index: false, follow: false } };
 
 /**
- * PLACEHOLDER — 7.2 builds the diagnosis.
+ * The screen immediately before the paywall.
  *
- * It exists now so the end of the quiz has a real destination rather than a
- * 404, and so 7.1's e2e can assert the flow completes.
+ * Computed server-side from the profile's onboarding answers — the client
+ * receives finished numbers, never the model. Arriving here without having
+ * answered the quiz redirects back into it: a diagnosis of nothing would have
+ * to fabricate, and fabricating is the competitor's mistake this screen exists
+ * to not make.
  */
-export default function DiagnosisPage() {
+export default async function DiagnosisPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user === null) redirect("/login");
+
+  let answers: Answers = {};
+  try {
+    const [row] = await getDb()
+      .select({ onboarding: profiles.onboarding })
+      .from(profiles)
+      .where(eq(profiles.id, user.id))
+      .limit(1);
+    answers = (row?.onboarding ?? {}) as Answers;
+  } catch {
+    redirect("/onboarding");
+  }
+
+  // The quiz must actually be finished — a partial diagnosis reads as broken.
+  if (resumeIndex(answers) < TOTAL_STEPS) redirect("/onboarding");
+
   return (
-    <div className="mx-auto flex w-full max-w-[30rem] flex-col gap-4">
-      <h1 className="text-display-md">Your leak</h1>
-      <p className="text-text-secondary text-body-lg">Placeholder. 7.2 builds this.</p>
-      <Button variant="accent" size="lg" asChild>
-        <Link href="/paywall">Continue</Link>
-      </Button>
+    <div className="mx-auto w-full max-w-[30rem] pb-16">
+      <DiagnosisClient diagnosis={buildDiagnosis(answers)} />
     </div>
   );
 }

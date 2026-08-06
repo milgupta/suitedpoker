@@ -16,3 +16,4 @@ docs/COMPETITOR-*.md
 
 # drizzle-kit generated snapshots — reformatting churns on every regenerate
 supabase/migrations/meta
+.next-trash-*
