@@ -929,6 +929,28 @@ if you add one.
 - **`docs/LAUNCH.md`** is ordered so nothing on it can silently undo something
   above it, and leads with the solver-claim decision.
 
+**What the full e2e passes left you.**
+
+- **`npm run smoke` before any long run.** 28 routes, two seconds. A confirming
+  suite was invalidated by an incomplete build — `rm -rf .next-trash-*` was
+  BACKGROUNDED and still running when `next build` started, `/styleguide/table`
+  shipped without its client reference manifest and returned 500, and six
+  failures across three files all looked like product bugs. **Always remove
+  `.next` synchronously.**
+- 🔴 **The first version of that smoke check could not fail.** It enumerated
+  routes from `.next/server/app` — the artifact it exists to validate — so a
+  deleted route vanished from the list and it reported "all 27 routes answered"
+  while curl got a 500 from the 28th. It reads `src/app` now. Proved by removing
+  a built route: exit 1, `/styleguide/table 500 ← BROKEN`.
+- **Playwright's expect timeout is 15s, not the 5s default.** Every assertion
+  waits on a real server, a real Postgres round-trip and a real Supabase auth
+  call; the login → gate → redirect chain regularly takes ten seconds under
+  parallel workers. Two daily tests failed a full pass and passed in isolation
+  on exactly that. `daily.spec.ts` also carries a 90s per-test budget.
+- **12 of the 14 skips are `NEXT_PUBLIC_POSTHOG_KEY` being empty** — the whole
+  8.1 event-stream verification has never run. One is the Supabase SMTP budget
+  (self-healing), one is Tab navigation on iOS Safari (a real platform limit).
+
 **What the first full e2e pass left you.**
 
 - 🔴 **THE HINT GUARD WAS NARROWER THAN ITS PROMISE FOR FOUR SUBSTAGES.**

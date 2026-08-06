@@ -9,8 +9,13 @@
  * leak test among them, which is exactly the kind of thing you do not want to
  * be reasoning about from corrupt evidence.
  *
- * This reads the routes Next ACTUALLY built rather than a hand-kept list, so a
- * new page is covered the day it exists.
+ * Routes are enumerated from SOURCE (`src/app`), never from the build output.
+ *
+ * The first version read `.next/server/app` — the very artifact it exists to
+ * validate. Deleting a built route made it vanish from the list, and the check
+ * cheerfully reported "all 27 routes answered" while curl got a 500 from the
+ * 28th. A check that enumerates from the thing it is checking cannot fail, and
+ * that is the whole failure mode this was written for.
  *
  *   npm run smoke            # against an already-running server
  *   PORT=3100 npm run smoke
@@ -20,7 +25,7 @@ import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? `http://localhost:${process.env.PORT ?? 3000}`;
-const APP_DIR = join(process.cwd(), ".next", "server", "app");
+const APP_DIR = join(process.cwd(), "src", "app");
 
 /** Route groups are organisational; they never appear in a URL. */
 function urlFor(dir: string): string | null {
@@ -34,14 +39,14 @@ function urlFor(dir: string): string | null {
   return `/${path}`;
 }
 
-function builtRoutes(): string[] {
+function sourceRoutes(): string[] {
   const found: string[] = [];
 
   const walk = (dir: string, rel: string): void => {
     for (const entry of readdirSync(dir)) {
       const full = join(dir, entry);
       if (statSync(full).isDirectory()) walk(full, `${rel}/${entry}`);
-      else if (entry === "page.js") {
+      else if (/^page\.(tsx?|mdx)$/.test(entry)) {
         const url = urlFor(rel);
         if (url !== null) found.push(url);
       }
@@ -53,9 +58,9 @@ function builtRoutes(): string[] {
 }
 
 async function main(): Promise<void> {
-  const routes = builtRoutes();
+  const routes = sourceRoutes();
   if (routes.length === 0) {
-    console.error("No built routes found. Run `npm run build` first.");
+    console.error("No page.tsx found under src/app. Is the working directory right?");
     process.exit(1);
   }
 
@@ -81,7 +86,7 @@ async function main(): Promise<void> {
   }
 
   console.log(
-    `\n${"=".repeat(52)}\nROUTE SMOKE (${routes.length} built routes)\n${"=".repeat(52)}`,
+    `\n${"=".repeat(52)}\nROUTE SMOKE (${routes.length} routes in src/app)\n${"=".repeat(52)}`,
   );
   console.log(rows.join("\n"));
 
