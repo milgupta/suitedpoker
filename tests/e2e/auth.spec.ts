@@ -178,7 +178,7 @@ test.describe("auth", () => {
     const alert = page.locator("form [role=alert]");
     const outcome = await Promise.race([
       page
-        .getByRole("heading", { name: /Onboarding|Check your email/ })
+        .getByRole("heading", { name: /Most players lose money|Check your email/ })
         .waitFor({ timeout: 15_000 })
         .then(() => "created" as const),
       alert.waitFor({ timeout: 15_000 }).then(() => "error" as const),
@@ -216,7 +216,7 @@ test.describe("auth", () => {
     if (data.user !== null) created.push(data.user.id);
 
     await page.goto(data.properties.action_link);
-    await expect(page.getByRole("heading", { name: "Onboarding" })).toBeVisible({
+    await expect(page.getByRole("heading", { name: /Most players lose money/ })).toBeVisible({
       timeout: 15_000,
     });
   });

@@ -226,6 +226,13 @@
   /* ── 3. Containers ──────────────────────────────────────────────────────── */
   --container-marketing: 720px;
   --container-app: 1100px;
+  /*
+   * The (app) shell's vertical padding, named because the onboarding funnel has
+   * to subtract it to fill exactly one viewport. A hardcoded 5rem in two files
+   * is a full-screen layout that silently gains a scrollbar the day the shell
+   * padding changes.
+   */
+  --app-shell-py: 2.5rem;
 
   /* ── 7. Easings ─────────────────────────────────────────────────────────── */
   --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);

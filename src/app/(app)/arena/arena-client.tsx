@@ -20,7 +20,6 @@ import type { HintLevel } from "@/lib/hints";
 import { parseArenaPreset, type ArenaPreset } from "@/lib/arena-preset";
 import { capture } from "@/lib/analytics-client";
 import { GRADES } from "@/lib/grade";
-import { cardsFromString } from "@/poker/cards";
 import { evColor } from "@/lib/ev-color";
 
 interface Answered {
@@ -357,7 +356,13 @@ function Hud({
 }
 
 function SpotView({ spot }: { spot: ClientSpot }) {
-  const hero = cardsFromString(spot.heroCards.map(String).join(" "));
+  /**
+   * `Card` is a branded NUMBER, so it survives JSON as a number and needs no
+   * parsing. The previous version stringified each card and fed the result back
+   * through `cardsFromString`, which turned card 36 into the token "36" and
+   * threw "not a card" — crashing the whole arena into its error boundary.
+   */
+  const hero = spot.heroCards;
 
   return (
     <div className="border-border bg-surface-1 flex flex-col items-center gap-4 rounded-lg border p-5">
@@ -381,7 +386,7 @@ function SpotView({ spot }: { spot: ClientSpot }) {
 
       {spot.board.length > 0 && (
         <div className="flex gap-2">
-          {cardsFromString(spot.board.map(String).join(" ")).map((card, i) => (
+          {spot.board.map((card, i) => (
             <PlayingCard key={i} card={card} size="md" index={i} dealCount={spot.board.length} />
           ))}
         </div>

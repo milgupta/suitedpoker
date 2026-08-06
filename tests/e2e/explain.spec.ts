@@ -50,7 +50,10 @@ async function login(page: Page, email: string): Promise<void> {
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
   await page.getByRole("button", { name: "Log in" }).click();
-  await expect(page).toHaveURL(/\/dashboard/);
+  // Generous on purpose. Under a loaded dev server with parallel workers this
+  // redirect chain — middleware, entitlement check, render — regularly takes
+  // ten seconds, and a 5s default turns that into a fake product failure.
+  await expect(page).toHaveURL(/\/dashboard/, { timeout: 30_000 });
 }
 
 /** Plays one spot to completion and returns its id and the action taken. */

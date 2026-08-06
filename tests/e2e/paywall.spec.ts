@@ -42,8 +42,9 @@ async function login(page: Page, email: string): Promise<void> {
   await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
   await page.getByRole("button", { name: "Log in" }).click();
   // Unsubscribed, so the entitlement gate lands them here. That IS the
-  // expected destination.
-  await expect(page).toHaveURL(/\/paywall/);
+  // expected destination. Generous timeout: under parallel workers the
+  // redirect chain regularly takes ten seconds.
+  await expect(page).toHaveURL(/\/paywall/, { timeout: 30_000 });
 }
 
 test.describe("paywall", () => {

@@ -48,7 +48,10 @@ async function login(page: Page, email: string): Promise<void> {
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
   await page.getByRole("button", { name: "Log in" }).click();
-  await expect(page).toHaveURL(/\/dashboard/);
+  // Generous on purpose. Under a loaded dev server with parallel workers this
+  // redirect chain — middleware, entitlement check, render — regularly takes
+  // ten seconds, and a 5s default turns that into a fake product failure.
+  await expect(page).toHaveURL(/\/dashboard/, { timeout: 30_000 });
 }
 
 async function nextSpot(request: APIRequestContext): Promise<{
@@ -134,6 +137,37 @@ test.describe("drill loop", () => {
     for (const forbidden of ["nodeRef", "strategy", "ev", "handKey", "seed", "frequencies"]) {
       expect(raw, `${forbidden} appears in the raw response`).not.toContain(`"${forbidden}"`);
     }
+  });
+
+  test("the arena actually renders a hand rather than an error boundary", async ({ page }) => {
+    /**
+     * The security tests below scrape the page for solution data — and a page
+     * that has CRASHED contains none of it, so they pass on a broken arena.
+     * This asserts the opposite thing: that a hand is really on screen.
+     *
+     * It exists because the arena spent three substages crashing on every load.
+     * `Card` is a branded number, and SpotView stringified each one and fed it
+     * back through `cardsFromString`, which threw "not a card: 36".
+     */
+    const { email } = await makeEntitledUser();
+    await login(page, email);
+
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+
+    await page.goto("/arena");
+    await page.waitForTimeout(2500);
+
+    expect(errors, `the arena threw: ${errors.join(" | ")}`).toEqual([]);
+    await expect(page.getByText(/couldn.t load/i)).toHaveCount(0);
+
+    // Two hole cards, and a decision to make.
+    const cards = await page.getByRole("img").count();
+    expect(cards, "no hero cards rendered").toBeGreaterThanOrEqual(2);
+    expect(
+      await page.getByRole("button", { name: /fold|call|raise|check|bet/i }).count(),
+      "no action buttons rendered",
+    ).toBeGreaterThan(0);
   });
 
   test("SECURITY — the rendered page exposes no solution data either", async ({ page }) => {

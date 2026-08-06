@@ -14,5 +14,5 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const user = await getUser();
   if (user === null) redirect("/login");
 
-  return <div className="mx-auto max-w-(--container-app) px-4 py-10">{children}</div>;
+  return <div className="mx-auto max-w-(--container-app) px-4 py-(--app-shell-py)">{children}</div>;
 }

@@ -133,8 +133,49 @@ sessions.
 | 4.2 Hint system | done — 7 hint e2e green, 50-hint leak test green |
 | 4.3 Post-hand explanation | done — streaming, 36-explanation matrix green |
 | 7.3 Stripe setup and checkout | code + paywall done — ⚠️ **every Stripe-touching test is BLOCKED: `.env.local` holds LIVE keys** |
+| 2.8, 2.9, 6.1 (Track C) | done — merged from `track/engine`, worktree removed |
+| 7.1 Onboarding quiz | done — 20 e2e green, derivation table printed |
 
 Stage 0 is complete. Update this table when you finish a substage.
+
+**What 7.1 left you.**
+
+- **`src/lib/onboarding.ts` is pure and owns everything**: the eight questions,
+  the option copy, the echo strings, and every derivation. The client renders
+  it, the API route derives from it, the tests assert on it. Do not put quiz
+  copy in the component.
+- **Derivation is SERVER-side, on `complete: true`.** The client posts raw
+  answers only. A client that could post its own skill tier and rating could
+  post itself a rating it never earned, and difficulty targeting reads that
+  number.
+- **The skill-tier cap is one-directional** (`play_money` caps at `videos`,
+  `starting` caps at `never`, nothing caps upward). Wrong-low costs a few easy
+  spots the rating fixes in twenty hands; wrong-high makes a beginner's first
+  session impossible and they don't return.
+- **The study answers ARE the `SkillTier` values** (`never|videos|charts|solver`)
+  — same vocabulary as `ExperienceAnswer` in rating.ts and the coach's tiers.
+  The rating comes from `initialRatingFromOnboarding`, never a second table.
+- **Progress is `index / TOTAL_STEPS` and nothing else.** Every competitor's bar
+  skips or runs backwards because it was computed from something cleverer.
+- **`ECHO_POINTS` enumerates every answer-echo**, and a test renders each one
+  with and without its source answer. A missing echo silently degrades into
+  "at your stakes" phrasing.
+- **Q8 (`hand`, free text, max 500 chars) is stored for 4.x** — feed it into the
+  coach's context for the user's first session. Nothing consumes it yet.
+- **`--app-shell-py` in globals.css is the (app) layout's vertical padding.**
+  The quiz fills `100dvh - 2*var(--app-shell-py)` to fit exactly one viewport;
+  a hardcoded padding in two places is a scrollbar the day one changes.
+- **Fixed in passing — the arena was CRASHING on every load.** `Card` is a
+  branded number; `SpotView` stringified each one and fed it back through
+  `cardsFromString`, which threw `not a card: "36"` and blanked the page into
+  the error boundary. The security e2e passed the whole time because a crashed
+  page contains no solution data. There is now a test asserting a hand actually
+  renders. When testing a page, assert the SUCCESS state exists, not only that
+  the failure state doesn't.
+- **Login redirects in e2e get `timeout: 30_000`.** Under parallel workers the
+  login→gate→render chain regularly takes ten seconds; the 5s default made real
+  passes look like product failures.
+- `/diagnosis` is a placeholder — 7.2 replaces it.
 
 **What 7.3 left you.**
 

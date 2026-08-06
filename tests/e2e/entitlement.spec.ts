@@ -88,7 +88,11 @@ test.describe("entitlement gating", () => {
     const { email } = await makeUser();
     await login(page, email);
     await expect(page).toHaveURL(/\/paywall/);
-    await expect(page.getByRole("heading", { name: "Subscribe to keep going" })).toBeVisible();
+    // Asserted on the plan cards rather than the headline: this test is about
+    // the GATE, and tying it to marketing copy makes every copy edit a red
+    // security test.
+    await expect(page.locator("[data-plan=annual]")).toBeVisible();
+    await expect(page.locator("[data-plan=monthly]")).toBeVisible();
   });
 
   test("STATE 3 — an active subscription is admitted", async ({ page }) => {
@@ -134,7 +138,7 @@ test.describe("entitlement gating", () => {
     // Gating onboarding would trap every new signup; gating /welcome would
     // bounce a user whose Stripe webhook has not landed yet.
     await page.goto("/onboarding");
-    await expect(page.getByRole("heading", { name: "Onboarding" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Find my leak" })).toBeVisible();
 
     await page.goto("/welcome");
     await expect(page.getByRole("heading", { name: "You're in" })).toBeVisible();
