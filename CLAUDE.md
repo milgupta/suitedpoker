@@ -929,6 +929,37 @@ if you add one.
 - **`docs/LAUNCH.md`** is ordered so nothing on it can silently undo something
   above it, and leads with the solver-claim decision.
 
+**What the first full e2e pass left you.**
+
+- 🔴 **THE HINT GUARD WAS NARROWER THAN ITS PROMISE FOR FOUR SUBSTAGES.**
+  `redactHint` iterated only the spot's LEGAL actions, so any action word that
+  was not legal there went untested — a level-1 hint shipped reading "when your
+  opponent makes a massive four-bet, look at the strength required to play back
+  against them". The design has always said "levels 1 and 2 may not name ANY
+  action". It now tests the full vocabulary.
+- **`tests/e2e` was excluded from `tsc`.** That is how a missing import reached
+  a run and aborted the whole suite at collection. Nothing required the
+  exclusion; typecheck passes with the specs in.
+- 🔴 **`stripe-webhook-live` and `chat-live` were running inside every
+  `npm run verify`** — real Stripe customers and real Gemini calls per commit,
+  and a guaranteed failure whenever Playwright touched the same Stripe account.
+  Only `coach-live` had been excluded. The exclude is now `*-live.test.ts`, and
+  verify went from 40s to 8s.
+- **A site-wide footer is not free.** The 9.6 disclaimer in the ROOT layout
+  pushed the onboarding quiz — sized to `100dvh - 2*var(--app-shell-py)` — 56px
+  into a scroll on every question. It lives on the public surface and /paywall
+  now, and moving it means each new public page must opt in (/methodology was
+  missed once already).
+- **`tests/unit/e2e-selectors.test.ts` scans all 66 `getByRole(name)`
+  assertions against src/.** Two stale ones cost a full-suite discovery each
+  this session, and one of them — a red test nobody had run — was the only
+  thing pointing at there being NO sign-out control for a subscribed user.
+- **13 iCloud sync duplicates were on disk**, 6 under `tests/`. Gitignored, so
+  never committed, but Playwright and Vitest discover and RUN them. Both
+  runners now ignore `* [0-9].*`.
+- **Run e2e on port 3100.** Another project holds 3000, and
+  `reuseExistingServer` will happily test it instead.
+
 **What 9.6 left you.**
 
 - 🔴 **A CARELESS EDIT SILENTLY BROKE PASSWORD RESET.** Adding `ageConfirmed`
