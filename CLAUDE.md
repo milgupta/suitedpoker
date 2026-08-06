@@ -137,6 +137,7 @@ sessions.
 | 8.3 Transactional email | done — 8 emails read, dunning schedule exact |
 | 8.4 Landing page and SEO | done — Lighthouse mobile 99/100/100/100, scan clean |
 | 8.5 Product assets, icons, capture | done — 7 shots, 82% smaller, clean loop seam |
+| 9.1 / 9.2 Motion, mobile, PWA pass | done — CLS 0.0000 everywhere, axe clean, 4 device sizes |
 | 4.1 Gemini integration and prompt architecture | done — **20-spot adversarial run unverified (no Gemini key)** |
 | 4.2 Hint system | done — 7 hint e2e green, 50-hint leak test green |
 | 4.3 Post-hand explanation | done — streaming, 36-explanation matrix green |
@@ -864,6 +865,38 @@ Stage 0 is complete. Update this table when you finish a substage.
 - Hooks added for capture, in the existing `data-*` convention: `data-action`
   on the arena's action buttons, `data-cell` on range-grid cells,
   `data-testid="start-session"` on the table setup.
+
+**What 9.1 / 9.2 left you.**
+
+- 🔴 **THE CARD ROUND-TRIP BUG SHIPPED TWICE.** 7.1 found the arena blank
+  behind its error boundary (`not a card: "36"`); 9.1 found the identical line
+  in the DAILY CHALLENGE (`not a card: "43"`), which had been blanking that
+  whole page. `Card` is a branded number and arrives already typed — render it
+  directly, never `cardsFromString(cards.map(String).join(" "))`.
+  `tests/unit/card-round-trip.test.ts` now fails the build on the shape.
+  Both times every surrounding test passed, because a crashed page renders
+  nothing and nothing contains no leaked solution data.
+- **An error must never be an eternal skeleton.** `/daily` checked
+  `today === null` and returned a Shimmer BEFORE it reached the error branch,
+  so a failed load showed a grey box forever. Error state first, always.
+- **`aria-label` is prohibited on a bare `<span>`** — axe rates it serious, and
+  a screen reader ignores it, so `AnimatedNumber` announced nothing at all
+  (its digits are aria-hidden while they roll). It carries `role="img"` now.
+- **A `role="grid"` needs `role="row"` between it and its gridcells.** All 169
+  range-grid cells were an aria-required-parent violation. Fixed with row
+  wrappers at `display: contents`, so the CSS grid lays out identically.
+- **`tests/e2e/sweep.spec.ts` is the whole 9.1/9.2 acceptance in one file:**
+  four device sizes × 13 routes for overflow, CLS per route, axe, reduced
+  motion, and 44px targets. **CLS is 0.0000 on all 13 routes.**
+- **The overflow check treats `overflow: hidden` as clipping**, not just
+  `auto`/`scroll` — the first version flagged the shimmer sweep, a gradient
+  deliberately animating past the edge of a box that clips it.
+- **The range grid is exempt from 44px, honestly.** 169 cells across 375px is
+  26px by arithmetic; it is a visualisation you read, and tapping opens a
+  detail panel whose controls are full-size.
+- Safe-area insets, `user-select: none` on cards and action buttons, and
+  `overscroll-behavior` are in `globals.css`. Inputs were already 16px on
+  mobile (no iOS zoom) and nothing used `100vh`.
 
 **What 0.2 left you.** Anything a later substage needs to build on:
 

@@ -69,6 +69,11 @@ export function cellBands(cell: CellStrategy | undefined): Band[] {
   }));
 }
 
+/** HAND_KEYS in 13 rows of 13 — the same order, grouped for the ARIA tree. */
+const ROWS: HandKey[][] = Array.from({ length: GRID_SIZE }, (_, row) =>
+  HAND_KEYS.slice(row * GRID_SIZE, (row + 1) * GRID_SIZE),
+);
+
 export function RangeGrid({
   strategy,
   highlightHand,
@@ -91,67 +96,79 @@ export function RangeGrid({
         role="grid"
         aria-label={`Range grid, ${mode}`}
       >
-        {HAND_KEYS.map((key, index) => {
-          const bands = cellBands(strategy[key]);
-          const isHighlighted = key === highlightHand;
-          const isSelected = key === selected;
+        {/*
+         * Rows are real elements with `display: contents`, so the CSS grid
+         * lays out exactly as before while the ARIA tree gets the structure it
+         * requires. A role="grid" whose gridcells are direct children is an
+         * aria-required-parent violation on all 169 of them — axe rates it
+         * critical, and a screen reader cannot navigate the grid at all.
+         */}
+        {ROWS.map((row, rowIndex) => (
+          <div key={`row-${rowIndex}`} role="row" style={{ display: "contents" }}>
+            {row.map((key, columnIndex) => {
+              const index = rowIndex * GRID_SIZE + columnIndex;
+              const bands = cellBands(strategy[key]);
+              const isHighlighted = key === highlightHand;
+              const isSelected = key === selected;
 
-          return (
-            <motion.button
-              key={key}
-              data-cell={key}
-              type="button"
-              role="gridcell"
-              aria-label={key}
-              onClick={() => {
-                setSelected((current) => (current === key ? null : key));
-                onCellClick?.(key);
-              }}
-              className="border-border-subtle relative aspect-square border-r border-b"
-              style={{
-                background: "var(--color-surface-2)",
-                outline: isHighlighted
-                  ? "2px solid var(--color-accent-bright)"
-                  : isSelected
-                    ? "2px solid var(--color-text-primary)"
-                    : undefined,
-                outlineOffset: "-2px",
-                zIndex: isHighlighted || isSelected ? 1 : 0,
-              }}
-              initial={reduced ? false : { opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={
-                reduced ? { duration: 0 } : { duration: DURATION.fast, delay: index * step }
-              }
-            >
-              {/* Bands stack from the bottom, so a mixed hand reads as a
+              return (
+                <motion.button
+                  key={key}
+                  data-cell={key}
+                  type="button"
+                  role="gridcell"
+                  aria-label={key}
+                  onClick={() => {
+                    setSelected((current) => (current === key ? null : key));
+                    onCellClick?.(key);
+                  }}
+                  className="border-border-subtle relative aspect-square border-r border-b"
+                  style={{
+                    background: "var(--color-surface-2)",
+                    outline: isHighlighted
+                      ? "2px solid var(--color-accent-bright)"
+                      : isSelected
+                        ? "2px solid var(--color-text-primary)"
+                        : undefined,
+                    outlineOffset: "-2px",
+                    zIndex: isHighlighted || isSelected ? 1 : 0,
+                  }}
+                  initial={reduced ? false : { opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={
+                    reduced ? { duration: 0 } : { duration: DURATION.fast, delay: index * step }
+                  }
+                >
+                  {/* Bands stack from the bottom, so a mixed hand reads as a
                   partially filled cell rather than as a flat colour. */}
-              <span className="absolute inset-0 flex flex-col-reverse">
-                {bands.map((band) => (
-                  <span
-                    key={band.action}
-                    style={{ height: `${band.height}%`, background: band.colour }}
-                  />
-                ))}
-              </span>
+                  <span className="absolute inset-0 flex flex-col-reverse">
+                    {bands.map((band) => (
+                      <span
+                        key={band.action}
+                        style={{ height: `${band.height}%`, background: band.colour }}
+                      />
+                    ))}
+                  </span>
 
-              {/* Labels only above 500px — below that the grid is purely visual
+                  {/* Labels only above 500px — below that the grid is purely visual
                   and detail comes from a tap. */}
-              {/*
+                  {/*
                 White, not canvas-dark. The label sits on both an accent fill
                 and a bare surface depending on the hand, and near-black is
                 invisible on the surface and fails AA on the fill. White clears
                 4.62 on the accent and 16.7 on surface-2.
               */}
-              <span
-                className="relative hidden font-mono text-[9px] leading-none font-semibold min-[500px]:block"
-                style={{ color: "var(--color-on-accent)" }}
-              >
-                {key}
-              </span>
-            </motion.button>
-          );
-        })}
+                  <span
+                    className="relative hidden font-mono text-[9px] leading-none font-semibold min-[500px]:block"
+                    style={{ color: "var(--color-on-accent)" }}
+                  >
+                    {key}
+                  </span>
+                </motion.button>
+              );
+            })}
+          </div>
+        ))}
       </div>
 
       {selected !== null && (

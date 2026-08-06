@@ -58,7 +58,19 @@ export function AnimatedNumber({
   const settled = `${prefix}${format(value, decimals, signed)}${suffix}`;
 
   return (
-    <span className={className} style={{ fontVariantNumeric: "tabular-nums" }} aria-label={settled}>
+    /*
+     * `role="img"` because `aria-label` is PROHIBITED on a generic span — axe
+     * flags it serious, and a screen reader ignores the label entirely, so the
+     * digits underneath (which are aria-hidden while they roll) are announced
+     * as nothing at all. A role that accepts a name is what makes the label
+     * count.
+     */
+    <span
+      className={className}
+      style={{ fontVariantNumeric: "tabular-nums" }}
+      role="img"
+      aria-label={settled}
+    >
       <span aria-hidden="true">
         {prefix}
         {reduced ? format(value, decimals, signed) : <motion.span>{text}</motion.span>}

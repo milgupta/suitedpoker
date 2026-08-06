@@ -11,7 +11,6 @@ import { AnimatedNumber, Shimmer } from "@/components/motion";
 import { Feedback, PlayingCard } from "@/components/poker";
 import { buildShareText, MAX_DAILY_SCORE, type DailySpotResult } from "@/lib/daily";
 import { capture } from "@/lib/analytics-client";
-import { cardsFromString } from "@/poker/cards";
 
 /**
  * Module scope: the React Compiler treats a Date.now() inside a component as an
@@ -114,6 +113,23 @@ export function DailyClient() {
   }
 
   if (today === null) {
+    /*
+     * ERROR BEFORE SKELETON. With these the other way round a failed load
+     * rendered a grey box forever: `setError` fires, `today` stays null, and
+     * the early return means the message below is never reached. An eternal
+     * skeleton is worse than an error — it gives the user nothing to do.
+     */
+    if (error !== "") {
+      return (
+        <div className="flex flex-col items-start gap-4 py-10" role="status">
+          <h1 className="text-heading-lg">Today&apos;s challenge isn&apos;t ready</h1>
+          <p className="text-text-secondary text-body-md max-w-[46ch]">{error}</p>
+          <Button variant="primary" onClick={() => void load()}>
+            Try again
+          </Button>
+        </div>
+      );
+    }
     return <Shimmer className="h-96 w-full" />;
   }
 
@@ -179,7 +195,14 @@ export function DailyClient() {
               </p>
             )}
             <div className="flex gap-2">
-              {cardsFromString(spot.heroCards.map(String).join(" ")).map((card, i) => (
+              {/*
+                `Card` is a BRANDED NUMBER and already the right type on the
+                wire. Stringifying each one and feeding it back through
+                cardsFromString threw `not a card: "43"` and blanked the whole
+                daily behind the error boundary. 7.1 fixed exactly this in the
+                arena; the same line survived here.
+              */}
+              {spot.heroCards.map((card, i) => (
                 <PlayingCard key={i} card={card} size="lg" index={i} dealCount={2} />
               ))}
             </div>
