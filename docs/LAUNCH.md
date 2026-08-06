@@ -151,6 +151,22 @@ Verify it works before you rely on it:
 VERCEL_ENV=production npm run build
 ```
 
+## 6b. Upstash — upgrade BEFORE the first ad, not after traction
+
+Staying on the free tier during beta is fine and correct: a handful of users
+will not come close to the daily command limit.
+
+The trap is the timing. The drill loop uses roughly **8 Redis commands per
+hand**, so a 10,000/day allowance is about **1,250 hands a day across all
+users** — say 25 people doing a 50-hand session. Traction and the cap arrive on
+the *same day*, and the failure mode is not a slow page: `getSession` returns
+null, `/api/drills/answer` returns `spot_not_found`, and **every user loses the
+ability to answer a hand at once.**
+
+- [ ] Upstash moved off Free Tier **before** the first dollar of ad spend
+- [ ] Uptime monitor on `/api/health` — it reports `redis: "down"` when the
+      quota is exhausted, which is the only warning you will get
+
 ## 7. The last checks before you spend a dollar
 
 - [ ] `npm run verify` green
