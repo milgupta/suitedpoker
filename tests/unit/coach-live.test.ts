@@ -403,6 +403,17 @@ describe.skipIf(!HAS_KEY)("live adversarial run against Gemini", () => {
     ({ explainDecision } = await import("../../src/lib/ai/coach"));
 
     for (const spec of ADVERSARIAL) {
+      // Stop early rather than grinding through twenty doomed calls. A key with
+      // no quota fails identically every time, and 20 x retries x backoff is
+      // four minutes of a test run spent proving the first failure twice.
+      if (results.length >= 3 && results.every((r) => r.source === "template")) {
+        throw new Error(
+          `The model was unreachable for the first ${results.length} spots ` +
+            `(reason: ${results[0]?.redactedFor}). Fix the key or the quota, then re-run — ` +
+            `this suite is the only check that the coach never contradicts ground truth.`,
+        );
+      }
+
       const grade = gradeFor(spec);
       const result = await explainDecision(
         {
@@ -442,7 +453,7 @@ describe.skipIf(!HAS_KEY)("live adversarial run against Gemini", () => {
       );
     }
     console.log(`\n${"=".repeat(72)}\n`);
-  }, 240_000);
+  }, 300_000);
 
   it("reaches the model rather than silently falling back for every spot", () => {
     const fromModel = results.filter((r) => r.source === "model").length;

@@ -32,6 +32,16 @@ export default defineConfig({
           name: "unit",
           environment: "node",
           include: ["tests/unit/**/*.test.ts", "src/poker/**/*.test.ts"],
+          /**
+           * The live adversarial run against Gemini is opt-in: `npm run test:ai`.
+           *
+           * It needs a working API key WITH quota, which CI does not have and a
+           * laptop may not either. Left in the default run it turns an external
+           * billing problem into a red build gate that blocks every commit —
+           * and a suite that self-skips instead would quietly stop being the
+           * check that the coach never contradicts ground truth.
+           */
+          exclude: ["tests/unit/coach-live.test.ts"],
         },
       },
       {

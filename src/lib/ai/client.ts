@@ -69,6 +69,11 @@ export async function generateCoached(options: GenerateOptions): Promise<Generat
         model: google(COACH_MODEL),
         system: options.system,
         prompt: options.prompt,
+        // OUR loop owns retries. The SDK retries twice by default, which
+        // multiplies with the loop below into nine attempts per call — nine
+        // times the latency the user waits, and nine times the quota burned on
+        // an error that was never going to succeed.
+        maxRetries: 0,
         maxOutputTokens: options.maxOutputTokens ?? 220,
         // Low but not zero: the explanations should not read identically for
         // every user, and a deterministic model is not more accurate here —
@@ -97,9 +102,10 @@ export async function generateCoached(options: GenerateOptions): Promise<Generat
           ? "rate_limited"
           : "api_error";
 
-      // A timeout is not worth retrying inside a request the user is waiting
-      // on — the budget is already spent.
-      if (lastReason === "timeout") break;
+      // Neither of these is worth another attempt. A timeout has already spent
+      // the user's patience, and a quota error will fail again immediately
+      // while burning more of the quota that caused it.
+      if (lastReason === "timeout" || lastReason === "rate_limited") break;
     } finally {
       clearTimeout(timer);
     }
@@ -147,6 +153,8 @@ export async function streamCoached(options: GenerateOptions): Promise<StreamRes
       model: google(COACH_MODEL),
       system: options.system,
       prompt: options.prompt,
+      // Same reasoning as generateCoached: no hidden second retry layer.
+      maxRetries: 0,
       maxOutputTokens: options.maxOutputTokens ?? 220,
       temperature: options.temperature ?? 0.4,
       abortSignal: AbortSignal.timeout(TIMEOUT_MS),
