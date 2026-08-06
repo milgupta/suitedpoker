@@ -16,12 +16,20 @@ queue.
 1. [console.upstash.com](https://console.upstash.com) → sign in → **Create
    Database**.
 2. Name: `suitedpoker`.
-3. Type: **Regional**. Global costs more and replicates data you do not need
-   replicated — every key here is short-lived session state.
-4. **Region: match your Vercel region.** Vercel's default is `iad1`
-   (Washington, D.C.), so pick `us-east-1`. This matters more than it sounds:
-   the drill loop makes several round trips per hand, and a cross-continent
-   database adds latency to every one of them.
+3. Type: **Regional**. Global costs more and replicates data that does not
+   benefit from it — every key here is short-lived session state, rate-limit
+   counters, or cache. Nothing is durable and nothing is read from two
+   continents.
+4. **Region: it must match the Vercel function region.** Ours is pinned to
+   `sfo1` in `vercel.json`, so the database is `us-west-1` (N. California).
+
+   This matters more than it sounds, and the arithmetic is one-sided. A single
+   drill request makes ONE browser round trip but several Redis calls. Same
+   region: a New York user pays ~70ms to reach the function, then ~5ms per
+   Redis call. Mismatched: ~10ms to the function, then ~70ms × 5 to Redis.
+   Matching the function to Redis beats matching the function to the user.
+
+   If you ever move one, move the other in the same sitting.
 5. TLS: on (the default).
 
 ## 2. Copy the REST credentials — not the other ones
