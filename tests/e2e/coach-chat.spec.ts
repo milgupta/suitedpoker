@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
 import { loadLocalEnv } from "../support/load-local-env";
+import { adminClient, isConfigured } from "../support/e2e-supabase";
 
 /**
  * The chat's SERVER-SIDE boundaries.
@@ -13,9 +14,7 @@ import { loadLocalEnv } from "../support/load-local-env";
 
 loadLocalEnv();
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
-const CONFIGURED = SUPABASE_URL !== "" && SERVICE_KEY !== "";
+const CONFIGURED = isConfigured();
 
 const PASSWORD = "correct-horse-battery";
 
@@ -79,9 +78,7 @@ test.describe("hand-scoped chat", () => {
   test.describe.configure({ mode: "serial", timeout: 120_000 });
 
   test.beforeAll(() => {
-    admin = createClient(SUPABASE_URL, SERVICE_KEY, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
+    admin = adminClient();
   });
 
   test.afterAll(async () => {
@@ -250,9 +247,7 @@ test.describe("abuse stays bounded", () => {
   test.describe.configure({ timeout: 180_000 });
 
   test.beforeAll(() => {
-    admin = createClient(SUPABASE_URL, SERVICE_KEY, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
+    admin = adminClient();
   });
 
   test("a user firing 200 chat requests is throttled, and the bill is bounded", async ({
@@ -295,9 +290,7 @@ test.describe("the admin cost page", () => {
   test.describe.configure({ timeout: 90_000 });
 
   test.beforeAll(() => {
-    admin = createClient(SUPABASE_URL, SERVICE_KEY, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
+    admin = adminClient();
   });
 
   test("is a 404 for a user who is not on the allowlist", async ({ page }) => {

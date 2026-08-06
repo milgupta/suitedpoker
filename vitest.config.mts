@@ -41,7 +41,9 @@ export default defineConfig({
            * and a suite that self-skips instead would quietly stop being the
            * check that the coach never contradicts ground truth.
            */
-          exclude: ["tests/unit/coach-live.test.ts"],
+          // See the note in playwright.config.ts: sync-conflict duplicates are
+          // gitignored but still on disk, and Vitest runs them.
+          exclude: ["tests/unit/coach-live.test.ts", "**/* [0-9].*"],
         },
       },
       {

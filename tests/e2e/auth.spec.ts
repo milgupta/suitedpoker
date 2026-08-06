@@ -3,6 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { loadLocalEnv } from "../support/load-local-env";
+import { adminClient, isConfigured } from "../support/e2e-supabase";
 
 /**
  * Auth end to end, against the real Supabase project.
@@ -19,9 +20,7 @@ import { loadLocalEnv } from "../support/load-local-env";
 
 loadLocalEnv();
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
-const CONFIGURED = SUPABASE_URL !== "" && SERVICE_KEY !== "";
+const CONFIGURED = isConfigured();
 
 const PASSWORD = "correct-horse-battery";
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
@@ -75,9 +74,7 @@ test.describe("auth", () => {
   test.skip(!CONFIGURED, "Supabase credentials absent — auth e2e cannot run");
 
   test.beforeAll(() => {
-    admin = createClient(SUPABASE_URL, SERVICE_KEY, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
+    admin = adminClient();
   });
 
   test.afterAll(async () => {

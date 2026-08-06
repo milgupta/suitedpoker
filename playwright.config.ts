@@ -5,6 +5,14 @@ const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? `http://localhost:${PORT}`;
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  /**
+   * iCloud/Dropbox sync copies files mid-write as "name 2.spec.ts". They are
+   * gitignored, so they never reach a commit — but they sit on disk and
+   * Playwright happily discovers and RUNS them, which means a stale copy of a
+   * spec reports failures against code that has since changed. Two of them were
+   * live when this was added.
+   */
+  testIgnore: ["**/* [0-9].*"],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

@@ -2,6 +2,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
 import { expect, test, type Page } from "@playwright/test";
 import { loadLocalEnv } from "../support/load-local-env";
+import { adminClient } from "../support/e2e-supabase";
 
 /**
  * Checkout, against real Stripe in test mode.
@@ -14,8 +15,6 @@ import { loadLocalEnv } from "../support/load-local-env";
 
 loadLocalEnv();
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 const STRIPE_KEY = process.env.STRIPE_SECRET_KEY ?? "";
 const PRICE_MONTHLY = process.env.STRIPE_PRICE_MONTHLY ?? "";
 const PRICE_ANNUAL = process.env.STRIPE_PRICE_ANNUAL ?? "";
@@ -30,12 +29,7 @@ const PRICE_ANNUAL = process.env.STRIPE_PRICE_ANNUAL ?? "";
  */
 const TEST_MODE = STRIPE_KEY.startsWith("sk_test_");
 
-const CONFIGURED =
-  SUPABASE_URL !== "" &&
-  SERVICE_KEY !== "" &&
-  TEST_MODE &&
-  PRICE_MONTHLY !== "" &&
-  PRICE_ANNUAL !== "";
+const CONFIGURED = isConfigured() && TEST_MODE && PRICE_MONTHLY !== "" && PRICE_ANNUAL !== "";
 
 const PASSWORD = "correct-horse-battery";
 
@@ -113,9 +107,7 @@ test.describe("checkout", () => {
   );
 
   test.beforeAll(() => {
-    admin = createClient(SUPABASE_URL, SERVICE_KEY, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
+    admin = adminClient();
     stripe = new Stripe(STRIPE_KEY);
   });
 

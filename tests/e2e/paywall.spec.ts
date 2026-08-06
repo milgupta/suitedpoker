@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { expect, test, type Page } from "@playwright/test";
 import { loadLocalEnv } from "../support/load-local-env";
+import { adminClient, isConfigured } from "../support/e2e-supabase";
 
 /**
  * The paywall itself.
@@ -13,9 +14,7 @@ import { loadLocalEnv } from "../support/load-local-env";
 
 loadLocalEnv();
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
-const CONFIGURED = SUPABASE_URL !== "" && SERVICE_KEY !== "";
+const CONFIGURED = isConfigured();
 
 const PASSWORD = "correct-horse-battery";
 
@@ -51,9 +50,7 @@ test.describe("paywall", () => {
   test.skip(!CONFIGURED, "Supabase credentials absent");
 
   test.beforeAll(() => {
-    admin = createClient(SUPABASE_URL, SERVICE_KEY, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
+    admin = adminClient();
   });
 
   test.afterAll(async () => {

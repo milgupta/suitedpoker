@@ -27,9 +27,25 @@ import { loadLocalEnv } from "../support/load-local-env";
 // exactly what Vitest sets, so this test would have silently skipped forever.
 loadLocalEnv();
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+/*
+ * Points at the E2E project when one is configured, the app's own otherwise.
+ *
+ * The policies are identical in both — same migration — so proving them there
+ * proves them here, and it keeps the two users this creates out of the table
+ * the signup funnel is measured from. To verify PRODUCTION's policies
+ * specifically, unset the E2E_* vars for the run; that should be a deliberate
+ * act, not the default.
+ */
+const E2E_URL = process.env.E2E_SUPABASE_URL ?? "";
+const SUPABASE_URL = E2E_URL !== "" ? E2E_URL : (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "");
+const ANON_KEY =
+  E2E_URL !== ""
+    ? (process.env.E2E_SUPABASE_ANON_KEY ?? "")
+    : (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "");
+const SERVICE_KEY =
+  E2E_URL !== ""
+    ? (process.env.E2E_SUPABASE_SERVICE_ROLE_KEY ?? "")
+    : (process.env.SUPABASE_SERVICE_ROLE_KEY ?? "");
 
 const CONFIGURED = SUPABASE_URL !== "" && ANON_KEY !== "" && SERVICE_KEY !== "";
 
