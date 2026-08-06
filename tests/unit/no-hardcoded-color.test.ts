@@ -13,6 +13,20 @@ import { describe, expect, it } from "vitest";
 const SRC = resolve(process.cwd(), "src");
 const TOKENS_FILE = join("src", "app", "globals.css");
 
+/**
+ * The ONE justified exception, and it is narrow on purpose.
+ *
+ * Email clients do not load stylesheets, cannot resolve a CSS variable, and
+ * Gmail strips `:root` entirely — so an email built on tokens renders with no
+ * colours at all. `src/emails/theme.ts` therefore holds literals, and
+ * `tests/unit/emails.test.ts` asserts every one of them still equals the token
+ * it was copied from, so the duplication cannot drift.
+ *
+ * Only theme.ts. A literal in a template or the layout is still a failure —
+ * they must all read from the theme.
+ */
+const EMAIL_PALETTE = join("src", "emails", "theme.ts");
+
 const SCANNED_EXTENSIONS = [".ts", ".tsx", ".css", ".js", ".jsx", ".mjs"];
 
 const PATTERNS: { name: string; re: RegExp }[] = [
@@ -33,7 +47,9 @@ function walk(dir: string): string[] {
 describe("no hardcoded colours outside globals.css", () => {
   const files = walk(SRC)
     .map((f) => relative(process.cwd(), f))
-    .filter((f) => f !== TOKENS_FILE.split("/").join(sep));
+    .filter(
+      (f) => f !== TOKENS_FILE.split("/").join(sep) && f !== EMAIL_PALETTE.split("/").join(sep),
+    );
 
   it("scans a meaningful number of files", () => {
     expect(files.length).toBeGreaterThan(5);

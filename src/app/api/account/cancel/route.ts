@@ -10,6 +10,8 @@ import { isCancelReason, offerFor } from "@/lib/cancellation";
 import { syncSubscription } from "@/lib/stripe/sync";
 import { captureServer } from "@/lib/analytics-server";
 import { invalidateEntitlement } from "@/lib/entitlement";
+import { sendTransactional } from "@/lib/email";
+import { formatDate } from "@/lib/dunning";
 
 /**
  * Cancelling, at period end.
@@ -96,6 +98,20 @@ export const POST = withAuth(async (request, auth) => {
         ? Math.max(0, Math.round((Date.now() / 1000 - updated.start_date) / 86_400))
         : 0;
     await captureServer(auth.userId, "subscription_cancelled", { reason, daysActive });
+
+    // Confirms the exact date, keeps the door open, no guilt. A win-back is
+    // far cheaper than a new customer.
+    const {
+      data: { user },
+    } = await auth.supabase.auth.getUser();
+    if (user?.email != null) {
+      await sendTransactional({
+        to: user.email,
+        template: "subscription_cancelled",
+        data: { accessEndsOn: endsAt === 0 ? null : formatDate(new Date(endsAt * 1000)) },
+        idempotencyKey: `cancelled:${subscriptionId}`,
+      });
+    }
 
     return NextResponse.json({
       ok: true,

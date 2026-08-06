@@ -133,6 +133,8 @@ sessions.
 | 7.5 Account, billing, cancellation | done — 9 e2e against real Stripe subscriptions |
 | 4.4 Hand-scoped chat | done — 15 jailbreaks + 10 number probes read against live Gemini |
 | 4.5 Cost guards and abuse protection | done — breaker verified, product usable with AI fully off |
+| 8.2 Meta Pixel and Conversions API | done — dedup wired end to end, hash hand-verified |
+| 8.3 Transactional email | done — 8 emails read, dunning schedule exact |
 | 4.1 Gemini integration and prompt architecture | done — **20-spot adversarial run unverified (no Gemini key)** |
 | 4.2 Hint system | done — 7 hint e2e green, 50-hint leak test green |
 | 4.3 Post-hand explanation | done — streaming, 36-explanation matrix green |
@@ -748,6 +750,49 @@ Stage 0 is complete. Update this table when you finish a substage.
   numbers: first sentence **1196ms**, whole explanation 2373ms.
 - **`npm run test:chat`** runs the jailbreak suite. Read the output — a green
   tick nobody read is not evidence.
+
+**What 8.2 / 8.3 left you.**
+
+- **Attribution is captured in the PROXY, on the landing hit.** `?fbclid=` and
+  the UTMs do not survive to /signup — several navigations later the query
+  string is gone. Capturing at signup captures nothing.
+- **FIRST touch wins.** Someone who arrives from an ad and returns via Google a
+  week later was acquired by the ad; overwriting credits the channel that
+  closed rather than the one that paid.
+- **The cookie is moved onto the profile from the `(app)` LAYOUT**, not one
+  route. There is no single entry point — /onboarding, /paywall and /welcome
+  are each somebody's first page — and a buyer who never finished onboarding
+  still needs it before the Stripe webhook reads it. Guarded by a 24h Redis
+  marker; a user with no cookie costs zero queries.
+- **The Purchase dedup id is minted at CHECKOUT**, stored in `localStorage`,
+  sent to Stripe as metadata, and fired from both /welcome and the webhook.
+  Two different ids report two sales for one payment.
+- **`fbp`/`fbc` are NOT hashed** — Meta matches them verbatim, and hashing them
+  produces a payload that is accepted and matches nobody. Only `em` is hashed,
+  and the pinned hash in the test was computed outside this codebase.
+- **The attribution cookie was double-encoded** (encoded by us AND by the
+  cookie layer) and `/api/meta/capi` checked configuration before validating
+  the body — so an unconfigured pixel answered a forged Purchase with a 200.
+  Both found by the e2e.
+- **`src/emails/theme.ts` is the only file besides globals.css allowed a colour
+  literal**, because email clients cannot resolve a CSS variable and Gmail
+  strips `:root`. `tests/unit/emails.test.ts` asserts every value still equals
+  its token, so the duplication cannot drift. A literal anywhere else under
+  `src/emails/` is still a build failure.
+- **`textSecondary` is opaque, not the token's `rgba()`** — Outlook has no
+  alpha channel and renders it black on near-black.
+- **Dunning is scheduled off `past_due_since`, never off a send log.** A log
+  that fails to write once sends the same email forever. A recovered
+  subscription is no longer past_due, so it simply is not in the result set —
+  that IS the "stop on payment" mechanism, and there is nothing to cancel.
+- **`stageDueOn` fires only on the EXACT day.** "Day 3 or later" re-sends every
+  day and turns dunning into a spam complaint.
+- **The final email's date is `accessEndsAt()`**, the same arithmetic the
+  entitlement rule enforces. Saying the 9th and cutting off on the 8th is a
+  chargeback.
+- **`npx vitest run --project unit tests/unit/emails.test.ts --reporter=verbose`**
+  prints all eight rendered emails. Read them.
+- Setup: `docs/META-SETUP.md` and `docs/EMAIL-SETUP.md`.
 
 **What 0.2 left you.** Anything a later substage needs to build on:
 

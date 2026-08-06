@@ -11,6 +11,10 @@ import { captureServer } from "@/lib/analytics-server";
 import { sendPurchase, purchaseEventId } from "@/lib/meta-capi";
 import { loadAttribution } from "@/lib/attribution-server";
 import { sendTransactional } from "@/lib/email";
+import { accessEndsAt, formatDate } from "@/lib/dunning";
+import { profiles } from "@/db/schema";
+import { LEAK_BB100, LEAK_HEADLINE } from "@/lib/diagnosis";
+import { link } from "@/emails/theme";
 
 /**
  * The Stripe webhook.
@@ -86,6 +90,44 @@ function subscriptionIdOfInvoice(invoice: Stripe.Invoice): string | null {
   return null;
 }
 
+function customerIdOf(session: Stripe.Checkout.Session): string {
+  return typeof session.customer === "string" ? session.customer : (session.customer?.id ?? "");
+}
+
+/**
+ * The welcome email — the one that is NOT generic.
+ *
+ * It restates the diagnosis and links the first lesson, so the first thing a
+ * new subscriber reads is about their own game rather than about the product.
+ */
+async function sendWelcome(userId: string, email: string, plan: PlanId | null): Promise<void> {
+  void plan;
+  try {
+    const [profile] = await getDb()
+      .select({ displayName: profiles.displayName, primaryLeak: profiles.primaryLeakKey })
+      .from(profiles)
+      .where(eq(profiles.id, userId))
+      .limit(1);
+
+    const leakKey = profile?.primaryLeak ?? null;
+
+    await sendTransactional({
+      to: email,
+      template: "welcome",
+      data: {
+        displayName: profile?.displayName ?? null,
+        leakLabel: leakKey === null ? null : (LEAK_HEADLINE[leakKey] ?? null),
+        leakBb100: leakKey === null ? null : (LEAK_BB100[leakKey] ?? null),
+        firstLessonHref: "/learn",
+      },
+      idempotencyKey: `welcome:${userId}`,
+    });
+  } catch (error) {
+    // A failed welcome email must never fail the payment webhook.
+    console.error(`[email] welcome failed for ${userId}: ${String(error)}`);
+  }
+}
+
 async function emailForCustomer(customerId: string): Promise<string | null> {
   try {
     const customer = await getStripe().customers.retrieve(customerId);
@@ -159,6 +201,10 @@ async function handleCheckoutCompleted(event: Stripe.Event): Promise<string> {
   // Only a paid session is a purchase. `payment_status` can be 'unpaid' on a
   // session completed with a delayed payment method.
   if (session.payment_status === "paid" && synced.plan !== null) {
+    const email =
+      session.customer_details?.email ?? (await emailForCustomer(customerIdOf(session)));
+    if (email !== null) await sendWelcome(synced.userId, email, synced.plan);
+
     const metaEventId = session.metadata?.metaEventId;
     await recordPurchase(
       event.id,
@@ -189,6 +235,27 @@ async function handleInvoicePaid(event: Stripe.Event): Promise<string> {
   const synced = await syncSubscription(subscriptionId);
   if (synced === null) return "no_user";
 
+  const customerId =
+    typeof invoice.customer === "string" ? invoice.customer : (invoice.customer?.id ?? null);
+  const email = customerId === null ? null : await emailForCustomer(customerId);
+
+  if (email !== null && synced.plan !== null) {
+    await sendTransactional({
+      to: email,
+      template: "receipt",
+      data: {
+        amount: `$${(invoice.amount_paid / 100).toFixed(2)}`,
+        planLabel: PLANS[synced.plan].label,
+        invoiceUrl: invoice.hosted_invoice_url ?? null,
+        nextBillingDate:
+          synced.currentPeriodEnd === null ? null : formatDate(synced.currentPeriodEnd),
+      },
+      // Stripe retries this event; a customer receiving two receipts for one
+      // charge reads it as having been billed twice.
+      idempotencyKey: `receipt:${invoice.id}`,
+    });
+  }
+
   // A renewal is not a new purchase. Counting it as one would make month two of
   // every subscriber look like a fresh acquisition.
   return `renewed:${synced.currentPeriodEnd?.toISOString() ?? "unknown"}`;
@@ -208,17 +275,16 @@ async function handleInvoiceFailed(event: Stripe.Event): Promise<string> {
   const email = customerId === null ? null : await emailForCustomer(customerId);
 
   if (email !== null) {
+    // Dunning #1, immediate. #2 and #3 come from the daily cron, scheduled
+    // off past_due_since rather than off a log of what was already sent.
     await sendTransactional({
       to: email,
       template: "payment_failed",
       data: {
-        plan: planForPriceId(subscription.items.data[0]?.price.id) ?? "your plan",
-        amountDue: (invoice.amount_due / 100).toFixed(2),
-        // The grace period is stated in the email because the alternative is a
-        // customer discovering the deadline by losing access.
-        graceEndsAt: synced.pastDueSince
-          ? new Date(synced.pastDueSince.getTime() + 3 * 86_400_000).toISOString()
-          : "",
+        amount: `$${(invoice.amount_due / 100).toFixed(2)}`,
+        updateUrl: link("/account"),
+        accessEndsOn:
+          synced.pastDueSince === null ? null : formatDate(accessEndsAt(synced.pastDueSince)),
       },
     });
   }

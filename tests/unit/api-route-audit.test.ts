@@ -27,6 +27,8 @@ const API_ROOT = join(process.cwd(), "src/app/api");
 const PUBLIC_ROUTES: Record<string, string> = {
   "stripe/webhook/route.ts":
     "Stripe is the caller and has no session. Authenticated by signature instead — the constructEvent call IS the guard.",
+  "email/dunning/route.ts":
+    "A Vercel cron is the caller and has no session. Authenticated by CRON_SECRET, which fails closed in production.",
   "meta/retry/route.ts":
     "A Vercel cron is the caller and has no session. Authenticated by CRON_SECRET, which fails closed in production.",
   "daily/generate/route.ts":
