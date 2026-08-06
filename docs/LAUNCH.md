@@ -91,6 +91,48 @@ All three fail closed without `CRON_SECRET`.
 - [ ] `ALERT_WEBHOOK_URL` set, so the AI budget breaker can reach you at 80%
       and 100% of `AI_DAILY_BUDGET_USD`
 
+## 5b. The complete Vercel environment
+
+`.env.local` never leaves the laptop — it is gitignored, and Vercel builds from
+GitHub. Every secret needs a second copy in the Vercel dashboard
+(Settings → Environment Variables), set for **Production**, **Preview** and
+**Development**. Vercel does not rebuild on an env change, so redeploy after.
+
+| Variable | Where it comes from | Status |
+|---|---|---|
+| `DATABASE_URL` | Supabase → Settings → Database | have it |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Settings → API | have it |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | same | have it |
+| `SUPABASE_SERVICE_ROLE_KEY` | same | have it |
+| `NEXT_PUBLIC_SITE_URL` | `https://suitedpoker.com`, no trailing slash | have it |
+| `UPSTASH_REDIS_REST_URL` | Upstash → REST API | have it |
+| `UPSTASH_REDIS_REST_TOKEN` | same | have it |
+| `CRON_SECRET` | `openssl rand -hex 32` | **generate** |
+| `STRIPE_SECRET_KEY` | Stripe **live** mode | **live mode** |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe live mode | **live mode** |
+| `STRIPE_WEBHOOK_SECRET` | the live webhook endpoint | **live mode** |
+| `STRIPE_PRICE_MONTHLY` / `_ANNUAL` | the live products | **live mode** |
+| `RESEND_API_KEY` | Resend, after domain verification | **needed** |
+| `NEXT_PUBLIC_POSTHOG_KEY` | PostHog project | **needed** |
+| `NEXT_PUBLIC_META_PIXEL_ID` | Meta Events Manager | **needed** |
+| `META_CAPI_ACCESS_TOKEN` | same, system user token | **needed** |
+| `ADMIN_EMAILS` | your email — empty means /admin/costs 404s for everyone | **needed** |
+| `AI_DAILY_BUDGET_USD` | optional, defaults to 25 | optional |
+| `ALERT_WEBHOOK_URL` | Slack/Discord, for the budget breaker | optional |
+
+**Do NOT set** `META_TEST_EVENT_CODE` or `DEV_BYPASS_ENTITLEMENT=true` in
+production — the build refuses both.
+
+Faster than the dashboard for a batch, once `vercel link` has been run:
+
+```bash
+vercel env add UPSTASH_REDIS_REST_URL production
+```
+
+**Production deploys stay red until Stripe live mode is done**, because the gate
+rejects test keys. Preview deploys are unaffected — use a preview URL to verify
+everything else first.
+
 ## 6. The build gate
 
 `next.config.ts` refuses a **production** deploy that is missing any of:
