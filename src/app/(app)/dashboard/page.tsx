@@ -1,18 +1,21 @@
 import type { Metadata } from "next";
-import { SignOutButton } from "../sign-out-button";
+import { redirect } from "next/navigation";
+import { getUser } from "@/lib/supabase/server";
+import { loadDashboard } from "@/lib/dashboard-server";
+import { DashboardView } from "@/components/dashboard/dashboard-view";
 
 export const metadata: Metadata = { title: "Dashboard", robots: { index: false, follow: false } };
 
 /**
- * PLACEHOLDER — Stage 3 builds the real dashboard. It exists now so auth has a
- * genuine destination to redirect to and the e2e tests assert something real.
+ * The home screen.
+ *
+ * Server-rendered from one query pass, so the answer to "what do I do right
+ * now?" is on screen with the first paint rather than after a spinner.
  */
-export default function DashboardPage() {
-  return (
-    <div>
-      <h1 className="text-display-md">Dashboard</h1>
-      <p className="text-text-secondary text-body-lg mt-3">Placeholder. Stage 3 builds this.</p>
-      <SignOutButton />
-    </div>
-  );
+export default async function DashboardPage() {
+  const user = await getUser();
+  if (user === null) redirect("/login");
+
+  const data = await loadDashboard(user.id);
+  return <DashboardView data={data} email={user.email ?? null} />;
 }

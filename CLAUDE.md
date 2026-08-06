@@ -140,8 +140,36 @@ sessions.
 | 6.3 Post-session review | done — planted leak found, one AI call enforced |
 | 5.1 Curriculum content system | done — 14 lessons, prose measured |
 | 5.2 Lesson player and progress | done — server-side lock verified, 20 e2e green |
+| 5.3 Dashboard | done — four data states, numbers hand-verified, LCP 128ms |
 
 Stage 0 is complete. Update this table when you finish a substage.
+
+**What 5.3 left you.**
+
+- **`src/lib/dashboard.ts` is pure arithmetic; `dashboard-server.ts` does one
+  query pass.** Every figure on the home screen is checkable against a hand
+  count in a unit test. Both my hand counts were wrong the first time and the
+  code was right — which is the entire argument for writing them down.
+- **`[data-fold]` reserves the first viewport** at `calc(100dvh -
+  var(--app-shell-py))` — only the shell's TOP padding sits above it, and
+  subtracting both ends it a gap short, which is exactly how the rating card
+  crept above the fold. An e2e enumerates what is above 844px.
+- **A brand-new user never sees a zero.** `totalHands === 0` swaps the whole
+  statistics block for a three-step path, and an e2e asserts no `0%` appears
+  anywhere on a new dashboard. Zeros on day one read as "empty", and that is a
+  refund.
+- **An untouched street reports zero ATTEMPTS, not zero accuracy** — never tell
+  someone they are bad at something they have not tried.
+- **`bb/100 lost` is a positive cost.** "You lose 4.2bb/100" reads
+  unambiguously; a negative number invites "negative loss, so… good?". The tile
+  carries `higherIsBetter: false`.
+- **There is no `street` column on `drill_attempts`** — street is derived from
+  the stored board string (0/3/4/5 cards).
+- **The greeting broke the layout.** Falling back to the email's local part
+  produced unbroken strings like `christopherjohnson1985`, which overflowed the
+  heading and pushed the page sideways at 390px. `displayNameFor()` caps at 18
+  characters and the heading is `break-words`. When an overflow test fails with
+  no element wider than the viewport, look for a text node that cannot wrap.
 
 **What 5.2 left you.**
 
