@@ -130,6 +130,7 @@ sessions.
 | 3.5 Range grid viewer | done |
 | 3.6 Hand-history format and question types | done |
 | 7.4 Webhooks and entitlement | done — verified against live Stripe test mode |
+| 7.5 Account, billing, cancellation | done — 9 e2e against real Stripe subscriptions |
 | 4.1 Gemini integration and prompt architecture | done — **20-spot adversarial run unverified (no Gemini key)** |
 | 4.2 Hint system | done — 7 hint e2e green, 50-hint leak test green |
 | 4.3 Post-hand explanation | done — streaming, 36-explanation matrix green |
@@ -677,6 +678,37 @@ Stage 0 is complete. Update this table when you finish a substage.
   does not have and takes 40s.
 - **`tests/unit/api-route-audit.test.ts` enumerates every API route** and fails
   the build on a new unguarded one. Exemptions must carry a written reason.
+
+**What 7.5 left you.**
+
+- **Settings live at `/account`, not `/settings`.** The plan said `/settings/*`,
+  but `/account` was already the entitlement-exempt prefix and already the
+  Stripe portal's `return_url` from 7.3. Moving it would have meant changing
+  both for no gain.
+- **`/account` MUST stay entitlement-exempt.** The people who most need billing
+  are the ones whose card just failed. Gating it means the only users who can
+  fix a payment problem are the ones who do not have one.
+- **The offer depends on the PLAN as well as the reason.** An annual subscriber
+  saying "too expensive" gets no offer — being told to "switch to yearly and
+  save" reads as an unread form letter and confirms they were right to leave.
+- **Declining the offer goes straight to confirm and it never reappears.** A
+  looping save offer does not retain anyone; it converts cancellations into
+  chargebacks, which cost the fee plus the dispute.
+- **Deleting an account cancels Stripe FIRST and only then deletes the user.**
+  The other order leaves a subscription billing someone who cannot log in and
+  cannot cancel. If Stripe fails, the delete is refused outright.
+- **Deletion cancels IMMEDIATELY; an ordinary cancellation never does.** They
+  paid for the period, so cancelling takes effect at period end — but there is
+  no account left to bill after a deletion.
+- **A save is recorded too** (`/api/account/cancel/record`, `offer_accepted =
+  true`, no Stripe change). Without it you see the reasons of everyone who left
+  and nothing about the offer that worked.
+- **The timezone field is not cosmetic** — `localDay()` reads it for both the
+  daily challenge and the streak. An invalid zone is rejected rather than
+  stored. The e2e proves Kiritimati and Niue sit on different calendar dates.
+- **Run e2e on port 3100** when another project holds 3000:
+  `PORT=3100 PLAYWRIGHT_BASE_URL=http://localhost:3100 npx playwright test`.
+  `reuseExistingServer` will otherwise happily test someone else's app.
 
 **What 0.2 left you.** Anything a later substage needs to build on:
 

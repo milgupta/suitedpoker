@@ -38,6 +38,12 @@ const AUTH_ONLY_ROUTES: Record<string, string> = {
   "entitlement/status/route.ts": "/welcome polls this before the webhook lands.",
   "onboarding/route.ts": "Onboarding runs before the paywall.",
   "guard-probe/authed/route.ts": "Test fixture for the guard itself.",
+  "account/profile/route.ts":
+    "A cancelled user must still be able to fix their own name and timezone.",
+  "account/password/route.ts": "Credentials are not a paid feature.",
+  "account/cancel/route.ts": "The person cancelling stops being entitled the moment it lands.",
+  "account/cancel/record/route.ts": "Same flow as the cancellation itself.",
+  "account/delete/route.ts": "Leaving must never require an active subscription.",
   "stripe/switch-plan/route.ts":
     "7.5 offers the yearly switch DURING cancellation, and it verifies an owned subscription itself rather than trusting the entitlement cache.",
 };

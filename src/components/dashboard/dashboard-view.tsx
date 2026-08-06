@@ -262,6 +262,17 @@ export function DashboardView({ data, email }: DashboardViewProps) {
           <QuickAction href="/table" label="Table sim" />
           <QuickAction href="/ranges" label="Ranges" />
         </div>
+
+        {/* Settings and billing have to be reachable from the home screen.
+            Burying them is what turns "how do I cancel" into a support email
+            and then into a chargeback. */}
+        <Link
+          href="/account"
+          className="text-text-tertiary text-body-sm tap-target mt-2 self-start underline"
+          data-cta="account"
+        >
+          Account and billing
+        </Link>
       </section>
     </div>
   );
