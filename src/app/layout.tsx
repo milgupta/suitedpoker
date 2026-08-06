@@ -27,7 +27,6 @@ import "./globals.css";
 import { MotionProvider } from "@/components/motion";
 import { PostHogProvider } from "@/components/PostHogProvider";
 import { MetaPixel } from "@/components/MetaPixel";
-import { DISCLAIMER } from "@/lib/compliance";
 
 // Every font is self-hosted — Inter via @fontsource-variable, Geist via the
 // `geist` package — rather than next/font/google, so builds stay hermetic with
@@ -76,12 +75,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <PostHogProvider>
           <MotionProvider>{children}</MotionProvider>
         </PostHogProvider>
-        {/*
-          Site-wide and understated. It is the sentence an ad reviewer and a
-          payment-risk analyst both look for, and it costs nothing to have on
-          every page rather than only where someone remembered to add it.
-        */}
-        <p className="text-text-tertiary text-caption px-4 pb-6 text-center">{DISCLAIMER}</p>
       </body>
     </html>
   );

@@ -232,8 +232,32 @@ describe("the disclaimer", () => {
     expect(DISCLAIMER).toContain("No real-money gambling");
   });
 
-  it("is rendered from the ROOT layout, so it cannot be missed on a page", () => {
-    const layout = readFileSync(join(SRC, "app", "layout.tsx"), "utf8");
-    expect(layout).toContain("DISCLAIMER");
+  it("renders on every PUBLIC surface, and not inside the app shell", () => {
+    /*
+     * It began life in the root layout, which put it on every page including
+     * the onboarding quiz — and that quiz is sized to fill exactly one viewport
+     * (`100dvh - 2*var(--app-shell-py)`), so an extra paragraph pushed all
+     * eight questions 56px into a scroll. Caught by the onboarding e2e.
+     *
+     * Nothing behind the login needs it: nobody reviewing this product for ad
+     * or payment eligibility has an account. /paywall is the exception, being
+     * the payment screen a Stripe reviewer does reach.
+     */
+    const surfaces = [
+      "src/app/(marketing)/(auth)/layout.tsx",
+      "src/app/legal/layout.tsx",
+      "src/app/(app)/paywall/page.tsx",
+    ];
+    for (const file of surfaces) {
+      expect(readFileSync(join(ROOT, file), "utf8"), file).toContain("ComplianceFooter");
+    }
+
+    // The landing page and the blocked page print it directly.
+    for (const file of ["src/app/page.tsx", "src/app/unavailable/page.tsx"]) {
+      expect(readFileSync(join(ROOT, file), "utf8"), file).toContain("DISCLAIMER");
+    }
+
+    // And NOT in the root layout, which is what broke the quiz.
+    expect(readFileSync(join(SRC, "app", "layout.tsx"), "utf8")).not.toContain("DISCLAIMER");
   });
 });

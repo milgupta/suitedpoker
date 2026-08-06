@@ -2,7 +2,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
 import { expect, test, type Page } from "@playwright/test";
 import { loadLocalEnv } from "../support/load-local-env";
-import { adminClient } from "../support/e2e-supabase";
+import { adminClient, isConfigured } from "../support/e2e-supabase";
 
 /**
  * Checkout, against real Stripe in test mode.

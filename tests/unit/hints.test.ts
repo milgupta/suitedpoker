@@ -246,3 +246,45 @@ describe("streetOf", () => {
     expect(streetOf(5)).toBe("river");
   });
 });
+
+describe("the level 1-2 guard covers EVERY action word", () => {
+  /**
+   * Regression: the guard used to iterate only the spot's LEGAL actions, so a
+   * word that was not legal there was never tested. A level-1 hint shipped
+   * saying "when your opponent makes a massive four-bet, look at the strength
+   * required to play back against them" — found by tests/e2e/hint.spec.ts,
+   * which had always used the full vocabulary while the product used a subset.
+   */
+  const NOT_LEGAL_HERE = ["fold", "call", "check", "raise", "bet"] as const;
+
+  it.each(NOT_LEGAL_HERE)('blocks "%s" even when it is not a legal action', (word) => {
+    for (const level of [1, 2] as const) {
+      const result = redactHint(`Consider how often they ${word} in this spot.`, level, []);
+      expect(result.safe, `level ${level} let "${word}" through with no legal actions`).toBe(false);
+    }
+  });
+
+  it("blocks the compound forms a model actually reaches for", () => {
+    for (const text of [
+      "When your opponent makes a massive four-bet, look at the strength required.",
+      "A three-bet from that position narrows things considerably.",
+      "Think about what an all-in means here.",
+    ]) {
+      expect(redactHint(text, 1, []).safe, text).toBe(false);
+    }
+  });
+
+  it("still allows a hint that names no action at all", () => {
+    // The guard must not be a mute button — see the templates in hints.ts.
+    const result = redactHint(
+      "Think about your position and how much is already in the middle.",
+      1,
+      ["fold", "call", "raise"],
+    );
+    expect(result.safe).toBe(true);
+  });
+
+  it("leaves level 3 free to name the action, which is its entire job", () => {
+    expect(redactHint("Raising is the line here.", 3, ["fold", "raise"]).safe).toBe(true);
+  });
+});

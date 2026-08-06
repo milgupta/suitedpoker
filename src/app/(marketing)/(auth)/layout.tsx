@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { ComplianceFooter } from "@/components/ComplianceFooter";
 
 /**
  * The auth shell. Ambient glow is allowed here — DESIGN.md permits it on
@@ -26,6 +27,8 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       <main className="flex flex-1 items-start justify-center px-4 pb-16">
         <div className="w-full max-w-sm">{children}</div>
       </main>
+
+      <ComplianceFooter />
     </div>
   );
 }

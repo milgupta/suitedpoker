@@ -30,7 +30,8 @@
     "screenshots": "tsx scripts/capture-screenshots.ts",
     "optimize:assets": "tsx scripts/optimize-assets.ts",
     "hero:video": "tsx scripts/capture-hero-video.ts",
-    "mutation": "tsx scripts/mutation-check.ts"
+    "mutation": "tsx scripts/mutation-check.ts",
+    "test:live": "vitest run --config vitest.live.config.mts"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.34",

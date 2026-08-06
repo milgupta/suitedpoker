@@ -33,17 +33,26 @@ export default defineConfig({
           environment: "node",
           include: ["tests/unit/**/*.test.ts", "src/poker/**/*.test.ts"],
           /**
-           * The live adversarial run against Gemini is opt-in: `npm run test:ai`.
+           * EVERY *-live suite is opt-in, and every one of them has its own
+           * npm script. They make real API calls: Gemini generations that cost
+           * money and need quota, and Stripe customers and subscriptions that
+           * are created for real in test mode.
            *
-           * It needs a working API key WITH quota, which CI does not have and a
-           * laptop may not either. Left in the default run it turns an external
-           * billing problem into a red build gate that blocks every commit —
-           * and a suite that self-skips instead would quietly stop being the
-           * check that the coach never contradicts ground truth.
+           * Only coach-live was listed here. stripe-webhook-live and chat-live
+           * matched `tests/unit/**` and had therefore been running inside every
+           * `npm run verify` — creating Stripe objects and burning Gemini quota
+           * on each commit, and failing outright whenever the Playwright suite
+           * happened to be touching the same Stripe account.
+           *
+           * Left in the default run they turn an external billing problem into
+           * a red build gate that blocks every commit; a suite that self-skips
+           * instead would quietly stop being the check it was written to be.
+           *
+           *   npm run test:ai · npm run test:chat · npm run test:stripe
            */
           // See the note in playwright.config.ts: sync-conflict duplicates are
           // gitignored but still on disk, and Vitest runs them.
-          exclude: ["tests/unit/coach-live.test.ts", "**/* [0-9].*"],
+          exclude: ["tests/unit/*-live.test.ts", "**/* [0-9].*"],
         },
       },
       {

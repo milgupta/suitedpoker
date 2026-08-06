@@ -9,6 +9,7 @@ import { SignOutButton } from "../sign-out-button";
 import { TrackView } from "@/components/track-view";
 import { PaywallClient } from "./paywall-client";
 import { PLANS } from "@/lib/stripe/plans";
+import { ComplianceFooter } from "@/components/ComplianceFooter";
 
 export const metadata: Metadata = { title: "Subscribe", robots: { index: false, follow: false } };
 
@@ -57,6 +58,10 @@ export default async function PaywallPage() {
       </Suspense>
 
       <SignOutButton />
+
+      {/* The payment screen is the one page behind the login that a Stripe
+          risk reviewer actually reaches. */}
+      <ComplianceFooter />
     </div>
   );
 }

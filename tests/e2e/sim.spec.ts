@@ -317,7 +317,7 @@ test.describe("table sim", () => {
     await page.goto("/table");
     await expect(page.getByRole("heading", { name: "Pick your table" })).toBeVisible();
 
-    await page.locator("[data-preset=casino]").click();
+    await page.locator("[data-preset=cardroom]").click();
     await page.getByRole("button", { name: "Sit down" }).click();
 
     await expect(page).toHaveURL(/\/table\/play\?session=/, { timeout: 20_000 });

@@ -193,9 +193,26 @@ export function redactHint(
     return { safe: false, reason: "gambling_advice", text: fallback };
 
   if (level < 3) {
-    for (const action of legalActions) {
-      const word = ACTION_WORDS[action];
-      if (word !== undefined && word.test(trimmed)) {
+    /*
+     * EVERY action word, not just the ones legal in this spot.
+     *
+     * This used to iterate `legalActions`, which left a hole exactly the size
+     * of the words that were not legal: a level-1 hint shipped reading "when
+     * your opponent makes a massive four-bet, look at the strength required to
+     * play back against them". "bet" was not among the hero's legal actions, so
+     * nothing tested for it — and a beginner reading "four-bet … play back" has
+     * been pointed straight at aggression before acting, which is the one thing
+     * a pre-decision hint must never do.
+     *
+     * The stated guarantee was always "levels 1 and 2 may not name ANY action".
+     * The implementation was narrower than the promise; this closes it.
+     *
+     * `legalActions` is still taken so the signature and the call sites stay
+     * put, and so level 3 can use it if it ever needs to.
+     */
+    void legalActions;
+    for (const word of Object.values(ACTION_WORDS)) {
+      if (word.test(trimmed)) {
         return { safe: false, reason: "contradicts_best_action", text: fallback };
       }
     }

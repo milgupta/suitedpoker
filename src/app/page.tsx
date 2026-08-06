@@ -3,6 +3,7 @@ import { TrackView } from "@/components/track-view";
 import { annualisedCents, formatUsd, PLANS, savingPercent } from "@/lib/stripe/plans";
 import { methodologyFacts } from "@/lib/methodology-server";
 import { provenanceHeadline } from "@/lib/methodology";
+import { DISCLAIMER } from "@/lib/compliance";
 
 const FEATURES = [
   {
@@ -438,9 +439,7 @@ export default function Home() {
               <p className="text-accent-bright text-body-md font-mono font-bold tracking-widest">
                 SUITEDPOKER
               </p>
-              <p className="text-text-secondary text-body-md mt-2">
-                Educational software. Play money only. No real-money gambling.
-              </p>
+              <p className="text-text-secondary text-body-md mt-2">{DISCLAIMER}</p>
             </div>
             <div className="text-text-secondary text-body-md flex gap-6">
               <Link href="/methodology" className="hover:text-text-primary transition">

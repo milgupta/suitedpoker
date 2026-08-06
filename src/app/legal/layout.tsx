@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ComplianceFooter } from "@/components/ComplianceFooter";
 
 export default function LegalLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -15,6 +16,7 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
       <p className="border-border text-text-tertiary text-caption mt-16 border-t pt-6">
         Questions: support@suitedpoker.com
       </p>
+      <ComplianceFooter className="mt-2" />
     </div>
   );
 }

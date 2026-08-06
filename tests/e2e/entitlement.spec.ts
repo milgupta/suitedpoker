@@ -98,7 +98,9 @@ test.describe("entitlement gating", () => {
 
     await login(page, email);
     await expect(page).toHaveURL(/\/dashboard/);
-    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+    // The dashboard's h1 is the GREETING ("Evening, Alex"); 5.3 replaced the
+    // word "Dashboard" and this assertion outlived it.
+    await expect(page.locator("[data-section='greeting']")).toBeVisible();
   });
 
   test("STATE 4 — 'active' with a PAST period end is NOT admitted", async ({ page }) => {
@@ -138,7 +140,12 @@ test.describe("entitlement gating", () => {
     await expect(page.getByRole("button", { name: "Find my leak" })).toBeVisible();
 
     await page.goto("/welcome");
-    await expect(page.getByRole("heading", { name: "You're in" })).toBeVisible();
+    // NOT bounced to /paywall — which is the whole point of the exemption.
+    // 7.4 made /welcome poll, so an unentitled visitor correctly sits on
+    // "Setting up your account" rather than "You're in"; asserting the latter
+    // was asserting that the entitlement check had NOT run.
+    await expect(page).toHaveURL(/\/welcome/);
+    await expect(page.locator("[data-welcome-state]")).toBeVisible();
   });
 
   test("an unentitled user still cannot reach a gated page directly", async ({ page }) => {

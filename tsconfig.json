@@ -28,5 +28,11 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "tests/e2e", ".next/**/* [0-9]*", ".next-trash-*"]
+  /*
+   * tests/e2e USED to be excluded, and that exclusion hid a broken spec until
+   * it aborted a full suite run at collection time — `isConfigured is not
+   * defined`, a missing import that tsc would have caught in a second. Nothing
+   * required the exclusion; typecheck passes with the specs in.
+   */
+  "exclude": ["node_modules", ".next/**/* [0-9]*", ".next-trash-*"]
 }
