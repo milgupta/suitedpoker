@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { persistAttribution, readAttributionCookie } from "@/lib/attribution-server";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -44,6 +45,18 @@ export async function GET(request: NextRequest) {
     const url = new URL(next === "/reset" ? "/reset" : "/login", origin);
     if (next !== "/reset") url.searchParams.set("error", "exchange_failed");
     return NextResponse.redirect(url);
+  }
+
+  // Google OAuth lands here, so this is where an OAuth signup's attribution
+  // gets recorded. Fire-and-forget: attribution is worth a lot and worth zero
+  // signups, so a failure must never block the redirect.
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user !== null) void persistAttribution(user.id, await readAttributionCookie());
+  } catch {
+    // Same.
   }
 
   return NextResponse.redirect(new URL(next, origin));

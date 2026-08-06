@@ -8,7 +8,8 @@ import { getStripe, isStripeConfigured, planForPriceId } from "@/lib/stripe/clie
 import { syncFromObject, syncSubscription } from "@/lib/stripe/sync";
 import { PLANS, type PlanId } from "@/lib/stripe/plans";
 import { captureServer } from "@/lib/analytics-server";
-import { sendPurchase } from "@/lib/meta-capi";
+import { sendPurchase, purchaseEventId } from "@/lib/meta-capi";
+import { loadAttribution } from "@/lib/attribution-server";
 import { sendTransactional } from "@/lib/email";
 
 /**
@@ -102,11 +103,14 @@ async function emailForCustomer(customerId: string): Promise<string | null> {
  * which is what stops five retries from reporting five sales.
  */
 async function recordPurchase(
-  eventId: string,
+  stripeEventId: string,
   userId: string,
   plan: PlanId,
   email: string | null,
+  metaEventId: string | null,
 ): Promise<void> {
+  // The EXACT amount Stripe charged. A rounded or hardcoded value here makes
+  // every ROAS figure in Ads Manager quietly wrong.
   const revenue = PLANS[plan].amountCents / 100;
 
   // Attributed to the USER id. An anonymous distinct id here silently breaks
@@ -114,14 +118,25 @@ async function recordPurchase(
   await captureServer(userId, "purchase_completed", { plan, revenue });
 
   await sendPurchase({
-    // The browser-side Pixel fires with this same id, derived from the Stripe
-    // event, so Meta deduplicates the pair into one conversion.
-    eventId,
+    /**
+     * The id the BROWSER minted at checkout, carried here through Stripe
+     * metadata. Both halves of the Purchase therefore share one id and Meta
+     * collapses them into a single conversion.
+     *
+     * The fallback is derived from the Stripe event id rather than random, so a
+     * webhook retry cannot mint a second id and report a second sale — but it
+     * will not match a pixel event, which is the correct trade: one conversion
+     * attributed server-side beats two attributed to nothing.
+     */
+    eventId: metaEventId ?? purchaseEventId(stripeEventId),
     userId,
     email: email ?? undefined,
     valueUsd: revenue,
     currency: "USD",
     plan,
+    // fbp/fbc, captured on the landing hit. Without them Meta's match quality
+    // for a server-side event is poor and attribution degrades badly.
+    attribution: await loadAttribution(userId),
   });
 }
 
@@ -144,11 +159,13 @@ async function handleCheckoutCompleted(event: Stripe.Event): Promise<string> {
   // Only a paid session is a purchase. `payment_status` can be 'unpaid' on a
   // session completed with a delayed payment method.
   if (session.payment_status === "paid" && synced.plan !== null) {
+    const metaEventId = session.metadata?.metaEventId;
     await recordPurchase(
       event.id,
       synced.userId,
       synced.plan,
       session.customer_details?.email ?? null,
+      typeof metaEventId === "string" && metaEventId !== "" ? metaEventId : null,
     );
   }
 

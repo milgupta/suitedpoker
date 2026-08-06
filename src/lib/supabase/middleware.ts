@@ -1,6 +1,11 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isEntitled } from "@/lib/entitlement-rule";
+import {
+  ATTRIBUTION_COOKIE,
+  ATTRIBUTION_COOKIE_OPTIONS,
+  nextAttributionCookie,
+} from "@/lib/attribution";
 import { isSupabaseConfigured, supabaseConfig } from "./config";
 
 /** Everything under here requires a session. */
@@ -53,10 +58,35 @@ function bypassEntitlement(): boolean {
 export async function updateSession(request: NextRequest): Promise<NextResponse> {
   let response = NextResponse.next({ request });
 
+  /**
+   * Attribution, captured on the FIRST request and nowhere else.
+   *
+   * `?fbclid=` and the UTMs are only visible on the landing hit. By the time
+   * someone reaches /signup, several navigations later, the query string is
+   * gone — so capturing it at signup captures nothing, and the ad account
+   * cannot attribute the customer it paid for. Written here, read at signup.
+   */
+  const attributionCookie = nextAttributionCookie(
+    request.cookies.get(ATTRIBUTION_COOKIE)?.value,
+    request.nextUrl,
+    {
+      fbp: request.cookies.get("_fbp")?.value,
+      fbc: request.cookies.get("_fbc")?.value,
+    },
+    Date.now(),
+  );
+
+  const applyAttribution = (target: NextResponse): NextResponse => {
+    if (attributionCookie !== null) {
+      target.cookies.set(ATTRIBUTION_COOKIE, attributionCookie, ATTRIBUTION_COOKIE_OPTIONS);
+    }
+    return target;
+  };
+
   // Without credentials there is no session to refresh and nothing to protect.
   // Let everything through rather than locking the whole app out of a build
   // that was never meant to have auth.
-  if (!isSupabaseConfigured()) return response;
+  if (!isSupabaseConfigured()) return applyAttribution(response);
 
   const { url, anonKey } = supabaseConfig();
 
@@ -91,7 +121,7 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
     // Preserve where they were going, so login can finish the journey rather
     // than dumping everyone on the dashboard.
     redirect.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
-    return NextResponse.redirect(redirect);
+    return applyAttribution(NextResponse.redirect(redirect));
   }
 
   // Entitlement gate. THIS IS UX, NOT A SECURITY BOUNDARY — middleware can be
@@ -131,7 +161,7 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
       const redirect = request.nextUrl.clone();
       redirect.pathname = "/paywall";
       redirect.search = "";
-      return NextResponse.redirect(redirect);
+      return applyAttribution(NextResponse.redirect(redirect));
     }
   }
 
@@ -139,8 +169,8 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
     const redirect = request.nextUrl.clone();
     redirect.pathname = "/dashboard";
     redirect.search = "";
-    return NextResponse.redirect(redirect);
+    return applyAttribution(NextResponse.redirect(redirect));
   }
 
-  return response;
+  return applyAttribution(response);
 }

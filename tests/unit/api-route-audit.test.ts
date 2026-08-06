@@ -27,6 +27,8 @@ const API_ROOT = join(process.cwd(), "src/app/api");
 const PUBLIC_ROUTES: Record<string, string> = {
   "stripe/webhook/route.ts":
     "Stripe is the caller and has no session. Authenticated by signature instead — the constructEvent call IS the guard.",
+  "meta/retry/route.ts":
+    "A Vercel cron is the caller and has no session. Authenticated by CRON_SECRET, which fails closed in production.",
   "daily/generate/route.ts":
     "A Vercel cron is the caller and has no session. Authenticated by CRON_SECRET, which fails closed in production.",
 };
@@ -38,6 +40,8 @@ const AUTH_ONLY_ROUTES: Record<string, string> = {
   "entitlement/status/route.ts": "/welcome polls this before the webhook lands.",
   "onboarding/route.ts": "Onboarding runs before the paywall.",
   "guard-probe/authed/route.ts": "Test fixture for the guard itself.",
+  "meta/capi/route.ts":
+    "Attribution events fire before anyone has paid — Lead is sent from onboarding and InitiateCheckout from the paywall itself.",
   "account/profile/route.ts":
     "A cancelled user must still be able to fix their own name and timezone.",
   "account/password/route.ts": "Credentials are not a paid feature.",

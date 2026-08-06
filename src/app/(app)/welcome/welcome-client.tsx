@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { fadeUp, scaleIn } from "@/lib/motion";
+import { trackPixel } from "@/lib/meta-client";
+import { PURCHASE_EVENT_ID_KEY } from "@/lib/meta-storage";
 
 /**
  * The post-checkout landing page, and the fix for the worst bug in this flow.
@@ -89,6 +91,28 @@ export function WelcomeClient({ hasSession }: { hasSession: boolean }) {
       clearTimeout(timer);
     };
   }, [check, hasSession]);
+
+  /**
+   * The browser half of the Purchase, fired ONCE the payment is confirmed.
+   *
+   * Same event id the webhook sends from the server (minted at checkout,
+   * carried through Stripe metadata), so Meta deduplicates the pair into one
+   * conversion. The key is removed immediately: a reload of /welcome must not
+   * report a second sale.
+   */
+  useEffect(() => {
+    if (phase === "checking") return;
+
+    let eventId: string | null = null;
+    try {
+      eventId = window.localStorage.getItem(PURCHASE_EVENT_ID_KEY);
+      if (eventId !== null) window.localStorage.removeItem(PURCHASE_EVENT_ID_KEY);
+    } catch {
+      // Private browsing. The server's half still lands.
+    }
+
+    if (eventId !== null) trackPixel("Purchase", eventId);
+  }, [phase]);
 
   // Prefetched during the wait so the first paid screen is instant.
   useEffect(() => {

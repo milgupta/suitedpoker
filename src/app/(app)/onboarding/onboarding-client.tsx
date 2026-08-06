@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { capture } from "@/lib/analytics-client";
+import { trackDeduplicated } from "@/lib/meta-client";
 import { SPRING } from "@/lib/motion";
 import {
   progressAt,
@@ -106,6 +107,10 @@ export function OnboardingClient({ initialAnswers }: OnboardingClientProps) {
       };
 
       if (body.derived !== undefined) {
+        // Meta's Lead event, deduplicated across pixel and CAPI. This is the
+        // signal the ad optimiser learns from before anyone has paid, so it is
+        // the one that decides who the algorithm shows the ads to on day one.
+        trackDeduplicated("Lead");
         capture("onboarding_completed", {
           skillTier: body.derived.skillTier,
           primaryLeak: body.derived.primaryLeakKey ?? "none",

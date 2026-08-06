@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { capture } from "@/lib/analytics-client";
+import { trackDeduplicated } from "@/lib/meta-client";
 import { SPRING } from "@/lib/motion";
 import type { Diagnosis } from "@/lib/diagnosis";
 import { cn } from "@/lib/utils";
@@ -31,6 +32,7 @@ export function DiagnosisClient({ diagnosis }: DiagnosisClientProps) {
   const [analyzing, setAnalyzing] = useState(!reduced);
 
   useEffect(() => {
+    trackDeduplicated("ViewContent", { content_name: "diagnosis" });
     capture("diagnosis_viewed", {
       primaryLeak: diagnosis.leakKey,
       annualCost: diagnosis.cost.annualUsd ?? 0,

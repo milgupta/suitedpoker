@@ -15,6 +15,12 @@ const bodySchema = z.object({
    * id instead, revenue-by-source is silently wrong.
    */
   distinctId: z.string().max(200).optional(),
+  /**
+   * The Meta deduplication key, minted by the browser alongside its own
+   * InitiateCheckout. Carried through Stripe so the webhook's server-side
+   * Purchase and the browser's Purchase share one id and Meta counts one sale.
+   */
+  metaEventId: z.string().max(100).optional(),
 });
 
 /**
@@ -70,12 +76,14 @@ export const POST = withAuth(async (request, auth) => {
         userId: auth.userId,
         plan,
         posthogDistinctId: parsed.data.distinctId ?? "",
+        metaEventId: parsed.data.metaEventId ?? "",
       },
       subscription_data: {
         metadata: {
           userId: auth.userId,
           plan,
           posthogDistinctId: parsed.data.distinctId ?? "",
+          metaEventId: parsed.data.metaEventId ?? "",
         },
       },
       allow_promotion_codes: true,

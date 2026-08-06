@@ -15,6 +15,8 @@ import {
   savingPercent,
   type PlanId,
 } from "@/lib/stripe/plans";
+import { newEventId, trackDeduplicated } from "@/lib/meta-client";
+import { PURCHASE_EVENT_ID_KEY } from "@/lib/meta-storage";
 import { cn } from "@/lib/utils";
 
 /**
@@ -68,6 +70,25 @@ export function PaywallClient({ diagnosis, leakBb100, leakLabel }: PaywallClient
 
     capture("checkout_started", { plan: selected });
 
+    /**
+     * ONE id for both halves of the Purchase.
+     *
+     * Minted here, handed to Stripe as metadata, and stashed locally so
+     * /welcome can fire the browser-side Purchase with the SAME id the webhook
+     * will send from the server. Meta collapses the pair into one conversion;
+     * two different ids would report two sales for one payment.
+     */
+    const metaEventId = newEventId("purchase");
+    try {
+      window.localStorage.setItem(PURCHASE_EVENT_ID_KEY, metaEventId);
+    } catch {
+      // Private browsing. The server still sends its half.
+    }
+    trackDeduplicated("InitiateCheckout", {
+      value: PLANS[selected].amountCents / 100,
+      currency: "USD",
+    });
+
     try {
       const response = await fetch("/api/stripe/checkout", {
         method: "POST",
@@ -77,6 +98,7 @@ export function PaywallClient({ diagnosis, leakBb100, leakLabel }: PaywallClient
           // Carried through Stripe so the purchase attributes to the session
           // that produced it rather than to a fresh anonymous id.
           distinctId: isAnalyticsConfigured() ? posthog.get_distinct_id() : undefined,
+          metaEventId,
         }),
       });
 

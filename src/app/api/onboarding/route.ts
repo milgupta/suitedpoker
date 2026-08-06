@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { persistAttribution, readAttributionCookie } from "@/lib/attribution-server";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { withAuth } from "@/lib/api-guard";
@@ -43,6 +44,12 @@ export const POST = withAuth(async (request, auth) => {
   if (!gate.allowed) {
     return NextResponse.json({ error: "rate_limited", resetAt: gate.resetAt }, { status: 429 });
   }
+
+  // The first authenticated server call every new user makes, and therefore the
+  // reliable moment to move the attribution cookie onto the profile. It only
+  // fills columns that are still empty, so calling it on every answer is a
+  // no-op after the first.
+  void persistAttribution(auth.userId, await readAttributionCookie());
 
   let body: unknown;
   try {
