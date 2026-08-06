@@ -32,7 +32,8 @@
     "hero:video": "tsx scripts/capture-hero-video.ts",
     "mutation": "tsx scripts/mutation-check.ts",
     "test:live": "vitest run --config vitest.live.config.mts",
-    "smoke": "tsx scripts/smoke-routes.ts"
+    "smoke": "tsx scripts/smoke-routes.ts",
+    "check:redis": "tsx scripts/check-redis.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.34",

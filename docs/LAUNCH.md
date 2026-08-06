@@ -26,6 +26,22 @@ top to bottom; do not skip the verification column.
 
 Full detail: [`docs/STRIPE-SETUP.md`](./STRIPE-SETUP.md).
 
+## 1b. Upstash Redis — a launch blocker
+
+Without it the app uses an in-memory store, and on serverless each invocation
+has its own memory: `/api/drills/next` writes the spot seed into one instance
+and `/api/drills/answer` reads from another. **The drill loop returns
+`spot_not_found` for everyone.** It also disables rate limiting, the AI budget
+circuit breaker, and the AI cache.
+
+```
+UPSTASH_REDIS_REST_URL=https://...upstash.io
+UPSTASH_REDIS_REST_TOKEN=...
+```
+
+`npm run check:redis` proves it works rather than that it is set. Full steps and
+the capacity arithmetic: [`docs/REDIS-SETUP.md`](./REDIS-SETUP.md).
+
 ## 2. Domain and DNS
 
 - [ ] `suitedpoker.com` and `www` both resolve to Vercel; www redirects to apex
