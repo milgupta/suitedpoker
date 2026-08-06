@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { methodologyFacts } from "@/lib/methodology-server";
 import { isFullySolverVerified, METHODOLOGY_SECTIONS, provenanceHeadline } from "@/lib/methodology";
+import { ComplianceFooter } from "@/components/ComplianceFooter";
 
 export const metadata: Metadata = {
   title: "Methodology — where the strategy comes from",
@@ -61,6 +62,8 @@ export default function MethodologyPage() {
           ← Back
         </Link>
       </p>
+
+      <ComplianceFooter className="mt-12" />
     </main>
   );
 }

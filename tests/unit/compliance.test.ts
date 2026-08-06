@@ -243,9 +243,16 @@ describe("the disclaimer", () => {
      * or payment eligibility has an account. /paywall is the exception, being
      * the payment screen a Stripe reviewer does reach.
      */
+    /*
+     * Enumerated rather than inferred, because moving it out of the root
+     * layout means each public surface must opt in — and /methodology was
+     * missed on the first pass, which the compliance e2e would have caught one
+     * full suite run later.
+     */
     const surfaces = [
       "src/app/(marketing)/(auth)/layout.tsx",
       "src/app/legal/layout.tsx",
+      "src/app/methodology/page.tsx",
       "src/app/(app)/paywall/page.tsx",
     ];
     for (const file of surfaces) {
