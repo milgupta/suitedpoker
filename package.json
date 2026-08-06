@@ -24,7 +24,7 @@
     "db:seed": "tsx scripts/seed.ts",
     "db:studio": "drizzle-kit studio",
     "test:rls": "vitest run --project unit tests/unit/rls.test.ts",
-    "test:ai": "vitest run --project unit tests/unit/coach-live.test.ts"
+    "test:ai": "vitest run --config vitest.live.config.mts"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.34",

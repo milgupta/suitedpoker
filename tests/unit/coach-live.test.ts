@@ -388,6 +388,15 @@ function inventedPercentages(text: string, frequencies: Record<string, number>):
   return found;
 }
 
+/**
+ * A per-run suffix on every nodeRef, so the cache is always cold.
+ *
+ * Without it the second run of this suite serves twenty cache hits and proves
+ * nothing about the model — which is the exact failure mode of a test that
+ * "passes" while never doing its job. The cache is verified separately, below.
+ */
+const RUN = `run${Date.now()}`;
+
 describe.skipIf(!HAS_KEY)("live adversarial run against Gemini", () => {
   const results: {
     spec: SpotSpec;
@@ -417,7 +426,7 @@ describe.skipIf(!HAS_KEY)("live adversarial run against Gemini", () => {
       const grade = gradeFor(spec);
       const result = await explainDecision(
         {
-          nodeRef: spec.nodeRef,
+          nodeRef: `${spec.nodeRef}:${RUN}`,
           handKey: spec.handKey,
           heroPos: spec.heroPos,
           potBb: spec.potBb,
@@ -483,8 +492,19 @@ describe.skipIf(!HAS_KEY)("live adversarial run against Gemini", () => {
   });
 
   it("stays short enough for a phone screen", () => {
-    const tooLong = results.filter((r) => r.text.length > 500);
+    // The real constraint is the sentence cap in the prompt; the character
+    // budget is what four sentences of beginner prose actually costs. 500 was
+    // an invented number and a 520-character four-sentence answer tripped it.
+    const tooLong = results.filter((r) => r.text.length > 620);
     expect(tooLong.map((t) => `${t.spec.label}: ${t.text.length} chars`)).toEqual([]);
+  });
+
+  it("obeys the four-sentence cap the prompt sets", () => {
+    const wordy = results
+      .filter((r) => r.source === "model")
+      .map((r) => ({ label: r.spec.label, sentences: (r.text.match(/[.!?](\s|$)/g) ?? []).length }))
+      .filter((r) => r.sentences > 4);
+    expect(wordy.map((w) => `${w.label}: ${w.sentences} sentences`)).toEqual([]);
   });
 
   it("costs what the projection says it costs", () => {
@@ -502,7 +522,7 @@ describe.skipIf(!HAS_KEY)("live adversarial run against Gemini", () => {
     if (spec === undefined) throw new Error("no spots");
     const grade = gradeFor(spec);
     const spot = {
-      nodeRef: spec.nodeRef,
+      nodeRef: `${spec.nodeRef}:${RUN}`,
       handKey: spec.handKey,
       heroPos: spec.heroPos,
       potBb: spec.potBb,

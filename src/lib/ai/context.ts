@@ -34,7 +34,11 @@ function pct(value: number): string {
 }
 
 export function buildCoachContext(
-  spot: Pick<Spot, "nodeRef" | "handKey" | "heroPos" | "potBb" | "effStackBb" | "actionHistory">,
+  spot: Pick<Spot, "nodeRef" | "handKey" | "heroPos" | "potBb" | "effStackBb" | "actionHistory"> & {
+    /** Postflop only. Supplied so the model never has to infer it. */
+    handClass?: string | null;
+    board?: readonly unknown[];
+  },
   grade: Grade,
   profile: CoachProfile,
   rationale?: string | null,
@@ -52,6 +56,11 @@ export function buildCoachContext(
   const lines = [
     `SPOT`,
     `Position: ${spot.heroPos}. Hand: ${spot.handKey}.`,
+    // Stated, never inferred. A model asked to judge hand strength from cards
+    // and a board WILL sometimes invent a pair that is not there — observed in
+    // the adversarial run, on an ace-high river the model called "your strong
+    // pair". Handing it the classification removes the guess entirely.
+    spot.handClass != null ? `Hand strength: ${spot.handClass.replace(/_/g, " ")}.` : "",
     `Pot ${spot.potBb.toFixed(1)}bb, effective stacks ${spot.effStackBb.toFixed(0)}bb.`,
     spot.actionHistory.length > 0 ? `Action so far: ${spot.actionHistory.join(", ")}.` : "",
     ``,

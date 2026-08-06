@@ -28,5 +28,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "tests/e2e", ".next/**/* 2*", ".next-trash-*"]
+  "exclude": ["node_modules", "tests/e2e", ".next/**/* [0-9]*", ".next-trash-*"]
 }

@@ -14,8 +14,20 @@ import { serverEnv } from "@/lib/env.server";
  * the explanation is the enhancement.
  */
 
-/** Flash tier: this is a high-volume, low-complexity summarisation job. */
-export const COACH_MODEL = "gemini-2.0-flash";
+/**
+ * Flash-LITE, deliberately.
+ *
+ * This is a high-volume summarisation job: the strategy is supplied as ground
+ * truth and the model only puts it into a sentence. The reasoning-heavy Flash
+ * models spend most of an output budget thinking before they write — measured
+ * at ~650 output tokens for a three-sentence answer, and truncated mid-word at
+ * 220 — which is both slower and an order of magnitude more expensive for no
+ * gain in accuracy. Flash-Lite answers the same question completely in ~50.
+ *
+ * `-latest` rather than a pinned version because Google retires dated model ids
+ * (gemini-2.0-flash was retired under us, mid-build).
+ */
+export const COACH_MODEL = "gemini-flash-lite-latest";
 export const TIMEOUT_MS = 8_000;
 const MAX_ATTEMPTS = 3;
 
@@ -188,10 +200,11 @@ export async function streamCoached(options: GenerateOptions): Promise<StreamRes
 /* ── Cost ────────────────────────────────────────────────────────────────── */
 
 /**
- * Gemini 2.0 Flash pricing, USD per million tokens, as published.
+ * Gemini Flash-Lite pricing, USD per million tokens, as published.
  *
  * Kept here rather than in a doc so the projection in the tests is computed
- * from the same numbers the code uses.
+ * from the same numbers the code uses. If the model changes, these change with
+ * it — the reasoning-tier Flash models are roughly 3x input and 6x output.
  */
 export const PRICE_PER_MILLION = { input: 0.1, output: 0.4 } as const;
 
