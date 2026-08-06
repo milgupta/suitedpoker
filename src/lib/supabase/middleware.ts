@@ -106,18 +106,25 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   ) {
     const { data } = await supabase
       .from("subscriptions")
-      .select("status, current_period_end")
+      .select("status, current_period_end, past_due_since")
       .eq("user_id", user.id)
       .order("current_period_end", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(5);
 
+    // Same shape as the server path in entitlement.ts, deliberately: ANY
+    // entitling row admits, because a past_due row's period end is in the past
+    // and ordering by it would rank a dead row above the live one.
     const entitled =
       bypassEntitlement() ||
-      isEntitled(
-        data === null
-          ? null
-          : { status: data.status as string | null, currentPeriodEnd: data.current_period_end },
+      (data ?? []).some((row) =>
+        isEntitled({
+          status: row.status as string | null,
+          currentPeriodEnd: row.current_period_end as string | null,
+          // Without this the Edge path would evict a past_due customer the
+          // server path is still admitting — the exact drift that
+          // entitlement-rule.ts exists to prevent.
+          pastDueSince: row.past_due_since as string | null,
+        }),
       );
 
     if (!entitled) {

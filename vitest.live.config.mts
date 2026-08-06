@@ -7,7 +7,8 @@ import { fileURLToPath } from "node:url";
  * it, because an exclusion in the default config also blocks an explicit run —
  * which is exactly what happened the first time.
  *
- *   npm run test:ai
+ *   npm run test:ai      — the Gemini coach
+ *   npm run test:stripe  — the payment boundary
  */
 export default defineConfig({
   resolve: {
@@ -19,7 +20,7 @@ export default defineConfig({
   test: {
     name: "live",
     environment: "node",
-    include: ["tests/unit/coach-live.test.ts"],
+    include: ["tests/unit/coach-live.test.ts", "tests/unit/stripe-webhook-live.test.ts"],
     testTimeout: 300_000,
     hookTimeout: 300_000,
   },

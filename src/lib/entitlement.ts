@@ -42,13 +42,18 @@ export async function hasActiveSubscription(userId: string): Promise<boolean> {
     .select({
       status: subscriptions.status,
       currentPeriodEnd: subscriptions.currentPeriodEnd,
+      pastDueSince: subscriptions.pastDueSince,
     })
     .from(subscriptions)
     .where(eq(subscriptions.userId, userId))
     .orderBy(desc(subscriptions.currentPeriodEnd))
-    .limit(1);
+    .limit(5);
 
-  const entitled = isEntitled(rows[0] ?? null);
+  // ANY entitling row lets them in, rather than only the one with the latest
+  // period end. A past_due subscription's period end is in the PAST, so picking
+  // the maximum would rank a long-expired cancelled row above the live one and
+  // lock out a customer inside their grace period.
+  const entitled = rows.some((row) => isEntitled(row));
   await cacheSet(cacheKey(userId), entitled, ENTITLEMENT_TTL_SECONDS);
   return entitled;
 }
@@ -63,5 +68,10 @@ export async function requireEntitlement(userId: string): Promise<void> {
 }
 
 // Re-exported so callers have one import for the whole concept.
-export { isEntitled, ENTITLING_STATUSES } from "@/lib/entitlement-rule";
+export {
+  isEntitled,
+  ENTITLING_STATUSES,
+  PAST_DUE_GRACE_DAYS,
+  PAST_DUE_GRACE_MS,
+} from "@/lib/entitlement-rule";
 export type { SubscriptionLike } from "@/lib/entitlement-rule";

@@ -129,6 +129,7 @@ sessions.
 | 3.4 Daily challenge, streaks, leaderboard | done |
 | 3.5 Range grid viewer | done |
 | 3.6 Hand-history format and question types | done |
+| 7.4 Webhooks and entitlement | done — verified against live Stripe test mode |
 | 4.1 Gemini integration and prompt architecture | done — **20-spot adversarial run unverified (no Gemini key)** |
 | 4.2 Hint system | done — 7 hint e2e green, 50-hint leak test green |
 | 4.3 Post-hand explanation | done — streaming, 36-explanation matrix green |
@@ -642,6 +643,40 @@ Stage 0 is complete. Update this table when you finish a substage.
 - **Check pot arithmetic against the ENGINE, never against a re-implementation.**
   The first version of that test repeated the renderer's own mistake and passed
   while both were wrong.
+
+**What 7.4 left you.**
+
+- **`current_period_end` lives on the subscription ITEM**, not the subscription.
+  It moved in API 2025-03-31 and reading the old location returns `undefined`
+  rather than throwing — which writes a null period end, which `isEntitled`
+  reads as "not entitled". A paying customer locked out with every log green.
+  `periodEndOf()` is the only place that reads it.
+- **Every webhook path re-fetches the subscription from Stripe** rather than
+  applying the event payload. Stripe does not guarantee delivery order, so
+  applying payloads as they arrive eventually writes a stale status.
+- **The `stripe_events` INSERT is the idempotency lock**, not a preceding
+  "have I seen this?" check. An application-level check passes a sequential
+  replay test and loses the concurrent one — there is a test that fires five
+  simultaneous deliveries.
+- **A failed handler releases its claim and returns 500** so Stripe retries.
+  Acknowledging an event we failed to process drops it forever.
+- **The webhook does its work INLINE, contrary to the plan's "return 200 first".**
+  On serverless, work after the response is not reliably executed, and a payment
+  silently never synced is worse than a retry.
+- **`past_due` gets a 3-day grace, measured from `past_due_since`** — which is
+  preserved across retries, never re-stamped, or a card that never succeeds
+  keeps access forever.
+- **Entitlement is `some(rows)`, not the row with the latest period end.** A
+  past_due row's period end is in the PAST, so ordering by it ranks a dead
+  cancelled row above the live one.
+- **`/welcome` polls `/api/entitlement/status` and is exempt from the gate.**
+  Verified live: admitted 920ms after the webhook landed. At 20s it stops
+  polling and lets them through anyway rather than spinning forever.
+- **`npm run test:stripe`** runs the live suite (real customers, real test
+  clock, real signatures). Not in `npm run verify` — it needs credentials CI
+  does not have and takes 40s.
+- **`tests/unit/api-route-audit.test.ts` enumerates every API route** and fails
+  the build on a new unguarded one. Exemptions must carry a written reason.
 
 **What 0.2 left you.** Anything a later substage needs to build on:
 

@@ -34,12 +34,20 @@ describe("the entitlement rule", () => {
     expect(isEntitled(null)).toBe(false);
   });
 
-  it.each(["canceled", "past_due", "incomplete", "unpaid", "paused", ""])(
+  it.each(["canceled", "incomplete", "unpaid", "paused", ""])(
     "refuses status %s even with a future period end",
     (status) => {
       expect(isEntitled({ status, currentPeriodEnd: FUTURE })).toBe(false);
     },
   );
+
+  it("gives past_due a grace period rather than refusing it outright", () => {
+    // Changed in 7.4, deliberately. 1.3 refused past_due, which locks out a
+    // paying customer the instant their bank declines a routine renewal —
+    // a refund and a chargeback rather than a recovered subscription.
+    // The exact boundaries live in tests/unit/entitlement-grace.test.ts.
+    expect(isEntitled({ status: "past_due", currentPeriodEnd: FUTURE })).toBe(true);
+  });
 
   it("refuses a row with no period end", () => {
     expect(isEntitled({ status: "active", currentPeriodEnd: null })).toBe(false);
