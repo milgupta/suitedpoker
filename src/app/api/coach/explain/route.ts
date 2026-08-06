@@ -13,6 +13,7 @@ import { nodeRefOf, type PreflopActionName } from "@/poker/solutions";
 import { streamExplanation, type ExplainEvent } from "@/lib/ai/coach";
 import { COACH_MODEL } from "@/lib/ai/client";
 import { tierOf } from "@/lib/explain-policy";
+import { canGenerate, recordSpend } from "@/lib/ai/budget";
 import { spotConfigSchema } from "@/lib/arena-preset";
 
 const bodySchema = z.object({
@@ -93,6 +94,15 @@ export const POST = withEntitlement(async (request, auth) => {
     // default here is the careful end of its scale.
   }
 
+  /**
+   * A correct decision is a CHEAP path: the template already explains "you
+   * found the best action" well, so it is the first thing to give up when the
+   * budget tightens. A mistake or a blunder is the expensive path — that
+   * explanation is the product, and it survives until the hard cap.
+   */
+  const path = result.evLoss > 0 ? "expensive" : "cheap";
+  const generationAllowed = await canGenerate(path);
+
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream<Uint8Array>({
@@ -109,12 +119,16 @@ export const POST = withEntitlement(async (request, auth) => {
           result,
           { skillTier, leaks },
           node.notes,
+          generationAllowed,
         )) {
           if (event.type === "text") full += event.text;
           if (event.type === "reset") full = "";
           send(event);
 
-          if (event.type === "done") await persist(auth.userId, full.trim(), event);
+          if (event.type === "done") {
+            await persist(auth.userId, full.trim(), event);
+            await recordSpend(event.costUsd);
+          }
         }
       } catch {
         // The generator is written not to throw, but a stream that ends without
@@ -168,7 +182,11 @@ async function persist(
     await db.insert(coachMessages).values({
       userId,
       attemptId: attempt?.id ?? null,
-      role: "assistant",
+      // "explanation", not "assistant". The chat transcript for this hand
+      // reads the same table, and an explanation replayed as a chat turn would
+      // be counted against the 10-turn cap and fed back as conversation the
+      // user never had.
+      role: "explanation",
       content: text,
       tokens: event.outputTokens,
     });

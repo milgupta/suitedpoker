@@ -49,7 +49,17 @@ export interface HintInput {
   readonly strategy: { bestAction: string; mix: Record<string, number> };
 }
 
-export async function generateHint(input: HintInput, level: HintLevel): Promise<HintResult> {
+export async function generateHint(
+  input: HintInput,
+  level: HintLevel,
+  /**
+   * False once 4.5's circuit breaker has cut the cheap paths. Hints are the
+   * first thing to degrade: `templateHint` is built from the same solution
+   * data and is guaranteed by construction to name no action at levels 1 and 2,
+   * which is the only property a hint has to have.
+   */
+  generationAllowed = true,
+): Promise<HintResult> {
   const key = hintCacheKeyFor({ nodeRef: input.nodeRef, handKey: input.handKey, level });
 
   const cached = await cacheGet<string>(`hint:${key}`);
@@ -73,6 +83,7 @@ export async function generateHint(input: HintInput, level: HintLevel): Promise<
     outputTokens: 0,
   });
 
+  if (!generationAllowed) return fallback("budget_exhausted");
   if (!isAiConfigured()) return fallback("not_configured");
 
   const context = buildHintContext(

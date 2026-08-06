@@ -162,23 +162,81 @@ test.describe("post-hand explanation", () => {
     );
   });
 
-  test("the whole explanation lands in under 1.5s", async ({ page }) => {
-    // The plan's budget is first-token latency. Playwright buffers the body, so
-    // this is stricter: the ENTIRE response inside the first-token budget.
+  test("the first sentence reaches the browser in under 1.5s", async ({ page }) => {
+    // THE PLAN'S BUDGET IS FIRST-TOKEN LATENCY, and this measures exactly that:
+    // a real fetch inside the page, reading the stream, stopping the clock on
+    // the first `text` event. Playwright's APIRequestContext buffers the whole
+    // body, so an earlier version of this test timed the ENTIRE generation and
+    // called it first-token — which passed only while the model happened to be
+    // fast, and started failing at ~2.0s when gemini-flash-lite got slower
+    // WITHOUT the user-visible latency changing at all. The number it was
+    // asserting was never the number that matters.
     //
-    // The route is warmed in beforeAll, because the first hit pays for
-    // Turbopack compiling it — around 9s, all dev server, none of it product.
-    // The genuine first-token timing, where the model can be paced
-    // deterministically, is in tests/unit/explain-stream.test.ts: 61ms of a
-    // 183ms stream.
+    // Total generation time is asserted separately below, against a budget that
+    // reflects what a full explanation actually costs.
     const { email } = await makeEntitledUser("fast");
     await login(page, email);
 
     const { spotId, action } = await playOne(page.request);
-    const result = await explain(page.request, spotId, action);
 
-    console.log(`WARM EXPLANATION: ${result.totalMs}ms`);
-    expect(result.totalMs, `explanation took ${result.totalMs}ms`).toBeLessThan(1500);
+    const timings = await page.evaluate(
+      async ({ spotId, action }) => {
+        const startedAt = performance.now();
+        const response = await fetch("/api/coach/explain", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ spotId, action }),
+        });
+
+        const reader = response.body?.getReader();
+        if (reader === undefined) return { firstTextMs: -1, totalMs: -1 };
+
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let firstTextMs = -1;
+
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+
+          if (firstTextMs < 0) {
+            for (const line of buffer.split("\n")) {
+              if (line.trim() === "") continue;
+              try {
+                if ((JSON.parse(line) as { type: string }).type === "text") {
+                  firstTextMs = performance.now() - startedAt;
+                  break;
+                }
+              } catch {
+                // A partial line. Wait for the rest of it.
+              }
+            }
+          }
+        }
+
+        return { firstTextMs, totalMs: performance.now() - startedAt };
+      },
+      { spotId, action },
+    );
+
+    console.log(
+      `FIRST SENTENCE: ${Math.round(timings.firstTextMs)}ms · WHOLE EXPLANATION: ${Math.round(timings.totalMs)}ms`,
+    );
+
+    expect(timings.firstTextMs, "no text event ever arrived").toBeGreaterThan(0);
+    expect(
+      timings.firstTextMs,
+      `first sentence took ${Math.round(timings.firstTextMs)}ms`,
+    ).toBeLessThan(1500);
+
+    // The whole thing, against an honest budget. Generous because it is a live
+    // model call over the network, and tight enough to catch a real regression
+    // such as the retry stack that once turned one call into nine.
+    expect(
+      timings.totalMs,
+      `the whole explanation took ${Math.round(timings.totalMs)}ms`,
+    ).toBeLessThan(6000);
   });
 
   test("a repeat of the same spot is served from cache", async ({ page }) => {

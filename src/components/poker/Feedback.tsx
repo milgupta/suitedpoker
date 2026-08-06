@@ -15,6 +15,12 @@ export interface FeedbackProps {
   ratingDelta?: number;
   onNext: () => void;
   /**
+   * 4.4's chat trigger and panel. Rendered BELOW the explanation and above
+   * "next hand", so it never sits between the user and the next hand — a coach
+   * that interrupts the loop stops being used by the people who need it.
+   */
+  chat?: ReactNode;
+  /**
    * The AI explanation slot. Passed in rather than fetched here so this stays a
    * presentational component — the styleguide renders it with nothing, and the
    * arena renders it with a live stream.
@@ -92,6 +98,7 @@ export function Feedback({
   result,
   ratingDelta = 0,
   onNext,
+  chat,
   explanation,
   className,
 }: FeedbackProps) {
@@ -197,6 +204,9 @@ export function Feedback({
           <Shimmer className="h-3 w-4/5" />
         </div>
       )}
+
+      {/* 6. Ask about this hand (4.4). Never between the user and "next". */}
+      {chat}
 
       {/* 7. Next */}
       <Button variant="primary" size="lg" className="w-full" onClick={onNext}>

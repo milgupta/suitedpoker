@@ -142,6 +142,12 @@ export async function* streamExplanation(
   grade: Grade,
   profile: CoachProfile,
   rationale?: string | null,
+  /**
+   * False when 4.5's circuit breaker has cut this path. The CACHE is still
+   * consulted first — a cache hit costs nothing, and refusing to serve one
+   * because the budget is spent would degrade the product for no saving.
+   */
+  generationAllowed = true,
 ): AsyncGenerator<ExplainEvent> {
   const key = cacheKeyFor({
     nodeRef: spot.nodeRef,
@@ -175,6 +181,11 @@ export async function* streamExplanation(
       costUsd: 0,
     },
   ];
+
+  if (!generationAllowed) {
+    for (const event of template("budget_exhausted")) yield event;
+    return;
+  }
 
   const context = buildCoachContext(spot, grade, profile, rationale);
   const stream = await streamCoached({

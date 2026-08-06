@@ -35,6 +35,10 @@ const serverSchema = z.object({
   META_CAPI_ACCESS_TOKEN: z.string().optional().or(z.literal("")),
 
   ADMIN_EMAILS: z.string().optional().default(""),
+
+  /** 4.5's circuit breaker. Both optional — the defaults are safe. */
+  AI_DAILY_BUDGET_USD: z.string().optional().or(z.literal("")),
+  ALERT_WEBHOOK_URL: z.string().optional().or(z.literal("")),
   DEV_BYPASS_ENTITLEMENT: z
     .string()
     .optional()

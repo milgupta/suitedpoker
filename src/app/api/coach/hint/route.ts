@@ -12,6 +12,7 @@ import { getStrategy } from "@/poker/solutions";
 import { generateHint } from "@/lib/ai/hint";
 import { MAX_HINTS_PER_DAY, preflopContextOf, streetOf, type HintLevel } from "@/lib/hints";
 import { COACH_MODEL, costUsd } from "@/lib/ai/client";
+import { canGenerate, recordSpend } from "@/lib/ai/budget";
 import { spotConfigSchema } from "@/lib/arena-preset";
 import { SPOT_TTL_SECONDS } from "../../drills/next/route";
 
@@ -138,7 +139,12 @@ export const POST = withEntitlement(async (request, auth) => {
       strategy: { bestAction, mix: strategyMix },
     },
     level,
+    // Hints are the CHEAP path — the first thing the circuit breaker gives up,
+    // because the template already does the one job a hint has.
+    await canGenerate("cheap"),
   );
+
+  await recordSpend(costUsd(hint.inputTokens, hint.outputTokens));
 
   await putSession(
     "drill",

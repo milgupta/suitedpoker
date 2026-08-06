@@ -98,8 +98,13 @@ export const POST = withEntitlement(async (request, auth) => {
   // Burn the spot before persisting, so a concurrent second submit loses.
   await putSession("drill", spotId, auth.userId, { ...stored, answered: true }, SPOT_TTL_SECONDS);
 
+  // Returned to the client, because 4.4's hand-scoped chat is keyed on it.
+  // Null when the insert failed — the chat is simply unavailable for that hand
+  // rather than the feedback being withheld.
+  let attemptId: string | null = null;
+
   try {
-    await getDb()
+    const [inserted] = await getDb()
       .insert(drillAttempts)
       .values({
         userId: auth.userId,
@@ -113,7 +118,9 @@ export const POST = withEntitlement(async (request, auth) => {
         timeMs,
         source: stored.config.tags?.[0] ?? "arena",
         hintsUsed: hintLevelReached,
-      });
+      })
+      .returning({ id: drillAttempts.id });
+    attemptId = inserted?.id ?? null;
   } catch {
     // A failed write must not cost the user their feedback — the whole point of
     // the loop is the explanation, and the attempt row is telemetry.
@@ -169,5 +176,6 @@ export const POST = withEntitlement(async (request, auth) => {
     rating: newRating,
     tieredUp: crossedTier,
     hintsUsed: hintLevelReached,
+    attemptId,
   });
 });

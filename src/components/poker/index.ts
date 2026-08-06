@@ -25,3 +25,5 @@ export {
 export { ChoiceGrid, type ChoiceGridProps, type ChoiceOption } from "./ChoiceGrid";
 export { HintButton, type HintButtonProps, type HintLine } from "./HintButton";
 export { HandHistory, historyLines, potByStreet, type HandHistoryProps } from "./HandHistory";
+export { CoachChat } from "./coach-chat";
+export type { CoachChatProps } from "./coach-chat";

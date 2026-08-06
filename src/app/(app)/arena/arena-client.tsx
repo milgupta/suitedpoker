@@ -9,6 +9,7 @@ import { GradeBadge } from "@/components/ui/grade-badge";
 import { Shimmer } from "@/components/motion";
 import { AnimatedNumber } from "@/components/motion";
 import {
+  CoachChat,
   Explanation,
   Feedback,
   FrequencyCapsules,
@@ -57,6 +58,9 @@ export function ArenaClient() {
   const startedAt = useRef(0);
   const [finished, setFinished] = useState(false);
   const [hintsRemaining, setHintsRemaining] = useState<number | null>(null);
+  /** 4.4's chat is scoped to one attempt, so it needs the row's id. */
+  const [attemptId, setAttemptId] = useState<string | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
   const hintLevel = useRef(0);
 
   const loadNext = useCallback(async () => {
@@ -123,8 +127,10 @@ export function ArenaClient() {
     const graded = (await response.json()) as Grade & {
       ratingDelta: number;
       hintsUsed?: number;
+      attemptId?: string | null;
     };
     setResult(graded);
+    setAttemptId(graded.attemptId ?? null);
     setAnsweredAction(action);
     setHistory((h) => [...h, { spot, result: graded, action }]);
 
@@ -324,6 +330,26 @@ export function ArenaClient() {
                     action={answeredAction ?? ""}
                     grade={result.grade}
                   />
+                )
+              }
+              chat={
+                attemptId === null || spotId === null ? undefined : (
+                  <>
+                    <Button
+                      variant="ghost"
+                      className="w-full"
+                      onClick={() => setChatOpen(true)}
+                      data-testid="open-chat"
+                    >
+                      Ask about this hand
+                    </Button>
+                    <CoachChat
+                      attemptId={attemptId}
+                      spotId={spotId}
+                      open={chatOpen}
+                      onOpenChange={setChatOpen}
+                    />
+                  </>
                 )
               }
             />

@@ -131,6 +131,8 @@ sessions.
 | 3.6 Hand-history format and question types | done |
 | 7.4 Webhooks and entitlement | done — verified against live Stripe test mode |
 | 7.5 Account, billing, cancellation | done — 9 e2e against real Stripe subscriptions |
+| 4.4 Hand-scoped chat | done — 15 jailbreaks + 10 number probes read against live Gemini |
+| 4.5 Cost guards and abuse protection | done — breaker verified, product usable with AI fully off |
 | 4.1 Gemini integration and prompt architecture | done — **20-spot adversarial run unverified (no Gemini key)** |
 | 4.2 Hint system | done — 7 hint e2e green, 50-hint leak test green |
 | 4.3 Post-hand explanation | done — streaming, 36-explanation matrix green |
@@ -709,6 +711,43 @@ Stage 0 is complete. Update this table when you finish a substage.
 - **Run e2e on port 3100** when another project holds 3000:
   `PORT=3100 PLAYWRIGHT_BASE_URL=http://localhost:3100 npx playwright test`.
   `reuseExistingServer` will otherwise happily test someone else's app.
+
+**What 4.4 / 4.5 left you.**
+
+- **The chat guard is NOT `redact()`.** The explanation guard rejects any
+  prescriptive sentence naming a non-best action — correct for explaining a
+  decision, wrong here, because "what if I had a flush draw?" is answered by
+  describing a different action in a hand the user does not hold. `redactChat`
+  keeps the content rules and the no-invented-numbers rule and drops the rest.
+- **`inventedNumber` matches spelled-out figures too.** Found by READING the
+  live probes: asked how often AQ flops a pair, the model answered "about 30
+  percent of the time" — a real statistic nothing in the data computed — and a
+  `%`-only regex let it through. Reading the 25 exchanges is the test.
+- **The explanation writes `role: "explanation"`, not `"assistant"`.** Both live
+  in `coach_messages`; as "assistant" an explanation would be replayed as
+  conversation and counted against the 10-turn cap.
+- **The turn cap is checked BEFORE the spot lookup** — it is the cheapest
+  rejection available and must not depend on another lookup succeeding.
+- **The breaker degrades by FEATURE, never by user.** Under a hard paywall
+  every user is paying, so there is no free tier to shed. Soft (80%) templates
+  the cheap paths — hints, and explanations of CORRECT decisions. Hard (100%)
+  stops everything. An explanation of a mistake is the product and goes last.
+- **Spend is counted in micro-dollars.** One explanation costs ~$0.00009;
+  rounding to cents records every one of them as zero while the real bill climbs.
+- **`AI_DAILY_BUDGET_USD` defaults to 25, and a zero or negative value is HARD**,
+  never unlimited. A misconfigured env var must fail toward spending nothing.
+- **One alert per threshold per day.** An alert on every request past 80% gets
+  muted, and then the hard cap arrives with no warning.
+- **`/admin/*` is its own route group outside `(app)`** — inside it, the
+  entitlement middleware redirects an unsubscribed admin to /paywall, so the
+  cost page would be unreachable exactly when you need it. An empty
+  `ADMIN_EMAILS` means NOBODY, and a non-admin gets 404, not 403.
+- **`tests/e2e/explain.spec.ts` measures FIRST-TOKEN in the browser now.** The
+  old test buffered the whole response and called it first-token; it went red at
+  ~2.0s when the model got slower, with user-visible latency unchanged. Real
+  numbers: first sentence **1196ms**, whole explanation 2373ms.
+- **`npm run test:chat`** runs the jailbreak suite. Read the output — a green
+  tick nobody read is not evidence.
 
 **What 0.2 left you.** Anything a later substage needs to build on:
 

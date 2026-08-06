@@ -20,7 +20,11 @@ export default defineConfig({
   test: {
     name: "live",
     environment: "node",
-    include: ["tests/unit/coach-live.test.ts", "tests/unit/stripe-webhook-live.test.ts"],
+    include: [
+      "tests/unit/coach-live.test.ts",
+      "tests/unit/stripe-webhook-live.test.ts",
+      "tests/unit/chat-live.test.ts",
+    ],
     testTimeout: 300_000,
     hookTimeout: 300_000,
   },
