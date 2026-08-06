@@ -136,8 +136,43 @@ sessions.
 | 2.8, 2.9, 6.1 (Track C) | done — merged from `track/engine`, worktree removed |
 | 7.1 Onboarding quiz | done — 20 e2e green, derivation table printed |
 | 7.2 The diagnosis screen | done — 25-combo table green, 20 e2e green |
+| 6.2 Table sim session play | done — leak test + 50-hand session green on both projects |
 
 Stage 0 is complete. Update this table when you finish a substage.
+
+**What 6.2 left you.**
+
+- **`toClientSimState()` in `src/lib/sim.ts` is the security boundary.** It is
+  built by explicit construction, never by spreading GameState and deleting
+  fields — the state holds every villain's cards AND the remaining deck, and a
+  client with the deck can read the runout. `FORBIDDEN_IN_CLIENT_PAYLOAD` names
+  the keys; the e2e scans every raw response of whole hands.
+- **Villain cards reveal ONLY at a showdown they reached unfolded** — a hand
+  ending in folds reveals nothing, `mayReveal()` is the single rule.
+- **The engine deals in INTEGER chips, 2 per bb** (SB 1, BB 2). Every bb figure
+  converts at the boundary; legal-action amounts stay in CHIPS on the wire so
+  neither side multiplies by two in only one direction.
+- **`awardPot` is explicit in the engine** — a complete hand has a pot and no
+  payouts until it runs. `sim-server` settles in both the hero path and the bot
+  loop; forget one and chips vanish (the conservation test catches it).
+- **The bot loop is synchronous; "thinking" delays are client animation** over
+  the returned `BotMove[]`. A server that sleeps between bot actions blocks the
+  hero's next input.
+- **`version` is the double-submit defence.** Client echoes the state version it
+  acted on; mismatch → 409 carrying the current state, which the client adopts.
+  The rating-relevant one: a double-tapped Raise commits chips once.
+- **Walkover hands settle inside `dealNextHand`** — every bot folds before the
+  hero acts, and waiting for hero input that never comes is how a 50-hand
+  session ends with 47 records. `pendingGrade` lives on the session because the
+  hand usually ends several actions after the graded decision.
+- **DB row first, sessionstore second** (`sim-store.ts`). A cache that outlives
+  a failed durable write rolls the session back when the cache expires.
+- **`RULES.SIM_ACTION` (600/min, open)** exists because a fast folder legally
+  exceeds the drill rule's 120/min.
+- **`PokerTable` gained `actionsOverride`** — the sim client can never compute
+  legality (it lacks the authoritative state, by design), so the server's legal
+  list is passed through.
+- Hands persist to `sim_hands` with full histories; 6.3 reads them.
 
 **What 7.2 left you.**
 

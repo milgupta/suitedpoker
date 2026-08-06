@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Action, GameState } from "@/poker/gamestate";
+import type { Action, GameState, LegalAction } from "@/poker/gamestate";
 import { legalActions } from "@/poker/gamestate";
 import { ActionBar, type SizedOption } from "./ActionBar";
 import { BoardRunout } from "./BoardRunout";
@@ -17,6 +17,13 @@ export interface PokerTableProps {
   heroSeat: number;
   onAction?: (action: Action) => void;
   sizedOptions?: readonly SizedOption[];
+  /**
+   * Server-supplied legal actions, for callers whose `state` is a client VIEW
+   * rather than the authoritative game — the table sim, whose client never
+   * holds enough state to compute legality (that is the point of the view).
+   * When absent, computed locally as before.
+   */
+  actionsOverride?: readonly LegalAction[];
   context?: HandContext;
   className?: string;
 }
@@ -114,6 +121,7 @@ export function PokerTable({
   heroSeat,
   onAction,
   sizedOptions,
+  actionsOverride,
   context,
   className,
 }: PokerTableProps) {
@@ -130,7 +138,7 @@ export function PokerTable({
   const bigBlind = state.config.bigBlind;
   const layout = seatLayout(state.players.length, heroSeat);
   const heroTurn = state.actionOn === heroSeat && !state.complete;
-  const actions = state.complete ? [] : legalActions(state);
+  const actions = actionsOverride ?? (state.complete ? [] : legalActions(state));
 
   const activeAngle =
     state.actionOn === null

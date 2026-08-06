@@ -127,6 +127,19 @@ export const RULES = {
     timeZone: "UTC",
   },
 
+  /**
+   * The table sim. Its own rule because the cadence is real: a fast folder
+   * taps fold + next twice a second, and every hand is several requests. The
+   * drill rule's 120/min rejects a legitimate hot streak mid-session.
+   */
+  SIM_ACTION: {
+    key: "sim_action",
+    limit: 600,
+    kind: "sliding",
+    windowSeconds: 60,
+    failMode: "open",
+  },
+
   API_GENERIC: {
     key: "api_generic",
     limit: 300,
