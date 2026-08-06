@@ -43,7 +43,7 @@ function playSession(
   totalHands: number,
   policy: HeroPolicy,
 ): { hands: StoredHand[]; live: LiveSimState } {
-  let live = createLiveSession({ presetId: "casino", totalHands, stackBb: 100, seed });
+  let live = createLiveSession({ presetId: "cardroom", totalHands, stackBb: 100, seed });
   const hands: StoredHand[] = [];
   let recorded = 0;
 

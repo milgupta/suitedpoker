@@ -31,7 +31,7 @@ export interface PokerTableProps {
 /**
  * The table is a GLOWING ELLIPTICAL RING, not a felt surface.
  *
- * A filled green oval is what every casino skin does and it fights every piece
+ * A filled green oval is what every poker-room skin does and it fights every piece
  * of data placed on top of it. A stroke on near-black keeps the board cards the
  * brightest objects on screen, which is where the eye should go.
  *

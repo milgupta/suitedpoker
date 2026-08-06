@@ -78,7 +78,7 @@ async function login(page: Page, email: string): Promise<void> {
 
 async function startSession(
   request: APIRequestContext,
-  preset = "casino",
+  preset = "cardroom",
   hands = 25,
 ): Promise<{ state: SimState; raw: string }> {
   const response = await request.post("/api/sim/start", { data: { preset, hands } });
@@ -196,7 +196,7 @@ test.describe("table sim", () => {
     const { email } = await makeEntitledUser("fifty");
     await login(page, email);
 
-    let { state } = await startSession(page.request, "casino", 50);
+    let { state } = await startSession(page.request, "cardroom", 50);
 
     let guard = 0;
     while (!state.sessionComplete) {
@@ -234,7 +234,7 @@ test.describe("table sim", () => {
     const { email } = await makeEntitledUser("refresh");
     await login(page, email);
 
-    const { state } = await startSession(page.request, "casino", 25);
+    const { state } = await startSession(page.request, "cardroom", 25);
     const before = JSON.stringify({
       hand: state.handNumber,
       version: state.version,
@@ -264,7 +264,7 @@ test.describe("table sim", () => {
     const { email } = await makeEntitledUser("tamper");
     await login(page, email);
 
-    const { state } = await startSession(page.request, "casino", 25);
+    const { state } = await startSession(page.request, "cardroom", 25);
 
     // An absurd raise, far outside the legal band.
     const absurd = await page.request.post("/api/sim/action", {

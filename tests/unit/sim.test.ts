@@ -63,7 +63,7 @@ function playHand(live: LiveSimState, seed: string): LiveSimState {
 describe("a 50-hand session", () => {
   const SEED = "sim-test-session";
   let live = createLiveSession({
-    presetId: "casino",
+    presetId: "cardroom",
     totalHands: 50,
     stackBb: 100,
     seed: SEED,
@@ -125,7 +125,7 @@ describe("a 50-hand session", () => {
   });
 
   it("rotated the button through full orbits", () => {
-    const seats = PRESETS.casino.villains.length + 1;
+    const seats = PRESETS.cardroom.villains.length + 1;
     expect(seats).toBe(6);
     // The button advanced once per hand: 50 hands from seat 0.
     expect(live.button).toBe(50 % seats);
@@ -185,7 +185,12 @@ describe("the leak surface", () => {
   it("reveals showdown reachers once the hand is over", () => {
     // Force showdowns by calling everything down with a passive hero.
     const SEED = "sim-showdown-test";
-    let live = createLiveSession({ presetId: "casino", totalHands: 20, stackBb: 100, seed: SEED });
+    let live = createLiveSession({
+      presetId: "cardroom",
+      totalHands: 20,
+      stackBb: 100,
+      seed: SEED,
+    });
 
     let sawShowdownReveal = false;
     for (let hand = 0; hand < 20 && !sawShowdownReveal; hand++) {
@@ -235,7 +240,7 @@ function heroFold(live: LiveSimState): Action {
 describe("tampering", () => {
   it("rejects an action out of turn and an illegal amount", () => {
     const live = createLiveSession({
-      presetId: "casino",
+      presetId: "cardroom",
       totalHands: 5,
       stackBb: 100,
       seed: "sim-tamper",

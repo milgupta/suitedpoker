@@ -61,7 +61,7 @@ interface SimState {
 /** Plays a 3-hand session to the end, folding everything. */
 async function playTinySession(request: APIRequestContext): Promise<string> {
   const started = await request.post("/api/sim/start", {
-    data: { preset: "casino", hands: 25 },
+    data: { preset: "cardroom", hands: 25 },
   });
   let state = ((await started.json()) as { state: SimState }).state;
   const sessionId = state.sessionId;

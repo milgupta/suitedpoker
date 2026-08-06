@@ -6,6 +6,7 @@ import {
   ATTRIBUTION_COOKIE_OPTIONS,
   nextAttributionCookie,
 } from "@/lib/attribution";
+import { isBlockedCountry } from "@/lib/compliance";
 import { isSupabaseConfigured, supabaseConfig } from "./config";
 
 /** Everything under here requires a session. */
@@ -82,6 +83,22 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
     }
     return target;
   };
+
+  /**
+   * Geo-blocking, before anything else runs.
+   *
+   * Checked here rather than per-page because a blocked visitor must not reach
+   * signup, checkout, or the API — and doing it in the proxy means there is one
+   * place to audit rather than one per route. Vercel sets the header; it is
+   * absent locally, which reads as "not blocked".
+   */
+  const country = request.headers.get("x-vercel-ip-country");
+  if (isBlockedCountry(country) && !request.nextUrl.pathname.startsWith("/unavailable")) {
+    const redirect = request.nextUrl.clone();
+    redirect.pathname = "/unavailable";
+    redirect.search = "";
+    return NextResponse.redirect(redirect);
+  }
 
   // Without credentials there is no session to refresh and nothing to protect.
   // Let everything through rather than locking the whole app out of a build

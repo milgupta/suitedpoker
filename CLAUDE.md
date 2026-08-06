@@ -139,6 +139,7 @@ sessions.
 | 8.5 Product assets, icons, capture | done — 7 shots, 82% smaller, clean loop seam |
 | 9.1 / 9.2 Motion, mobile, PWA pass | done — CLS 0.0000 everywhere, axe clean, 4 device sizes |
 | 9.3 / 9.4 Test suite, perf, launch readiness | done — 6/6 mutations caught, build gate live |
+| 9.6 Compliance hardening | done — age gate, geo-block, 251-file string audit clean |
 | 4.1 Gemini integration and prompt architecture | done — **20-spot adversarial run unverified (no Gemini key)** |
 | 4.2 Hint system | done — 7 hint e2e green, 50-hint leak test green |
 | 4.3 Post-hand explanation | done — streaming, 36-explanation matrix green |
@@ -152,7 +153,8 @@ sessions.
 | 5.2 Lesson player and progress | done — server-side lock verified, 20 e2e green |
 | 5.3 Dashboard | done — four data states, numbers hand-verified, LCP 128ms |
 
-Stage 0 is complete. Update this table when you finish a substage.
+**Every substage in `SUITEDPOKER_BUILD_PLAN.md` is now done.** Update this table
+if you add one.
 
 **What 5.3 left you.**
 
@@ -926,6 +928,33 @@ Stage 0 is complete. Update this table when you finish a substage.
 - **`src/poker` coverage: 92.27% statements, 94.97% lines** — above the 90% bar.
 - **`docs/LAUNCH.md`** is ordered so nothing on it can silently undo something
   above it, and leads with the solver-claim decision.
+
+**What 9.6 left you.**
+
+- **The table-sim preset was literally named `casino`** and rendered as "The
+  Casino". Renamed to `cardroom` / "The Cardroom" — the same table to a player,
+  and what a poker room is actually called, but "casino" is a word Meta's ad
+  review and Stripe's risk team both score.
+- **Two curriculum lessons had genuine copy problems**: "count the saved barrel
+  as winnings" and "picking the 5 costs real money". Both rewritten in bb.
+- **`payouts` is NOT forbidden** — `awardPot` returning payouts is the engine
+  describing itself. Chips, pot, bet, stack and blind all stay. What goes is
+  anything implying money MOVES.
+- **The string audit is denial-aware, with a 300-character window.** The FAQ
+  asks "Is this gambling?" in one string and denies it in the next; flagging the
+  question would push the copy toward not addressing it at all, which is worse.
+  Same shape as the landing-page scan.
+- **`ageConfirmed` is a refined boolean, not `z.literal(true)`.** The literal
+  narrows the OUTPUT type to `true`, which makes an unchecked default a type
+  error and forces the whole form to be typed twice. The refinement rejects
+  `false` just as firmly.
+- **Geo-blocking is in the PROXY**, so a blocked visitor cannot reach signup,
+  checkout or the API — one place to audit rather than one per route. A missing
+  `x-vercel-ip-country` reads as NOT blocked; failing closed would block every
+  developer and every non-Vercel deploy.
+- **`BLOCKED_COUNTRIES` is one constant.** Change the list, not the routing.
+- **The disclaimer renders from the ROOT layout**, so it cannot be missed on a
+  page someone forgot.
 
 **What 0.2 left you.** Anything a later substage needs to build on:
 

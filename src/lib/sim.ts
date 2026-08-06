@@ -16,7 +16,15 @@ import type { GameState, HandEvent, LegalAction, SidePot, Street } from "@/poker
 
 /* ── Presets ─────────────────────────────────────────────────────────────── */
 
-export type PresetId = "home_game" | "casino" | "online" | "boss";
+/**
+ * "cardroom", not "casino".
+ *
+ * Same table to a player, and it is what a poker room is actually called — but
+ * "casino" is a word Meta's ad review and Stripe's risk team both score, and
+ * this id reaches the UI as a label. Renamed in 9.6; any stored `casino` value
+ * falls back to the default preset rather than erroring.
+ */
+export type PresetId = "home_game" | "cardroom" | "online" | "boss";
 
 export interface TablePreset {
   readonly id: PresetId;
@@ -35,9 +43,9 @@ export const PRESETS: Record<PresetId, TablePreset> = {
     teaches:
       "Value betting big against players who cannot fold, and staying out of the maniac's way.",
   },
-  casino: {
-    id: "casino",
-    name: "The Casino",
+  cardroom: {
+    id: "cardroom",
+    name: "The Cardroom",
     villains: ["station", "station", "station", "nit", "tag"],
     teaches:
       "Live $1/$2 in miniature: bet your good hands bigger, and stop bluffing the unbluffable.",
@@ -56,7 +64,7 @@ export const PRESETS: Record<PresetId, TablePreset> = {
   },
 };
 
-export const PRESET_IDS: readonly PresetId[] = ["home_game", "casino", "online", "boss"];
+export const PRESET_IDS: readonly PresetId[] = ["home_game", "cardroom", "online", "boss"];
 
 export function isPresetId(value: unknown): value is PresetId {
   return typeof value === "string" && (PRESET_IDS as readonly string[]).includes(value);

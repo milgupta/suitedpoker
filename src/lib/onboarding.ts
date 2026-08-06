@@ -71,7 +71,7 @@ export interface Answers {
 const VENUES: readonly QuizOption[] = [
   { value: "home", label: "Home games with friends", echo: "in your home game" },
   { value: "online_micro", label: "Online micro-stakes", echo: "at micro-stakes" },
-  { value: "live_1_2", label: "Live casino ($1/$2)", echo: "at $1/$2" },
+  { value: "live_1_2", label: "Live cardroom ($1/$2)", echo: "at $1/$2" },
   { value: "play_money", label: "Play-money apps", echo: "in play money" },
   { value: "starting", label: "I'm just starting out", echo: "when you sit down" },
 ];

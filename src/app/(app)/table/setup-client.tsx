@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 
 export function TableSetupClient() {
   const router = useRouter();
-  const [preset, setPreset] = useState<PresetId>("casino");
+  const [preset, setPreset] = useState<PresetId>("cardroom");
   const [hands, setHands] = useState<SessionLength>(25);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");

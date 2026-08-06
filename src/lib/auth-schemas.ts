@@ -32,6 +32,17 @@ export const signupSchema = z
     email,
     password,
     confirmPassword: z.string().min(1, "Confirm your password."),
+    /**
+     * The 18+ confirmation. Required, and stored with a timestamp.
+     *
+     * A refined boolean rather than `z.literal(true)`: the literal narrows the
+     * OUTPUT type to `true`, which makes an unchecked default value a type
+     * error and forces the whole form to be typed twice. The refinement rejects
+     * `false` just as firmly and leaves the type alone.
+     */
+    ageConfirmed: z
+      .boolean()
+      .refine((v) => v === true, "You need to be 18 or over to use SuitedPoker."),
   })
   .refine((v) => v.password === v.confirmPassword, {
     message: "Those passwords don't match.",
@@ -44,6 +55,17 @@ export const resetSchema = z
   .object({
     password,
     confirmPassword: z.string().min(1, "Confirm your password."),
+    /**
+     * The 18+ confirmation. Required, and stored with a timestamp.
+     *
+     * A refined boolean rather than `z.literal(true)`: the literal narrows the
+     * OUTPUT type to `true`, which makes an unchecked default value a type
+     * error and forces the whole form to be typed twice. The refinement rejects
+     * `false` just as firmly and leaves the type alone.
+     */
+    ageConfirmed: z
+      .boolean()
+      .refine((v) => v === true, "You need to be 18 or over to use SuitedPoker."),
   })
   .refine((v) => v.password === v.confirmPassword, {
     message: "Those passwords don't match.",
