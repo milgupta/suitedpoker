@@ -70,7 +70,9 @@ export async function persistHand(
       .insert(simHands)
       .values({
         sessionId,
-        handHistory: { ...history, record },
+        // heroSeat travels with the hand: the review recomputes VPIP/PFR and
+        // replays from these rows alone, long after the live session is gone.
+        handHistory: { ...history, record, heroSeat: live.heroSeat },
         heroEvLoss: record.heroEvLoss === null ? null : record.heroEvLoss.toFixed(3),
       });
   } catch {

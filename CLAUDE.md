@@ -137,8 +137,36 @@ sessions.
 | 7.1 Onboarding quiz | done — 20 e2e green, derivation table printed |
 | 7.2 The diagnosis screen | done — 25-combo table green, 20 e2e green |
 | 6.2 Table sim session play | done — leak test + 50-hand session green on both projects |
+| 6.3 Post-session review | done — planted leak found, one AI call enforced |
 
 Stage 0 is complete. Update this table when you finish a substage.
+
+**What 6.3 left you.**
+
+- **`src/lib/sim-review.ts` recomputes everything from stored events.** VPIP,
+  PFR, replays and leak attempts all derive from `sim_hands.hand_history` — no
+  second running tally during play, so a stat bug can be fixed and re-run over
+  old sessions. VPIP/PFR are verified against an independent count in the test.
+- **ONE Gemini call per review, whatever the hand count** — enforced by a test
+  that counts mock calls over a 50-hand session, and cached per session in
+  Redis so re-opening the page is free. Per-hand explanations at 50 hands would
+  be fifty times the cost of a review most users skim once.
+- **The summary guard is `contentViolation()`** (new export in redact.ts): the
+  session summary grounds in aggregate stats, not one graded decision, so the
+  contradiction check does not apply but the money/site/solver rules do.
+- **`templateSummary()` is specific with no model** — it names the top leak or
+  the worst hand with its numbers. "You played fine" is a failure state.
+- **The grader's leak verbs are `overfolds`/`overaggressive`/`overcalls`** —
+  `describeLeak()` matched a verb that did not exist ("overfolding") and the
+  planted-leak test caught it. Match the grader's vocabulary, not a guess at it.
+- **Mucked cards stay mucked, even post-session.** Replay steps carry hero
+  cards only; what showdown revealed is already in the event text. The e2e
+  scans the review payload.
+- **Replay steps are a fold over the engine's events** — pot and board at each
+  step are the engine's numbers, never re-derived arithmetic (the 3.6 lesson).
+  `event.amount` is the TO-amount; the fold pays deltas.
+- Every leak row carries a `drillLink` via `buildArenaLink` targeting that
+  exact position + actionSeq.
 
 **What 6.2 left you.**
 

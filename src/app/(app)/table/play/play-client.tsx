@@ -360,11 +360,11 @@ function SessionSummary({ state }: { state: ClientSimState }) {
         <HudStat label="bb/100" value={bb100.toFixed(1)} />
       </div>
       <div className="flex gap-3">
+        <Button variant="accent" size="lg" asChild>
+          <Link href={`/table/review?session=${state.sessionId}`}>Review session</Link>
+        </Button>
         <Button variant="primary" size="lg" asChild>
           <Link href="/table">Play again</Link>
-        </Button>
-        <Button variant="ghost" size="lg" asChild>
-          <Link href="/dashboard">Done</Link>
         </Button>
       </div>
     </section>

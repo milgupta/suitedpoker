@@ -115,6 +115,21 @@ export function templateExplanation(grade: Grade, tier: SkillTier = "never"): st
 }
 
 /**
+ * The content rules alone — for AI surfaces whose ground truth is not a single
+ * graded decision (the 6.3 session summary grounds in aggregate stats, so the
+ * contradiction check does not apply, but the money/site/solver rules do).
+ */
+export function contentViolation(text: string): RedactReason | null {
+  const trimmed = text.trim();
+  if (trimmed === "") return "empty";
+  if (REAL_MONEY.test(trimmed)) return "real_money";
+  if (GAMBLING_ADVICE.test(trimmed)) return "gambling_advice";
+  if (SITE_REFERENCE.test(trimmed)) return "site_reference";
+  if (CLAIMS_SOLVER.test(trimmed)) return "claims_solver";
+  return null;
+}
+
+/**
  * Checks model output against the ground truth and the content rules.
  *
  * The contradiction check is deliberately narrow: it looks for a PRESCRIPTIVE
