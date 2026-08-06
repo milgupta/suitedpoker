@@ -51,6 +51,7 @@ Project Settings → API, into `.env.local`:
 E2E_SUPABASE_URL=https://<new-ref>.supabase.co
 E2E_SUPABASE_ANON_KEY=<anon key>
 E2E_SUPABASE_SERVICE_ROLE_KEY=<service_role key>
+E2E_DATABASE_URL=postgresql://...   # only needed for setup:e2e-db
 ```
 
 Add the same three to CI. **Do not** add them to Vercel — the app must never

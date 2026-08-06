@@ -33,7 +33,8 @@
     "mutation": "tsx scripts/mutation-check.ts",
     "test:live": "vitest run --config vitest.live.config.mts",
     "smoke": "tsx scripts/smoke-routes.ts",
-    "check:redis": "tsx scripts/check-redis.ts"
+    "check:redis": "tsx scripts/check-redis.ts",
+    "setup:e2e-db": "tsx scripts/setup-e2e-db.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.34",
