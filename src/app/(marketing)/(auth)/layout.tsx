@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { ComplianceFooter } from "@/components/ComplianceFooter";
+import { Wordmark } from "@/components/Wordmark";
 
 /**
  * The auth shell. Ambient glow is allowed here — DESIGN.md permits it on
@@ -16,11 +17,8 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       />
 
       <header className="px-4 py-6">
-        <Link
-          href="/"
-          className="text-accent-bright text-body-md font-mono font-bold tracking-widest"
-        >
-          SUITEDPOKER
+        <Link href="/" className="inline-block transition hover:opacity-80">
+          <Wordmark />
         </Link>
       </header>
 

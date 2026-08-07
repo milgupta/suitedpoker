@@ -38,9 +38,18 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://suitedpoker.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
+  /**
+   * The landing page is the brand alone; every other page is the brand and
+   * then what the page is. Brand-first on a subpage, rather than the "%s ·
+   * SuitedPoker" this used to be, so a truncated tab still says who we are.
+   *
+   * A page's own `title` is therefore the SHORT form — "Account", not
+   * "Account — SuitedPoker", and never with an em dash of its own, or the tab
+   * reads "SuitedPoker — Methodology — where the strategy comes from".
+   */
   title: {
-    default: "SuitedPoker — Learn what a solver would do",
-    template: "%s · SuitedPoker",
+    default: "SuitedPoker",
+    template: "SuitedPoker — %s",
   },
   description:
     "A poker training app for beginners. Practise real spots, see exactly what a solver does, and understand why — explained in plain English.",

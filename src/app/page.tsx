@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { TrackView } from "@/components/track-view";
+import { Wordmark } from "@/components/Wordmark";
 import { annualisedCents, formatUsd, PLANS, savingPercent } from "@/lib/stripe/plans";
 import { methodologyFacts } from "@/lib/methodology-server";
 import { provenanceHeadline } from "@/lib/methodology";
@@ -110,9 +111,7 @@ export default function Home() {
         }}
       />
       <header className="mx-auto flex max-w-(--container-app) items-center justify-between px-6 py-6">
-        <span className="text-accent-bright text-body-md font-mono font-bold tracking-widest">
-          SUITEDPOKER
-        </span>
+        <Wordmark />
         <Link
           href="#pricing"
           className="text-text-secondary hover:text-text-primary text-body-md transition"
@@ -436,9 +435,7 @@ export default function Home() {
         <div className="mx-auto max-w-(--container-app) px-6 py-12">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-accent-bright text-body-md font-mono font-bold tracking-widest">
-                SUITEDPOKER
-              </p>
+              <Wordmark />
               <p className="text-text-secondary text-body-md mt-2">{DISCLAIMER}</p>
             </div>
             <div className="text-text-secondary text-body-md flex gap-6">

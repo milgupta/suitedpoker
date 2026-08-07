@@ -23,12 +23,20 @@ export default function manifest(): MetadataRoute.Manifest {
     background_color: palette.canvas,
     theme_color: palette.canvas,
     categories: ["education", "games"],
+    // Generated from the brand SVGs by `npm run icons`, never hand-placed.
+    // 192 and 512 are what Chrome requires before it offers to install at all;
+    // a manifest with only a 32 and a 180 silently never prompts.
     icons: [
-      { src: "/icon", sizes: "32x32", type: "image/png" },
-      { src: "/apple-icon", sizes: "180x180", type: "image/png" },
+      { src: "/brand/icon-192.png", sizes: "192x192", type: "image/png" },
+      { src: "/brand/icon-512.png", sizes: "512x512", type: "image/png" },
       // `maskable` so Android crops the mark rather than framing it in a white
-      // circle — the icon is inset for exactly this.
-      { src: "/apple-icon", sizes: "180x180", type: "image/png", purpose: "maskable" },
+      // circle — this one is the full-bleed variant for exactly that reason.
+      {
+        src: "/brand/icon-maskable-512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
+      },
     ],
   };
 }

@@ -46,7 +46,7 @@ const FIXTURES: { [K in TransactionalTemplate]: TemplateData[K] } = {
   password_reset: { resetUrl: `${SITE}/reset?token=abc123` },
   verify_email: { verifyUrl: `${SITE}/auth/confirm?token=abc123` },
   receipt: {
-    amount: "$149.99",
+    amount: "$119.99",
     planLabel: "Yearly",
     invoiceUrl: "https://invoice.stripe.com/i/acct_1/test",
     nextBillingDate: "August 6, 2027",

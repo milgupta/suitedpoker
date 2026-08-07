@@ -164,7 +164,7 @@ test.describe("checkout", () => {
     expect(session.cancel_url).toContain("/paywall?cancelled=1");
 
     // The correct amount and interval, read back from Stripe.
-    expect(session.amount_total).toBe(14999);
+    expect(session.amount_total).toBe(11999);
     expect(session.currency).toBe("usd");
     const item = session.line_items?.data[0];
     expect(item?.price?.id).toBe(PRICE_ANNUAL);
@@ -273,7 +273,7 @@ test.describe("checkout", () => {
 
     for (const [plan, priceId, expected] of [
       ["monthly", PRICE_MONTHLY, 3999],
-      ["annual", PRICE_ANNUAL, 14999],
+      ["annual", PRICE_ANNUAL, 11999],
     ] as const) {
       const { email } = await makeUser(`buy${plan}`);
       await login(page, email);

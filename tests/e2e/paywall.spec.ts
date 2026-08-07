@@ -70,11 +70,11 @@ test.describe("paywall", () => {
     // Yearly is pre-selected and says the saving as a number.
     await expect(page.locator("[data-plan=annual]")).toHaveAttribute("data-selected", "true");
     await expect(page.locator("[data-plan=monthly]")).toHaveAttribute("data-selected", "false");
-    await expect(page.getByText("Save 69%")).toBeVisible();
+    await expect(page.getByText("Save 75%")).toBeVisible();
 
     // Both the per-week headline and the real billed price.
-    await expect(page.getByText("$2.88", { exact: false })).toBeVisible();
-    await expect(page.getByText("$149.99", { exact: false }).first()).toBeVisible();
+    await expect(page.getByText("$2.31", { exact: false })).toBeVisible();
+    await expect(page.getByText("$119.99", { exact: false }).first()).toBeVisible();
 
     // Every card carries a real radio, not just a border weight.
     expect(await page.getByRole("radio").count()).toBe(2);

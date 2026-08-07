@@ -158,6 +158,41 @@ sessions.
 **Every substage in `SUITEDPOKER_BUILD_PLAN.md` is now done.** Update this table
 if you add one.
 
+**What the icon and title pass left you.**
+
+- 🔴 **`src/app/favicon.ico` was the stock create-next-app file for forty
+  substages** — 25,931 bytes of Next's own logo, sitting in the tab of every
+  browser that prefers `.ico`. It is a binary, so nothing read it and no test
+  looked at it. `tests/unit/icons.test.ts` reads the icon headers now.
+- **`npm run icons` regenerates every icon from the two brand SVGs.** Never
+  hand-place one. `public/brand/spade-tile.svg` (rounded) feeds the tab, the
+  favicon and the wordmark; `spade-square.svg` (full-bleed) feeds the surfaces
+  that apply their OWN rounding — iOS and Android maskable — because shipping
+  the rounded tile there double-rounds it and leaves pale corners.
+- **`src/app/icon.svg` is a BYTE COPY of the brand SVG, not a re-render.** A
+  test asserts they are identical, so editing the mark without re-running
+  `npm run icons` fails the build rather than shipping two marks.
+- **A vector favicon is what Google scales.** The `.ico` still carries a 48px
+  entry because Google's guidance asks for a multiple of 48 and the old file
+  topped out at 32.
+- **`icon.tsx` and `icon.svg` satisfy the same Next file convention.** Both
+  present emits two competing `<link rel="icon">`; the test asserts the old
+  `.tsx` routes stay deleted.
+- **The manifest had only a 32 and a 180, so Chrome never offered to install
+  it.** 192 and 512 are the threshold. A manifest icon path is checked by
+  nothing in the build — the test resolves every one against disk and against
+  the size it declares.
+- **The title scheme is `SuitedPoker` bare on `/`, `SuitedPoker — %s`
+  everywhere else** (it was `%s · SuitedPoker`). Brand first, so a truncated
+  tab still says who we are. **A page's own `title` must be the SHORT form
+  with no em dash of its own** — `/methodology` read "SuitedPoker —
+  Methodology — where the strategy comes from" until it was cut back to
+  "Methodology".
+- ⚠️ **The landing `<title>` no longer carries a keyword line.** "SuitedPoker"
+  alone is what Google shows as the result link; the description carries the
+  rest. A deliberate call, not an oversight — revisit it if organic CTR
+  matters more than the brand reading clean.
+
 **What 5.3 left you.**
 
 - **`src/lib/dashboard.ts` is pure arithmetic; `dashboard-server.ts` does one

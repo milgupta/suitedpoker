@@ -30,7 +30,7 @@ import { cn } from "@/lib/utils";
  *   2. Every card carries a real radio. Communicating selection with border
  *      weight alone is genuinely ambiguous about what you are buying.
  *   3. Both the per-week headline AND the real billed price, separated by a
- *      hairline. "$2.88 per week" reads far smaller than "$149.99"; the second
+ *      hairline. "$2.31 per week" reads far smaller than "$119.99"; the second
  *      line is what keeps it honest.
  *
  * There is no exit downsell. Dropping the price the instant someone reaches for

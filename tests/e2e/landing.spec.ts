@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { annualisedCents, formatUsd, PLANS } from "@/lib/stripe/plans";
 
 /**
  * THE LANDING PAGE, AND THE SCAN THAT PROTECTS THE AD ACCOUNT.
@@ -221,8 +222,13 @@ test.describe("the landing page", () => {
     const text = await bodyText(page);
     // Hardcoded prices on a landing page outlive the price change that made
     // them wrong, and the first person to notice is a customer at checkout.
-    expect(text).toContain("$149.99");
-    expect(text).toContain("$39.99");
-    expect(text).toContain("$12.50");
+    //
+    // Derived, not typed — the first version of this test hardcoded the three
+    // figures and went red the day the annual price moved, which made a real
+    // price change look like a product regression.
+    expect(text).toContain(formatUsd(PLANS.annual.amountCents));
+    expect(text).toContain(formatUsd(PLANS.monthly.amountCents));
+    expect(text).toContain(formatUsd(annualisedCents("monthly")));
+    expect(text).toContain(formatUsd(Math.round(PLANS.annual.amountCents / 12)));
   });
 });

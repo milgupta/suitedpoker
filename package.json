@@ -29,6 +29,7 @@
     "test:chat": "vitest run --config vitest.live.config.mts tests/unit/chat-live.test.ts",
     "screenshots": "tsx scripts/capture-screenshots.ts",
     "optimize:assets": "tsx scripts/optimize-assets.ts",
+    "icons": "tsx scripts/gen-icons.ts",
     "hero:video": "tsx scripts/capture-hero-video.ts",
     "mutation": "tsx scripts/mutation-check.ts",
     "test:live": "vitest run --config vitest.live.config.mts",

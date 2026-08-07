@@ -157,7 +157,7 @@ test.describe("attribution", () => {
     await login(page, user.email);
 
     const response = await page.request.post("/api/meta/capi", {
-      data: { eventName: "Purchase", eventId: "forged_purchase", customData: { value: 149.99 } },
+      data: { eventName: "Purchase", eventId: "forged_purchase", customData: { value: 119.99 } },
     });
 
     expect(response.status()).toBe(400);

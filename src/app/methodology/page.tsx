@@ -5,7 +5,10 @@ import { isFullySolverVerified, METHODOLOGY_SECTIONS, provenanceHeadline } from 
 import { ComplianceFooter } from "@/components/ComplianceFooter";
 
 export const metadata: Metadata = {
-  title: "Methodology — where the strategy comes from",
+  // Short, because the root template prefixes "SuitedPoker — " to it. The
+  // longer "where the strategy comes from" lives in the description, which is
+  // the line Google actually shows underneath.
+  title: "Methodology",
   description:
     "Exactly what SuitedPoker's strategy data is, how it was built, and what it can and cannot tell you.",
 };

@@ -35,7 +35,7 @@ export const PLANS: Record<PlanId, Plan> = {
   annual: {
     id: "annual",
     label: "Yearly",
-    amountCents: 14999,
+    amountCents: 11999,
     interval: "year",
     intervalLabel: "per year",
   },

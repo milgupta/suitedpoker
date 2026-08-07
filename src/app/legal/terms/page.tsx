@@ -1,3 +1,5 @@
+import { formatUsd, PLANS } from "@/lib/stripe/plans";
+
 export const metadata = { title: "Terms of Service" };
 
 export default function Terms() {
@@ -23,9 +25,12 @@ export default function Terms() {
 
       <h2>Subscriptions and billing</h2>
       <p>
-        Access is sold as a subscription, billed monthly at $39.99 USD or annually at $149.99 USD.
-        Subscriptions renew automatically at the end of each billing period until cancelled.
-        Payments are processed by Stripe; we do not store your card details.
+        {/* Derived, never typed: a price stated in the terms that disagrees with the
+            price Stripe charges is the one copy error with legal weight. */}
+        Access is sold as a subscription, billed monthly at {formatUsd(PLANS.monthly.amountCents)}{" "}
+        USD or annually at {formatUsd(PLANS.annual.amountCents)} USD. Subscriptions renew
+        automatically at the end of each billing period until cancelled. Payments are processed by
+        Stripe; we do not store your card details.
       </p>
 
       <h2>Cancellation and refunds</h2>
