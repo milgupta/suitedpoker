@@ -43,24 +43,38 @@ export function initAnalytics(): void {
   });
 }
 
+/**
+ * Every capture path goes through this, never a bare `started` check.
+ *
+ * React runs CHILD effects before PARENT effects, so a `TrackView` inside the
+ * tree fires before PostHogProvider's init effect has run. Reading `started`
+ * directly dropped the first event of every page load — landing_viewed among
+ * them — silently, with the client otherwise healthy. initAnalytics is
+ * idempotent, so the ordering simply stops mattering.
+ */
+function ready(): boolean {
+  initAnalytics();
+  return started;
+}
+
 export function capture<E extends EventName>(event: E, properties: EventMap[E]): void {
-  if (!started) return;
+  if (!ready()) return;
   posthog.capture(event, properties);
 }
 
 export function identify(userId: string, traits: Partial<UserTraits>): void {
-  if (!started) return;
+  if (!ready()) return;
   posthog.identify(userId, traits);
 }
 
 export function resetAnalytics(): void {
-  if (!started) return;
+  if (!ready()) return;
   // On logout, or the next user on a shared device inherits the last one's
   // identity and every funnel is wrong.
   posthog.reset();
 }
 
 export function capturePageview(url: string): void {
-  if (!started) return;
+  if (!ready()) return;
   posthog.capture("$pageview", { $current_url: url });
 }
