@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import type { Action, GameState, LegalAction } from "@/poker/gamestate";
 import { legalActions } from "@/poker/gamestate";
 import { ActionBar, type SizedOption } from "./ActionBar";
@@ -25,6 +24,8 @@ export interface PokerTableProps {
    */
   actionsOverride?: readonly LegalAction[];
   context?: HandContext;
+  /** Optional seat → archetype label (Station / Nit / TAG) for the sim. */
+  seatTags?: Readonly<Record<number, string>>;
   className?: string;
 }
 
@@ -166,18 +167,9 @@ export function PokerTable({
   sizedOptions,
   actionsOverride,
   context,
+  seatTags,
   className,
 }: PokerTableProps) {
-  const [narrow, setNarrow] = useState(false);
-
-  useEffect(() => {
-    const query = window.matchMedia("(max-width: 640px)");
-    const update = (): void => setNarrow(query.matches);
-    update();
-    query.addEventListener("change", update);
-    return () => query.removeEventListener("change", update);
-  }, []);
-
   const bigBlind = state.config.bigBlind;
   const layout = seatLayout(state.players.length, heroSeat);
   const heroTurn = state.actionOn === heroSeat && !state.complete;
@@ -195,11 +187,11 @@ export function PokerTable({
 
   return (
     <div className={cn("flex w-full flex-col gap-4", className)}>
-      {/* The table. Compresses to a taller ellipse on narrow screens so the
-          hero's cards and the action bar keep the bottom third. */}
+      {/* Aspect from Tailwind breakpoints — never matchMedia state. A narrow
+          flag set in an effect was shifting the ring one frame after paint
+          and costing CLS on the session screen. */}
       <div
-        className="relative w-full"
-        style={{ aspectRatio: narrow ? "3 / 4" : "16 / 10" }}
+        className="relative aspect-[3/4] w-full sm:aspect-[16/10]"
         role="img"
         aria-label={`Poker table, ${state.street}, pot ${potBb.toFixed(1)} big blinds`}
       >
@@ -226,6 +218,7 @@ export function PokerTable({
                 isActive={state.actionOn === i}
                 bigBlind={bigBlind}
                 revealCards={i === heroSeat || state.street === "showdown"}
+                tag={seatTags?.[player.seat] ?? null}
               />
             </div>
           );

@@ -3,6 +3,7 @@
 import { motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
 import { GRID_SIZE, HAND_KEYS, type HandKey } from "@/poker/range";
+import { actionLabel } from "@/lib/action-label";
 import { DURATION, staggerDelay } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
@@ -217,7 +218,7 @@ function CellDetail({
                   className="inline-block size-3 rounded-full"
                   style={{ background: band.colour, outline: "1px solid var(--color-border)" }}
                 />
-                {band.action}
+                {actionLabel(band.action)}
               </span>
               <span className="tabular-nums">{band.height.toFixed(0)}%</span>
             </li>

@@ -27,6 +27,23 @@ const POSTHOG_ASSETS = POSTHOG_HOST.replace("us.i.posthog.com", "us-assets.i.pos
 
 const nextConfig: NextConfig = {
   /**
+   * The deploy environment, inlined into the client bundle at build time.
+   *
+   * The Meta pixel is gated on this — anything but "production" logs instead of
+   * sending, so a laptop and a preview deploy cannot reach the live dataset.
+   *
+   * NOT left to Vercel's `NEXT_PUBLIC_VERCEL_ENV`: that one exists only when the
+   * project has "Automatically expose System Environment Variables" enabled, and
+   * a silently absent value here reads as "not production", which would turn the
+   * production pixel off with nothing to show for it. `VERCEL_ENV` is always
+   * present in a Vercel build, so deriving it here removes the dependency on a
+   * dashboard checkbox.
+   */
+  env: {
+    NEXT_PUBLIC_VERCEL_ENV: process.env.VERCEL_ENV ?? process.env.NEXT_PUBLIC_VERCEL_ENV ?? "",
+  },
+
+  /**
    * PostHog is proxied through our own origin.
    *
    * Every mainstream adblock list blocks posthog.com by hostname. Without this

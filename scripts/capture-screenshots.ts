@@ -64,9 +64,9 @@ interface Shot {
 const SHOTS: Shot[] = [
   {
     name: "dashboard",
-    path: "/dashboard",
+    path: "/practice",
     ready: async (page) => {
-      await page.waitForSelector("[data-section='actions']", { timeout: 30_000 });
+      await page.waitForSelector("[data-practice]", { timeout: 30_000 });
       await page.waitForTimeout(500);
     },
     fullPage: true,

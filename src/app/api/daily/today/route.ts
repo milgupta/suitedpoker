@@ -43,7 +43,11 @@ export const GET = withEntitlement(async (_request, auth) => {
   // Which spots this user has already answered — one attempt each, so this is
   // also the "resume in progress" state.
   const [result] = await db
-    .select({ id: dailyResults.id, completedAt: dailyResults.completedAt })
+    .select({
+      id: dailyResults.id,
+      completedAt: dailyResults.completedAt,
+      score: dailyResults.score,
+    })
     .from(dailyResults)
     .where(and(eq(dailyResults.userId, auth.userId), eq(dailyResults.challengeId, challenge.id)))
     .limit(1);
@@ -53,10 +57,18 @@ export const GET = withEntitlement(async (_request, auth) => {
       ? []
       : (
           await db
-            .select({ spotIndex: dailySpotResults.spotIndex, grade: dailySpotResults.grade })
+            .select({
+              spotIndex: dailySpotResults.spotIndex,
+              grade: dailySpotResults.grade,
+              evLoss: dailySpotResults.evLoss,
+            })
             .from(dailySpotResults)
             .where(eq(dailySpotResults.resultId, result.id))
-        ).map((r) => ({ spotIndex: r.spotIndex, grade: r.grade }));
+        ).map((r) => ({
+          spotIndex: r.spotIndex,
+          grade: r.grade,
+          evLoss: r.evLoss === null ? 0 : Number(r.evLoss),
+        }));
 
   return NextResponse.json({
     date: today,
@@ -65,6 +77,7 @@ export const GET = withEntitlement(async (_request, auth) => {
     spots,
     answered,
     completed: result?.completedAt != null,
+    score: result?.score ?? null,
     streak: currentStreak(
       {
         count: profile?.streakCount ?? 0,

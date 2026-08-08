@@ -56,7 +56,7 @@ export const POST = withEntitlement(async (request, auth) => {
   try {
     const db = getDb();
     const [profile] = await db
-      .select({ rating: profiles.rating })
+      .select({ rating: profiles.rating, primaryLeak: profiles.primaryLeakKey })
       .from(profiles)
       .where(eq(profiles.id, auth.userId))
       .limit(1);
@@ -69,12 +69,17 @@ export const POST = withEntitlement(async (request, auth) => {
         .orderBy(desc(drillAttempts.createdAt))
         .limit(3);
 
+      // Only the primary leak is persisted — Q6's list is not. Targeting still
+      // fires ~30% when one exists; the chip tells the user why this hand feels
+      // different from a random one.
+      const leakTags = profile.primaryLeak == null ? [] : [profile.primaryLeak];
+
       const selection = selectNextDifficulty({
         rating: profile.rating,
         // Newest first from the query; the selector wants oldest first.
         recentGrades: recent.map((r) => r.grade as GradeName).reverse(),
         roll: Math.random(),
-        leakTags: [],
+        leakTags,
       });
 
       leakTag = selection.leakTag;

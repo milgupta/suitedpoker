@@ -247,7 +247,7 @@ export function CancelClient({ plan, periodEnd }: { plan: PlanId; periodEnd: str
 
           <div className="mt-8 flex flex-col gap-3">
             <Button variant="accent" asChild>
-              <Link href="/dashboard">Keep playing until then</Link>
+              <Link href="/practice">Keep playing until then</Link>
             </Button>
             <Button variant="ghost" asChild>
               <Link href="/account">Back to account</Link>

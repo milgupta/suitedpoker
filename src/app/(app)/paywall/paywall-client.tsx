@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import posthog from "posthog-js";
@@ -84,6 +84,28 @@ export function PaywallClient({ diagnosis }: PaywallClientProps) {
   const [selected, setSelected] = useState<PlanId>("annual");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+
+  /**
+   * The drop-off step, fired on Stripe's return rather than on leaving here.
+   *
+   * This catches the BACK BUTTON on Stripe's page, which is the only abandonment
+   * the browser ever tells us about — a closed tab or a dead session simply
+   * never comes back, and counting those means differencing against
+   * `checkout_started` in the funnel. Guarded by a ref because React mounts
+   * effects twice in development and a doubled abandonment understates
+   * conversion.
+   */
+  const abandonReported = useRef(false);
+  useEffect(() => {
+    if (!cancelled || abandonReported.current) return;
+    abandonReported.current = true;
+
+    const raw = params.get("plan");
+    const plan = PLAN_IDS.find((id) => id === raw);
+    // Fall back to the default selection rather than dropping the event: a
+    // missing plan is worth less than a missing drop-off.
+    capture("checkout_abandoned", { plan: plan ?? "annual" });
+  }, [cancelled, params]);
 
   async function startCheckout(): Promise<void> {
     if (busy) return;

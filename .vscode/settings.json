@@ -1,0 +1,29 @@
+{
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/**": true,
+    "**/.next/**": true,
+    "**/test-results/**": true,
+    "**/playwright-report/**": true,
+    "**/tools/solver/out/**": true,
+    "**/coverage/**": true,
+    "**/.turbo/**": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.next": true,
+    "**/tools/solver/out": true,
+    "**/test-results": true,
+    "**/playwright-report": true,
+    "**/package-lock.json": true,
+    "**/public/screenshots": true
+  },
+  "files.exclude": {
+    "**/.next": true,
+    "**/tools/solver/out": true
+  },
+  "typescript.tsserver.watchOptions": {
+    "watchDirectory": "useFsEventsOnParentDirectory"
+  }
+}

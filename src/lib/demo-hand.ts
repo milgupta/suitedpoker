@@ -76,9 +76,14 @@ const SHORTLIST: Record<SkillTier, readonly DemoSpot[]> = {
   // Used charts: facing aggression, where charts usually run out.
   charts: [
     {
-      id: "btn-vs-3bet",
-      heroPos: "BTN",
-      actionSeq: "vs_3bet_BB",
+      // Was BTN:vs_3bet_BB until that node was quarantined — every vs_3bet
+      // file with a blind 3bettor carried one shared strategy, so the button's
+      // 48% opening range and the cutoff's 28% got the same answer. This is
+      // the same lesson from a pairing the data actually describes, and it is
+      // the exact hand the "Facing a 3-bet" lesson opens with.
+      id: "co-vs-btn-3bet",
+      heroPos: "CO",
+      actionSeq: "vs_3bet_BTN",
       difficulty: 6,
       teaches: "a middle pair against a 3-bet is a genuine mix",
     },
@@ -93,11 +98,14 @@ const SHORTLIST: Record<SkillTier, readonly DemoSpot[]> = {
   // Used a solver: give them something they will not find obvious.
   solver: [
     {
-      id: "bb-vs-4bet",
-      heroPos: "BB",
-      actionSeq: "vs_4bet_BTN",
+      // Was BB:vs_4bet_BTN. All eight 4bet nodes share one strategy file, so
+      // the 4bettor's position changed nothing — indefensible on the largest
+      // pot in the preflop tree, and quarantined until it is solved.
+      id: "utg-vs-mp-3bet",
+      heroPos: "UTG",
+      actionSeq: "vs_3bet_MP",
       difficulty: 6,
-      teaches: "stacking off or folding in a 4-bet pot",
+      teaches: "the tightest opening range in the game still has to fold some of itself",
     },
     {
       id: "co-vs-3bet",

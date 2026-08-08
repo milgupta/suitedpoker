@@ -54,7 +54,7 @@ async function login(page: Page, email: string): Promise<void> {
   // Generous on purpose. Under a loaded dev server with parallel workers this
   // redirect chain — middleware, entitlement check, render — regularly takes
   // ten seconds, and a 5s default turns that into a fake product failure.
-  await expect(page).toHaveURL(/\/dashboard/, { timeout: 30_000 });
+  await expect(page).toHaveURL(/\/practice/, { timeout: 30_000 });
 }
 
 async function nextSpotId(request: APIRequestContext): Promise<string> {

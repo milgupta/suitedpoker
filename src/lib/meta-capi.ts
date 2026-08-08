@@ -5,10 +5,14 @@ import { clientEnv } from "@/lib/env";
 import { serverEnv } from "@/lib/env.server";
 import { getRedis } from "@/lib/redis";
 import {
+  formatSuppressedEvent,
   isValidEventTime,
+  metaDelivery,
   normaliseForHash,
   purchaseEventId,
+  withDerivedFbc,
   type Attribution,
+  type MetaDelivery,
   type MetaEvent,
   type MetaEventName,
   type UserData,
@@ -31,6 +35,20 @@ export function isCapiConfigured(): boolean {
   return typeof pixelId === "string" && pixelId !== "" && typeof token === "string" && token !== "";
 }
 
+/**
+ * Whether this process may reach the live dataset.
+ *
+ * Read at CALL time, not module load, so a test can stub the environment — and
+ * from the runtime `VERCEL_ENV` in preference to the inlined public copy,
+ * because the server has the authoritative one.
+ */
+export function capiDelivery(): MetaDelivery {
+  return metaDelivery(
+    process.env.VERCEL_ENV ?? process.env.NEXT_PUBLIC_VERCEL_ENV,
+    process.env.META_TEST_EVENT_CODE,
+  );
+}
+
 /** SHA-256 of the value after Meta's normalisation. */
 export function hashPii(value: string): string {
   return createHash("sha256").update(normaliseForHash(value)).digest("hex");
@@ -41,8 +59,20 @@ export function buildUserData(input: {
   attribution?: Partial<Attribution> | null;
   ip?: string | null;
   userAgent?: string | null;
+  /** Fallback click time for a stored `fbclid` that has no `fbc` beside it. */
+  clickTimeMs?: number;
 }): UserData {
   const data: UserData = {};
+
+  /**
+   * fbc is the single biggest lever on Event Match Quality, so a stored click
+   * id must never go out without one. `attributionFromQuery` writes both
+   * together on the landing hit; this covers a row written before it did.
+   */
+  const attribution =
+    input.attribution == null
+      ? null
+      : withDerivedFbc(input.attribution, input.clickTimeMs ?? Date.now());
 
   // Hashed, never raw. Meta rejects unhashed email, and sending one would be a
   // plaintext PII disclosure to a third party.
@@ -52,10 +82,10 @@ export function buildUserData(input: {
 
   // fbp and fbc are NOT hashed — Meta matches them verbatim, and hashing them
   // silently produces a payload that is accepted and matches nothing.
-  const fbp = input.attribution?.fbp;
+  const fbp = attribution?.fbp;
   if (typeof fbp === "string" && fbp !== "") data.fbp = fbp;
 
-  const fbc = input.attribution?.fbc;
+  const fbc = attribution?.fbc;
   if (typeof fbc === "string" && fbc !== "") data.fbc = fbc;
 
   if (typeof input.ip === "string" && input.ip !== "") data.client_ip_address = input.ip;
@@ -147,18 +177,51 @@ export interface SendResult {
   readonly reason: string | null;
   readonly attempts: number;
   readonly queued: boolean;
+  /**
+   * What actually happened to the event.
+   *
+   * `ok` alone cannot express it: a suppressed event did not fail and must not
+   * be retried, but reporting it as sent would make a dev run indistinguishable
+   * from a live one in every log and every test.
+   */
+  readonly delivery: "sent" | "test" | "logged" | "skipped";
 }
 
 async function postOnce(event: MetaEvent): Promise<{ ok: boolean; reason: string | null }> {
+  /**
+   * THE ONE PLACE A REQUEST LEAVES FOR META, so it is the one place the
+   * environment gate has to hold.
+   *
+   * `sendEvent` short-circuits before it ever gets here — this is the second,
+   * independent force-off, and it is what covers `drainQueue`: a queue written
+   * before the gate existed, or by a process that was production at the time,
+   * must not drain into the live dataset from a laptop.
+   */
+  const delivery = capiDelivery();
+  if (delivery === "log") {
+    console.info(formatSuppressedEvent(event, process.env.VERCEL_ENV));
+    return { ok: true, reason: null };
+  }
+
   const pixelId = clientEnv.NEXT_PUBLIC_META_PIXEL_ID ?? "";
   const token = serverEnv().META_CAPI_ACCESS_TOKEN ?? "";
-  const testCode = process.env.META_TEST_EVENT_CODE;
 
   const body: Record<string, unknown> = { data: [event] };
-  // Routes the event to Meta's Test Events panel instead of production
-  // reporting. Present only when the env var is set, so it cannot leak into a
-  // real run by being forgotten in code.
-  if (typeof testCode === "string" && testCode !== "") body.test_event_code = testCode;
+  /**
+   * Routes the event to Meta's Test Events panel instead of reporting.
+   *
+   * Attached ONLY when `capiDelivery()` resolved to "test", which production
+   * never does. That is a runtime backstop under the build-time refusal in
+   * env-required.ts: reading the env var directly here would attach the code to
+   * a real conversion the moment someone set it in the wrong Vercel scope, and
+   * a test-coded Purchase is a Purchase Meta never counts.
+   */
+  if (delivery === "test") {
+    body.test_event_code = process.env.META_TEST_EVENT_CODE;
+    console.info(
+      `[meta] TEST EVENTS ${event.event_name} id=${event.event_id} code=${process.env.META_TEST_EVENT_CODE}`,
+    );
+  }
 
   try {
     const response = await fetch(
@@ -192,12 +255,31 @@ export async function sendEvent(
   options: SendOptions & { sleep?: (ms: number) => Promise<void> },
 ): Promise<SendResult> {
   if (!isCapiConfigured()) {
-    return { ok: false, reason: "not_configured", attempts: 0, queued: false };
+    return { ok: false, reason: "not_configured", attempts: 0, queued: false, delivery: "skipped" };
   }
 
   const event = buildEvent(options);
   if (!isValidEventTime(event.event_time, options.nowMs ?? Date.now())) {
-    return { ok: false, reason: "stale_event_time", attempts: 0, queued: false };
+    return {
+      ok: false,
+      reason: "stale_event_time",
+      attempts: 0,
+      queued: false,
+      delivery: "skipped",
+    };
+  }
+
+  /**
+   * Suppressed BEFORE the retry loop, not inside it.
+   *
+   * Falling through to `postOnce` would work — it gates too — but it would burn
+   * three iterations and a backoff sleep on every dev event, and it would leave
+   * the caller unable to tell a logged event from a sent one.
+   */
+  const delivery = capiDelivery();
+  if (delivery === "log") {
+    console.info(formatSuppressedEvent(event, process.env.VERCEL_ENV));
+    return { ok: true, reason: null, attempts: 0, queued: false, delivery: "logged" };
   }
 
   const sleep = options.sleep ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));
@@ -205,7 +287,17 @@ export async function sendEvent(
   let reason: string | null = null;
   for (let attempt = 1; attempt <= 3; attempt++) {
     const result = await postOnce(event);
-    if (result.ok) return { ok: true, reason: null, attempts: attempt, queued: false };
+    if (result.ok) {
+      return {
+        ok: true,
+        reason: null,
+        attempts: attempt,
+        queued: false,
+        // "sent" means it entered REPORTING. A test-coded event reached Meta
+        // and is visible in Events Manager, but Meta counts it nowhere.
+        delivery: delivery === "test" ? "test" : "sent",
+      };
+    }
 
     reason = result.reason;
     if (!retryable(reason)) break;
@@ -216,11 +308,11 @@ export async function sendEvent(
   // ad account, which costs far more than a delayed one.
   if (retryable(reason)) {
     await enqueue(event);
-    return { ok: false, reason, attempts: 3, queued: true };
+    return { ok: false, reason, attempts: 3, queued: true, delivery: "skipped" };
   }
 
   console.error(`[meta-capi] ${event.event_name} ${event.event_id} failed: ${reason}`);
-  return { ok: false, reason, attempts: 1, queued: false };
+  return { ok: false, reason, attempts: 1, queued: false, delivery: "skipped" };
 }
 
 /** Drains the retry queue. Called by a cron. */

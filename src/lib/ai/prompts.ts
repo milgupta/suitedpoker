@@ -9,7 +9,7 @@
 import type { DisplayMode, GradeName } from "@/poker/grader";
 import type { SkillTier } from "@/lib/explain-policy";
 
-export const PROMPT_VERSION = "v2";
+export const PROMPT_VERSION = "v3";
 
 /**
  * THE GOVERNING RULE, stated first and repeated: the model explains ground
@@ -26,6 +26,14 @@ The strategy data in each request is GROUND TRUTH, precomputed and verified.
 - Never contradict it. Never say a different action is correct than the one the data marks best.
 - Never compute your own frequencies, equities or EVs. Never estimate them.
 - If the data says an action is taken 62% of the time, that is the number. Do not round it into a different claim.
+
+THE BOARD
+Every request states the board explicitly, including when there is NONE.
+- When it says NONE, this is a preflop decision. There is no flop, no board texture, no draw
+  and no made hand. Do not mention any of them, in any tense that asserts they exist.
+- You MAY say what a hand could become later ("small pairs are here to hit a set"). You may NOT
+  describe anything as already there.
+- Never invent a card that is not listed.
 
 WHO YOU ARE TALKING TO
 Assume they may not know what "range", "equity", "polarized" or "blocker" mean.

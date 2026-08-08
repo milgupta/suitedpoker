@@ -37,3 +37,39 @@ export function actionLabel(action: string): string {
   const words = action.replace(/_/g, " ").trim();
   return words === "" ? action : words.charAt(0).toUpperCase() + words.slice(1);
 }
+
+/**
+ * The same name mid-sentence, where a capital would read as the start of one.
+ *
+ * "— but Bet 66% is close" and "splits between Fold, Call" both looked like a
+ * bug rather than emphasis.
+ */
+export function actionPhrase(action: string): string {
+  return actionLabel(action).toLowerCase();
+}
+
+/**
+ * Past tense, for "You ___".
+ *
+ * Only the four base actions had a verb, so every postflop sizing fell through
+ * to its raw identifier and the result line read "You bet_33". A sizing is the
+ * majority of postflop actions, so the fallthrough was the common case rather
+ * than the edge one.
+ */
+const VERBS: Record<string, string> = {
+  fold: "folded",
+  call: "called",
+  check: "checked",
+  raise: "raised",
+  bet: "bet",
+  allin: "shoved",
+  bet_33: "bet 33%",
+  bet_66: "bet 66%",
+  bet_100: "bet pot",
+  raise_small: "raised small",
+  raise_pot: "raised pot",
+};
+
+export function actionVerb(action: string): string {
+  return VERBS[action] ?? actionPhrase(action);
+}

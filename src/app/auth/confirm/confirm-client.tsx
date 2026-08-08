@@ -3,10 +3,11 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { APP_HOME } from "@/lib/app-chrome";
 
 /** Only same-origin paths — this value arrives from an emailed URL. */
 function safeNext(value: string | null): string {
-  return value !== null && value.startsWith("/") && !value.startsWith("//") ? value : "/dashboard";
+  return value !== null && value.startsWith("/") && !value.startsWith("//") ? value : APP_HOME;
 }
 
 export function ConfirmClient() {

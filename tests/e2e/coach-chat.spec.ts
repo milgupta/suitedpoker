@@ -66,7 +66,7 @@ async function login(page: Page, email: string): Promise<void> {
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
   await page.getByRole("button", { name: "Log in" }).click();
-  await page.waitForURL(/\/(dashboard|onboarding|paywall)/, { timeout: 25_000 });
+  await page.waitForURL(/\/(practice|onboarding|paywall)/, { timeout: 25_000 });
 }
 
 function chat(request: APIRequestContext, body: Record<string, unknown>) {
@@ -215,7 +215,7 @@ test.describe("hand-scoped chat", () => {
 
     // Read through the API the component uses, twice, across a navigation.
     for (let i = 0; i < 2; i++) {
-      await page.goto("/dashboard");
+      await page.goto("/practice");
       const response = await page.request.get(
         `/api/coach/chat?attemptId=${encodeURIComponent(attemptId)}`,
       );

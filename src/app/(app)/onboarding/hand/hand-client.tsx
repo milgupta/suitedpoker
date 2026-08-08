@@ -8,7 +8,9 @@ import type { Grade } from "@/poker/grader";
 import { Button } from "@/components/ui/button";
 import { Shimmer } from "@/components/motion";
 import { Explanation, Feedback, FrequencyCapsules, SpotTable } from "@/components/poker";
+import { capsuleSegments } from "@/lib/action-grid";
 import { capture } from "@/lib/analytics-client";
+import { actionGridClass } from "@/lib/action-grid";
 import { cn } from "@/lib/utils";
 import { actionLabel } from "@/lib/action-label";
 import { fadeUp } from "@/lib/motion";
@@ -129,14 +131,8 @@ export function HandClient() {
     router.prefetch("/diagnosis");
   }, [router]);
 
-  const capsuleSegments =
-    result === null
-      ? []
-      : Object.entries(result.frequencies).map(([action, freq]) => ({
-          action,
-          freq,
-          evLoss: result.alternativeActions.find((a) => a.action === action)?.evLoss ?? 0,
-        }));
+  const segments =
+    result === null || spot === null ? [] : capsuleSegments(spot.legalActions, result);
 
   if (phase === "intro") {
     return (
@@ -201,28 +197,17 @@ export function HandClient() {
         {/* Only when there is a SEQUENCE — with one action the seat chip on
             the table already says it. */}
         {spot.actionHistory.length > 1 && (
-          <p className="text-text-tertiary text-caption text-center">
+          <p className="text-text-secondary text-body-sm text-center">
             {spot.actionHistory.join(" · ")}
           </p>
         )}
       </div>
 
       {result !== null && (
-        <FrequencyCapsules segments={capsuleSegments} topAction={result.topAction} revealed />
+        <FrequencyCapsules segments={segments} topAction={result.topAction} revealed />
       )}
 
-      <div
-        /* Two columns at four actions — "Raise small" runs out of an 80px
-           button, and this is the one hand that decides whether anybody pays. */
-        className={cn(
-          "grid gap-2.5",
-          spot.legalActions.length >= 4
-            ? "grid-cols-2 sm:grid-cols-4"
-            : spot.legalActions.length === 3
-              ? "grid-cols-3"
-              : "grid-cols-2",
-        )}
-      >
+      <div className={cn("grid gap-2.5", actionGridClass(spot.legalActions.length))}>
         {spot.legalActions.map((action) => (
           <Button
             key={action}

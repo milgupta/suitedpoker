@@ -117,7 +117,7 @@ export function ReviewClient() {
       </section>
 
       {/* 3 · Leaks, each with a next action */}
-      {review.leaks.length > 0 && (
+      {review.leaks.length > 0 ? (
         <section className="flex flex-col gap-3">
           <h2 className="text-heading-lg">Detected leaks</h2>
           {review.leaks.map((leak) => (
@@ -140,12 +140,24 @@ export function ReviewClient() {
             </div>
           ))}
         </section>
+      ) : (
+        <p className="text-text-tertiary text-caption" data-no-leaks>
+          No leak pattern yet — we need about ten similar spots before calling one out. Short
+          sessions often look clean for that reason alone.
+        </p>
       )}
 
-      {/* 4 · Worst decisions, expandable into replays */}
+      {/* 4 · Worst decisions, expandable into replays.
+          Grades are vs the GTO chart, not vs the table's exploitative bots —
+          the bots play a style; the grade measures a different standard. */}
       {review.worst.length > 0 && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-heading-lg">Your most expensive decisions</h2>
+          <div>
+            <h2 className="text-heading-lg">Your most expensive decisions</h2>
+            <p className="text-text-tertiary text-caption mt-1">
+              Graded vs chart — not vs how the bots at this table play.
+            </p>
+          </div>
           {review.worst.map((decision) => (
             <div key={decision.handNumber} className="border-border bg-surface-1 rounded-lg border">
               <button
@@ -163,7 +175,10 @@ export function ReviewClient() {
                     #{decision.handNumber}
                   </span>
                   {decision.grade !== "" && (
-                    <GradeBadge grade={decision.grade as GradeName} size="sm" static />
+                    <span className="flex items-center gap-1.5">
+                      <GradeBadge grade={decision.grade as GradeName} size="sm" static />
+                      <span className="text-text-tertiary text-caption">vs chart</span>
+                    </span>
                   )}
                   <span className="text-body-sm">{decision.resultLine}</span>
                 </span>
@@ -235,6 +250,21 @@ function Replay({ steps }: { steps: ReplayStep[] }) {
           ))}
         </div>
       )}
+
+      {(() => {
+        const hero = step.seats.find((s) => s.cards !== null);
+        if (hero?.cards == null) return null;
+        return (
+          <div className="flex items-center gap-2" data-replay-hero>
+            <span className="text-text-tertiary text-caption">Your hand</span>
+            <div className="flex gap-1">
+              {cardsFromString(hero.cards).map((card, i) => (
+                <PlayingCard key={i} card={card} size="sm" />
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="flex flex-wrap gap-2">
         {step.seats.map((seat) => (

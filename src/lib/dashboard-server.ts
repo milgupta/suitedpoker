@@ -218,7 +218,7 @@ export async function loadDashboard(userId: string, now = new Date()): Promise<D
         },
         length: 10,
         label: `Fixing: ${leak.position}`,
-        returnTo: "/dashboard",
+        returnTo: "/progress",
       }),
     })),
 

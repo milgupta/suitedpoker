@@ -45,7 +45,7 @@ describe("the redact guard", () => {
     expect(result.safe).toBe(false);
     expect(result.reason).toBe("contradicts_best_action");
     // And it must fall back to something TRUE, not to nothing.
-    expect(result.text).toContain("raise");
+    expect(result.text.toLowerCase()).toContain("raise");
   });
 
   it.each([
@@ -88,7 +88,7 @@ describe("the template fallback", () => {
     // Default tier is `never` — the fallback obeys the same zero-jargon rule
     // the model does, because with no key it IS what the user reads.
     const novice = templateExplanation(makeGrade());
-    expect(novice).toContain("raise");
+    expect(novice.toLowerCase()).toContain("raise");
     expect(novice).toContain("71%");
     expect(novice).toContain("0.80 big blinds");
     expect(novice).not.toContain("EV");
@@ -169,10 +169,13 @@ describe("the context block", () => {
   );
 
   it("supplies the full mix and the EV table as ground truth", () => {
+    // The action names are written the way they are printed. The model echoes
+    // the vocabulary it is handed, so a `raise_small` in the prompt comes back
+    // out in the sentence the user reads.
     expect(context.text).toContain("Solver mix");
-    expect(context.text).toContain("raise 71%");
+    expect(context.text).toContain("Raise 71%");
     expect(context.text).toContain("EVs:");
-    expect(context.text).toContain("Best action: raise");
+    expect(context.text).toContain("Best action: Raise");
   });
 
   it("tells the model when the spot is a genuine mix", () => {
@@ -254,7 +257,7 @@ describe("graceful degradation", () => {
     expect(result.source).toBe("template");
     expect(result.redactedFor).toBe("not_configured");
     expect(result.costUsd).toBe(0);
-    expect(result.text).toContain(grade.bestAction);
+    expect(result.text.toLowerCase()).toContain(grade.bestAction);
     expect(redact(result.text, grade).safe).toBe(true);
   });
 });

@@ -58,7 +58,7 @@ async function login(page: Page, email: string): Promise<void> {
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
   await page.getByRole("button", { name: "Log in" }).click();
-  await page.waitForURL(/\/(dashboard|paywall|onboarding)/, { timeout: 20_000 });
+  await page.waitForURL(/\/(practice|paywall|onboarding)/, { timeout: 20_000 });
 }
 
 test.describe("the /welcome race", () => {

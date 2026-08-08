@@ -2,6 +2,7 @@ import "server-only";
 
 import { createHash } from "node:crypto";
 import { cacheGet, cacheSet } from "@/lib/redis";
+import { solutionSetVersion } from "@/lib/solution-data";
 import { generateCoached, isAiConfigured } from "./client";
 import { buildHintContext } from "./context";
 import { COACH_SYSTEM_PROMPT, HINT_INSTRUCTIONS, PROMPT_VERSION } from "./prompts";
@@ -37,7 +38,18 @@ export function hintCacheKeyFor(input: {
   level: HintLevel;
 }): string {
   return createHash("sha256")
-    .update(["hint", input.nodeRef, input.handKey, String(input.level), PROMPT_VERSION].join("|"))
+    .update(
+      [
+        "hint",
+        input.nodeRef,
+        input.handKey,
+        String(input.level),
+        PROMPT_VERSION,
+        // A hint is written from the mix. Repair the mix and a cached hint
+        // points at the wrong idea for thirty days.
+        solutionSetVersion(),
+      ].join("|"),
+    )
     .digest("hex");
 }
 
@@ -113,7 +125,9 @@ export async function generateHint(
     inputTokens += generated.inputTokens;
     outputTokens += generated.outputTokens;
 
-    const checked = redactHint(generated.text, level, input.clientSpot.legalActions);
+    const checked = redactHint(generated.text, level, input.clientSpot.legalActions, {
+      hasBoard: input.clientSpot.board.length > 0,
+    });
     if (checked.safe) {
       await cacheSet(`hint:${key}`, checked.text, CACHE_TTL_SECONDS);
       return {

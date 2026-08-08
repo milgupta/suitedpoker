@@ -7,9 +7,8 @@ import { getSession } from "@/lib/sessionstore";
 import { getDb } from "@/db";
 import { aiUsage, coachMessages, drillAttempts, profiles } from "@/db/schema";
 import { loadSolutionData } from "@/lib/solution-data";
+import { gradeSpot, strategyForSpot } from "@/lib/grade-spot";
 import { generateSpot } from "@/poker/generator";
-import { grade as gradePreflop } from "@/poker/grader";
-import { nodeRefOf, type PreflopActionName } from "@/poker/solutions";
 import { streamExplanation, type ExplainEvent } from "@/lib/ai/coach";
 import { COACH_MODEL } from "@/lib/ai/client";
 import { tierOf } from "@/lib/explain-policy";
@@ -70,14 +69,18 @@ export const POST = withEntitlement(async (request, auth) => {
 
   const data = loadSolutionData();
   const spot = generateSpot(stored.config, data, stored.seed);
-  const node = data.preflop.find((n) => nodeRefOf(n.heroPos, n.actionSeq) === spot.nodeRef);
-  if (node === undefined) return NextResponse.json({ error: "node_missing" }, { status: 500 });
 
   if (!spot.legalActions.includes(parsed.data.action)) {
     return NextResponse.json({ error: "illegal_action" }, { status: 400 });
   }
 
-  const result = gradePreflop(node, spot.handKey, parsed.data.action as PreflopActionName);
+  const result = gradeSpot(data, spot, parsed.data.action, stored.config.type);
+  if (result === null) {
+    return NextResponse.json({ error: "node_missing" }, { status: 500 });
+  }
+
+  const strategy = strategyForSpot(data, spot, stored.config.type);
+  const rationale = strategy?.notes ?? null;
 
   let skillTier = tierOf(null);
   let leaks: string[] = [];
@@ -118,7 +121,7 @@ export const POST = withEntitlement(async (request, auth) => {
           spot,
           result,
           { skillTier, leaks },
-          node.notes,
+          rationale,
           generationAllowed,
         )) {
           if (event.type === "text") full += event.text;

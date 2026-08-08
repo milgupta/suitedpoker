@@ -52,11 +52,11 @@ export const metadata: Metadata = {
     template: "SuitedPoker — %s",
   },
   description:
-    "A poker training app for beginners. Practise real spots, see exactly what a solver does, and understand why — explained in plain English.",
+    "A poker training app for beginners. Practise real spots, see the strategy mix, and understand why — explained in plain English.",
   openGraph: {
-    title: "SuitedPoker — Learn what a solver would do",
+    title: "SuitedPoker — Learn the strategy behind every decision",
     description:
-      "Practise real poker spots, see exactly what a solver does, and understand why. Built for players who are past the rules and stuck on the rest.",
+      "Practise real poker spots, see the strategy mix, and understand why. Built for players who are past the rules and stuck on the rest.",
     url: SITE_URL,
     siteName: "SuitedPoker",
     type: "website",
@@ -64,8 +64,8 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
   twitter: {
     card: "summary_large_image",
-    title: "SuitedPoker — Learn what a solver would do",
-    description: "Practise real poker spots, see exactly what a solver does, and understand why.",
+    title: "SuitedPoker — Learn the strategy behind every decision",
+    description: "Practise real poker spots, see the strategy mix, and understand why.",
   },
   // "Educational software", stated in the metadata as well as on the page.
   // Meta's ad review reads both, and this is the category boundary that keeps

@@ -28,16 +28,19 @@
     "test:stripe": "vitest run --config vitest.live.config.mts tests/unit/stripe-webhook-live.test.ts",
     "test:chat": "vitest run --config vitest.live.config.mts tests/unit/chat-live.test.ts",
     "screenshots": "tsx scripts/capture-screenshots.ts",
+    "screenshots:web": "tsx scripts/capture-web-screenshots.ts",
     "optimize:assets": "tsx scripts/optimize-assets.ts",
     "icons": "tsx scripts/gen-icons.ts",
     "emails:supabase": "tsx scripts/gen-supabase-emails.ts",
+    "email:test": "tsx scripts/send-test-email.ts",
     "hero:video": "tsx scripts/capture-hero-video.ts",
     "mutation": "tsx scripts/mutation-check.ts",
     "test:live": "vitest run --config vitest.live.config.mts",
     "smoke": "tsx scripts/smoke-routes.ts",
     "check:redis": "tsx scripts/check-redis.ts",
     "setup:e2e-db": "tsx scripts/setup-e2e-db.ts",
-    "check:env": "tsx scripts/check-env.ts"
+    "check:env": "tsx scripts/check-env.ts",
+    "posthog:setup": "tsx scripts/posthog-setup.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.34",

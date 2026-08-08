@@ -1,7 +1,49 @@
 # PostHog insights
 
-Exact configuration for the five insights 8.1 specifies. Build them in the
-PostHog UI; each heading is the insight name to use.
+> **The funnel and feature dashboard are now built by
+> `npm run posthog:setup`, not by hand.**
+>
+> The script owns the "Funnel & feature usage" dashboard and its six insights.
+> It matches by name and PATCHes, so it is safe to re-run, and a hand-edit in
+> the PostHog UI is overwritten on the next run — change the script instead.
+> Every event it references is checked against `EVENT_NAMES` before any request
+> is sent, so renaming an event in `analytics.ts` fails the script loudly rather
+> than leaving a chart that silently reads zero.
+>
+>     npm run posthog:setup           create or update everything
+>     npm run posthog:setup -- --dry  print the plan, write nothing
+>
+> Needs `POSTHOG_PERSONAL_API_KEY` in `.env.local` with `insight:write`,
+> `dashboard:write` and `query:read`. The project is resolved by matching
+> `NEXT_PUBLIC_POSTHOG_KEY`, never a hardcoded id — the organisation has three
+> projects and two of them are other products.
+>
+> The sections below are the ORIGINAL 8.1 hand-build specification, kept as the
+> reasoning behind each insight. Where they disagree with the script, the script
+> is what exists.
+
+## Three things that made the funnel read zero
+
+Found by executing the funnel rather than by looking at the event list, where
+every one of these looks perfectly healthy:
+
+1. **The client was never identified as the Supabase user.** Client captures
+   carried PostHog's device id, `captureServer` carried the user id, and nothing
+   merged them — so `paywall_viewed` and the `purchase_completed` it led to
+   belonged to two different PERSONS and no funnel containing both could ever
+   complete. `identify()` was called only in the login form, so anyone who
+   signed up and bought in one session was anonymous throughout.
+   `AnalyticsIdentity` in the `(app)` layout fixes it, on the same "first
+   authenticated render" hook as `captureAttributionOnce`.
+2. **`signup_completed` had never fired, once.** `signInWithOAuth` navigates the
+   browser away mid-call, so the capture after it in `google-button.tsx` is
+   unreachable. It fires from `/auth/callback` now, server-side, gated on the
+   Google provider — an email confirmation lands on that same route and would
+   otherwise be double-counted against the form's own capture.
+3. **`checkout_abandoned` was in the schema and wired nowhere.** It fires on
+   Stripe's return now, and the plan rides back on `cancel_url`. It only ever
+   catches the BACK BUTTON — a closed tab never returns — so read it alongside
+   `checkout_started`, not on its own.
 
 Setup first: **Project settings → Toolbar/Authorized URLs** must include
 `https://suitedpoker.com` and `http://localhost:3000`, or session replay and the
@@ -10,6 +52,16 @@ toolbar will not attach.
 All events are captured through `/ingest` on our own origin — if you ever see
 volume drop sharply with no product change, check the rewrite in
 `next.config.ts` before you believe the drop.
+
+**Verifying the stream.** `tests/e2e/analytics.spec.ts` reads what actually
+reaches `/ingest`. It must run HEADED — posthog-js's `_is_bot()` drops every
+capture when the user agent says "HeadlessChrome" — and the spec masks
+`navigator.webdriver`, which is set under Playwright either way:
+
+    PORT=3100 PLAYWRIGHT_BASE_URL=http://localhost:3100 PWHEADED=1 \
+      npx playwright test tests/e2e/analytics.spec.ts --headed
+
+8/8 on desktop-chrome and 8/8 on mobile-safari.
 
 ---
 

@@ -86,7 +86,7 @@ export default function OpengraphImage() {
           <div style={{ display: "flex", width: "38%", background: palette.surface2 }} />
         </div>
         <div style={{ display: "flex", fontSize: 30, color: palette.textSecondary }}>
-          Learn exactly what a solver would do — in plain English.
+          Learn the strategy behind every decision — in plain English.
         </div>
       </div>
     </div>,

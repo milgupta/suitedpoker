@@ -14,7 +14,7 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "SuitedPoker",
     description:
       "Poker strategy training for beginners. Practise real spots, see the full strategy, and understand why.",
-    start_url: "/dashboard",
+    start_url: "/practice",
     display: "standalone",
     orientation: "portrait",
     // From the shared literal palette: a manifest is JSON parsed by the OS,

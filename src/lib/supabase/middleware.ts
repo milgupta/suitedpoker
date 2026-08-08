@@ -12,11 +12,15 @@ import { isSupabaseConfigured, supabaseConfig } from "./config";
 /** Everything under here requires a session. */
 const PROTECTED_PREFIXES = [
   "/dashboard",
+  "/practice",
+  "/progress",
   "/onboarding",
   "/drill",
   "/daily",
   "/ranges",
   "/arena",
+  "/learn",
+  "/table",
   "/account",
 ];
 
@@ -184,7 +188,7 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
 
   if (user !== null && isMatch(pathname, AUTH_ONLY_PREFIXES)) {
     const redirect = request.nextUrl.clone();
-    redirect.pathname = "/dashboard";
+    redirect.pathname = "/practice";
     redirect.search = "";
     return applyAttribution(NextResponse.redirect(redirect));
   }

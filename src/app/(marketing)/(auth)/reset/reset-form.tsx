@@ -12,6 +12,7 @@ import { passwordStrength, resetSchema, type ResetValues } from "@/lib/auth-sche
 import { createClient } from "@/lib/supabase/client";
 import { authErrorMessage } from "@/lib/supabase/errors";
 import { FormError } from "../auth-shell";
+import { APP_HOME } from "@/lib/app-chrome";
 
 const STRENGTH_COLORS = [
   "var(--color-grade-blunder)",
@@ -58,7 +59,7 @@ export function ResetForm() {
       return;
     }
 
-    router.replace("/dashboard");
+    router.replace(APP_HOME);
     router.refresh();
   }
 

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Shimmer } from "@/components/motion";
 import { RangeGrid, type RangeStrategy } from "@/components/poker";
+import { actionLabel } from "@/lib/action-label";
 import { buildArenaLink } from "@/lib/arena-preset";
 import { HERO_POSITIONS } from "@/poker/solutions";
 
@@ -20,14 +21,25 @@ interface NodeSummary {
   confidence: { rangeShape: string; frequencies: string; ev: string; note?: string };
 }
 
-/** "vs_rfi_CO" reads as "vs CO open" to a human. */
+/** Seat names beginners already know — never just UTG / MP abbreviations alone. */
+const POSITION_LABELS: Record<string, string> = {
+  UTG: "Under the gun",
+  MP: "Middle position",
+  CO: "Cutoff",
+  BTN: "Button",
+  SB: "Small blind",
+  BB: "Big blind",
+};
+
+/** "vs_rfi_CO" reads as "vs cutoff open" to a human. */
 function describeScenario(actionSeq: string): string {
-  if (actionSeq === "rfi") return "Open (RFI)";
-  const [kind, seat] = actionSeq.split("_").slice(-2);
-  if (actionSeq.startsWith("vs_rfi")) return `vs ${seat} open`;
-  if (actionSeq.startsWith("vs_3bet")) return `vs ${seat} 3-bet`;
-  if (actionSeq.startsWith("vs_4bet")) return `vs ${seat} 4-bet`;
-  return `${kind} ${seat}`;
+  if (actionSeq === "rfi") return "Open first in";
+  const seat = actionSeq.split("_").at(-1) ?? "";
+  const seatWord = POSITION_LABELS[seat]?.toLowerCase() ?? seat;
+  if (actionSeq.startsWith("vs_rfi")) return `vs ${seatWord} open`;
+  if (actionSeq.startsWith("vs_3bet")) return `vs ${seatWord} 3-bet`;
+  if (actionSeq.startsWith("vs_4bet")) return `vs ${seatWord} 4-bet`;
+  return actionSeq.replace(/_/g, " ");
 }
 
 export function RangesClient() {
@@ -91,8 +103,12 @@ export function RangesClient() {
                   setPosition(pos);
                   setNodeRef(null);
                 }}
+                title={POSITION_LABELS[pos]}
               >
-                {pos}
+                <span className="font-mono">{pos}</span>
+                <span className="text-text-tertiary ms-1.5 hidden sm:inline">
+                  {POSITION_LABELS[pos]}
+                </span>
               </Button>
             ))}
           </div>
@@ -122,26 +138,27 @@ export function RangesClient() {
           <div className="text-text-tertiary text-caption flex flex-wrap gap-x-4 font-mono">
             <span>{selected.potBb}BB pot</span>
             <span>{selected.effStackBb}BB effective</span>
-            <span>{selected.actions.join(" · ")}</span>
           </div>
 
-          <RangeGrid strategy={selected.strategy} />
-
           <div className="flex flex-wrap gap-3">
-            {[
-              ["raise", "var(--color-accent)"],
-              ["call", "var(--color-accent-deep)"],
-              ["fold", "transparent"],
-            ].map(([action, colour]) => (
+            {(
+              [
+                ["raise", "var(--color-accent)"],
+                ["call", "var(--color-accent-deep)"],
+                ["fold", "transparent"],
+              ] as const
+            ).map(([action, colour]) => (
               <span key={action} className="text-caption flex items-center gap-2 font-mono">
                 <span
                   className="inline-block size-3 rounded-full"
                   style={{ background: colour, outline: "1px solid var(--color-border)" }}
                 />
-                {action}
+                {actionLabel(action)}
               </span>
             ))}
           </div>
+
+          <RangeGrid strategy={selected.strategy} />
 
           {selected.notes !== null && (
             <div className="border-border bg-surface-1 rounded-lg border p-5">
@@ -150,10 +167,12 @@ export function RangesClient() {
             </div>
           )}
 
-          {/* Honesty about provenance. Never claim to be a solver. */}
+          {/* Honesty about provenance — never claim to be a live solver run. */}
           <p className="text-text-tertiary text-caption">
-            Solver-derived simplified strategy. Range shape {selected.confidence.rangeShape}{" "}
-            confidence, frequencies {selected.confidence.frequencies}, EV {selected.confidence.ev}.
+            Authored approximation of GTO ranges (not a live solver dump). Range shape{" "}
+            {selected.confidence.rangeShape} confidence, frequencies{" "}
+            {selected.confidence.frequencies}, EV model {selected.confidence.ev}.
+            {selected.confidence.note ? ` ${selected.confidence.note}` : ""}
           </p>
 
           <Button variant="accent" size="lg" asChild>

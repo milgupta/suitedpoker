@@ -145,7 +145,7 @@ sessions.
 | 4.1 Gemini integration and prompt architecture | done — **20-spot adversarial run unverified (no Gemini key)** |
 | 4.2 Hint system | done — 7 hint e2e green, 50-hint leak test green |
 | 4.3 Post-hand explanation | done — streaming, 36-explanation matrix green |
-| 7.3 Stripe setup and checkout | code + paywall done — ⚠️ **every Stripe-touching test is BLOCKED: `.env.local` holds LIVE keys** |
+| 7.3 Stripe setup and checkout | done — **verified in test mode: checkout 7/7, webhooks 17/17** |
 | 2.8, 2.9, 6.1 (Track C) | done — merged from `track/engine`, worktree removed |
 | 7.1 Onboarding quiz | done — 20 e2e green, derivation table printed |
 | 7.2 The diagnosis screen | done — 25-combo table green, 20 e2e green |
@@ -157,6 +157,108 @@ sessions.
 
 **Every substage in `SUITEDPOKER_BUILD_PLAN.md` is now done.** Update this table
 if you add one.
+
+**What the first live Stripe test-mode run left you.**
+
+- 🛑 **`DATABASE_URL` WAS POINTING AT SUPABASE'S SESSION-MODE POOLER (port
+  5432), NOT TRANSACTION MODE (6543).** Session mode caps at 15 clients and
+  holds one per connection, so `getDb()` threw `EMAXCONNSESSION` under any real
+  concurrency. `src/db/index.ts` has always been configured for transaction mode
+  — `prepare: false` exists specifically for it — so the URL and the client
+  disagreed. **Check this in Vercel as well; a local fix does not fix
+  production.**
+- 🔴 **A BARE `catch {}` HID THAT FOR THE WHOLE OF 7.3.** `rememberCustomer`
+  swallowed every failure, so the subscriptions row was NEVER written, so
+  `findCustomerId` always missed, so **every checkout minted a fresh Stripe
+  customer**. Nothing in the logs, nothing in the tests. It caught the moment
+  the suite could finally run against `sk_test_`. The catch logs now.
+- **`customers.create` carries `idempotencyKey: customer:<userId>`.** Neither
+  existing guard is watertight: the DB write can fail, and Stripe's customer
+  SEARCH index is eventually consistent by up to a minute, so two checkouts
+  seconds apart both miss it. "Start checkout, change your mind, come back" is
+  ordinary behaviour on a payment screen, not a rare race. Stripe now collapses
+  the duplicate itself.
+- ⚠️ **There are ~14 more `getDb()` calls inside a bare `catch`.** Each one is
+  the same shape: a silent no-op under pool exhaustion. Worth a pass.
+- ⚠️ **The Stripe test-mode ANNUAL price is $149.99; `plans.ts` says $119.99.**
+  Two checkout tests fail on exactly that and they are right to — the paywall
+  would promise $119.99 and Stripe would charge $149.99. Reconcile before
+  anything else in the payment flow is believed.
+- **No test-mode webhook endpoint exists on the account**, and
+  `STRIPE_WEBHOOK_SECRET` is still the live-mode one. Webhook verification needs
+  `stripe listen --forward-to localhost:3000/api/stripe/webhook` and its
+  printed `whsec_`.
+- **`npm run email:test -- <address> [template]`** sends one real transactional
+  email. `tests/unit/emails.test.ts` proves the HTML; only a real send proves
+  the key, the domain and the `from` address.
+
+**What the product correctness audit left you.**
+
+- 🛑 **THE STRATEGY SET IS NOW 24 NODES, NOT 43.** `src/poker/node-status.ts` is
+  an allowlist: every quarantined node carries a WRITTEN REASON and
+  `loadSolutionData()` filters it, while `loadAllSolutionData()` still returns
+  everything so `/methodology` counts honestly and the deferred solver work has
+  something to replace. All 8 `vs_4bet` nodes are held back because they were
+  ONE FILE — a 4bet from UTG and one from the cutoff answered identically, on
+  the biggest preflop pot in the tree. 12 of the 20 `vs_3bet` nodes went the
+  same way; one representative of each template survives, chosen to be the
+  pairing it actually describes.
+- 🔴 **THE CAPSULES WERE SORTED BY FREQUENCY AND THE BUTTONS WERE NOT.** A hand
+  the solver called 60% of the time printed "60%" above Fold — the screen
+  stating the exact opposite of the strategy it had just graded the user
+  against. `capsuleSegments()` in `src/lib/action-grid.ts` is pure and shared by
+  the arena and the demo hand, so the correspondence is an assertion rather than
+  something somebody notices in a screenshot. Four actions also wrapped the
+  buttons to 2×2 below `sm` while the capsules stayed in one row of four, which
+  is what `actionGridClass` exists for.
+- 🔴 **THE EV COLUMN WAS DECORATIVE AND THE GRADER READ IT.** `EV(call) −
+  EV(raise)` was `+0.11` at the mode across every node; JJ, TT, 99 and AQs all
+  cost exactly `1.55bb` to 3bet on the button. `gradeDecision` derives the band,
+  the Glicko delta, the leak report and the diagnosis from that number.
+  `scripts/repair-preflop.ts` re-derives it under the indifference rule — an
+  action played at nonzero frequency is worth the same as its alternatives to
+  within a hundredth of a big blind, and folding is worth exactly zero, so a
+  negative EV at a real frequency is now impossible rather than unnoticed.
+- **The ranges are written in poker notation in the repair script**, not typed
+  as 169 numbers, so any published chart can be held against them. BB defence
+  against a button open went 25.6% → 40.4%; AKo no longer folds anywhere; the
+  top of every range raises.
+- 🔴 **THE AI WAS NEVER TOLD WHETHER THERE WAS A BOARD.** `buildCoachContext`
+  accepted a `board` parameter and never wrote it into the prompt for four
+  substages, so a preflop button-versus-UTG decision came back explained in
+  terms of "the straight and flush draws you pick up on this board". Saying
+  "Board: NONE" is the load-bearing half — an absent field reads to a model as a
+  detail omitted for brevity, not a fact about the world, and it reconstructs
+  what it thinks should have been there. The context now also names the villain,
+  the seats still to act, and the actions the strategy never takes.
+- **`inventsBoard()` blocks the PRESENT tense and allows the FUTURE.** "Small
+  pairs are here to hit a set" is the actual reason they are in the range;
+  "you have a flush draw" is fiction. A guard that blocked both would remove the
+  explanation it exists to protect. Preflop-ness is derived from the node ref
+  (`isPreflopNodeRef` — a colon means `POSITION:actionSeq`), because the guard is
+  handed a graded decision rather than the spot that produced it.
+- **`solutionSetVersion()` is in the coach AND hint cache keys**, alongside
+  `grade` and `displayMode`. Explanations live for thirty days; without the hash,
+  repairing a node leaves the numbers on screen coming from the new file and the
+  sentence under them from the old one. `PROMPT_VERSION` is `v3`.
+- 🔴 **A `vs_3bet` DRILL COULD DEAL A HAND THE HERO COULD NOT HOLD.** The spot
+  puts the hero in a pot they opened themselves, so 72o at UTG is unreachable by
+  construction. `reachableHands()` in the generator intersects with the opening
+  range, and an invariant test asserts the data supports it at every seat.
+- **`src/lib/spot-seats.ts` walks the action sequence now** instead of comparing
+  seat indices. On a `vs_3bet` spot the seats between the hero and the 3-bettor
+  were drawn as still to act — three opponents the player did not have.
+- **The invariant suite is the point of the pass**, not the repairs.
+  `solution-invariants` (no duplicate served strategy, indifference band, range
+  widths against published bounds, monotonic opening widths, premiums never
+  folded), `action-copy` (no identifier reaches a text node, in a scan narrow
+  enough not to cry wolf, plus every template rendered), `ai-grounding` (the
+  board statement and the fiction guard over a written corpus of both kinds),
+  and `spot-seats` driven by every served node rather than the cases somebody
+  thought to write down.
+- ⚠️ **`npm run screenshots` has NOT been re-run.** The range grid legend, the
+  capsule row and the feedback copy all changed; `public/screenshots` still
+  shows the previous text.
 
 **What the RunOut pass left you.**
 
@@ -562,12 +664,17 @@ if you add one.
 
 **What 7.3 left you.**
 
-- 🛑 **`.env.local` contains LIVE Stripe keys** (`sk_live_`, `pk_live_`), not test
-  keys. `tests/e2e/checkout.spec.ts` refuses to run on anything but `sk_test_`
-  and skips with a loud message, because those tests complete real purchases and
-  open real subscriptions. Nothing in 7.3 has been verified against Stripe. Swap
-  in test-mode keys AND test-mode price ids — price ids differ between modes —
-  then run `npx playwright test tests/e2e/checkout.spec.ts`.
+- ✅ **Verified against Stripe test mode.** `tests/e2e/checkout.spec.ts` 7/7
+  (including real settled charges on both plans, a declined card and a 3DS
+  card) and `npm run test:stripe` 17/17. The suites still refuse to run on
+  anything but `sk_test_`, because they complete real purchases.
+- 🛑 **THE LIVE ANNUAL PRICE IS STILL $149.99 AND `plans.ts` SAYS $119.99.**
+  Test mode was reconciled with a new price; LIVE mode was not. Ship as-is and
+  the paywall promises $119.99 while Stripe charges $149.99 — which is a refund,
+  a chargeback and a Stripe risk flag in one. Create the live $119.99 price and
+  set `STRIPE_PRICE_ANNUAL` in Vercel to it.
+- **Price ids differ between modes**, so the env var must differ per environment.
+  This is exactly how the mismatch above happened.
 - **Price ids are server-only** (`STRIPE_PRICE_MONTHLY`, `STRIPE_PRICE_ANNUAL`).
   The old `NEXT_PUBLIC_STRIPE_PRICE_*` vars are gone. The client sends
   `plan: "monthly" | "annual"` and the server picks the price; a client that can
@@ -963,6 +1070,72 @@ if you add one.
   numbers: first sentence **1196ms**, whole explanation 2373ms.
 - **`npm run test:chat`** runs the jailbreak suite. Read the output — a green
   tick nobody read is not evidence.
+
+**What the Meta environment-gate pass left you.**
+
+- 🛑 **THE PIXEL AND CAPI WERE UNGATED FOR THE WHOLE OF 8.2 — ~1.5K EVENTS
+  REACHED THE LIVE DATASET FROM LOCALHOST.** `.env.local` carries a real
+  `NEXT_PUBLIC_META_PIXEL_ID` and a real `META_CAPI_ACCESS_TOKEN`, so every dev
+  page load fired a PageView and every dev checkout an InitiateCheckout into the
+  one dataset the ad account optimises against. It cannot be cleaned, only
+  diluted. **Those events are still in there — treat pre-gate Meta reporting as
+  contaminated, and do not read cost-per-acquisition off it.**
+- **`metaDelivery(vercelEnv, testEventCode)` in `src/lib/meta.ts` is the single
+  predicate**, pure and shared by both halves. `production` → `send`;
+  non-production with `META_TEST_EVENT_CODE` → `test`; everything else → `log`.
+  **VERCEL_ENV, never NODE_ENV** — a preview build is also
+  `NODE_ENV=production`, which is exactly the case a NODE_ENV check waves
+  through.
+- **FAILS CLOSED.** No `VERCEL_ENV` at all — a laptop, CI, any non-Vercel host —
+  means log. Being wrong that way costs a dev log line; being wrong the other way
+  is permanent.
+- 🔴 **THE PIXEL SCRIPT IS NOT INJECTED OUTSIDE PRODUCTION, and that is the
+  point.** `fbq('init')` fires a PageView the instant it runs, so gating only our
+  own `track` calls would still have shipped every dev page load. `MetaPixel`
+  returns null; `trackPixel` logs what it would have sent.
+- **Two independent force-offs on the server**, same shape as the entitlement
+  bypass: `sendEvent` short-circuits before the retry loop, and `postOnce` — the
+  one place a request leaves for Meta — gates again. The second one is what
+  covers `drainQueue`, which can drain a queue written by a different process.
+- **`SendResult.delivery` is `sent | test | logged | skipped`.** `ok` alone
+  cannot express it — a suppressed event did not fail and must not be retried,
+  but reporting it as sent makes a dev run indistinguishable from a live one.
+  `/api/meta/capi` returns `sent: false, delivery: "logged"` in dev.
+- **`META_TEST_EVENT_CODE` is the deliberate opt-out of the console**, and only
+  outside production. Meta excludes test-coded events from reporting and
+  optimisation, so they cannot dilute anything. **Production ignores the variable
+  entirely** — a runtime backstop under the existing `FORBIDDEN_IN_PRODUCTION`
+  build refusal, because a test-coded Purchase is a Purchase Meta never counts.
+- **The PIXEL half has no test-events branch and cannot have one.**
+  `test_event_code` is a field on the server API's payload; `fbq` has no
+  equivalent, and a `NEXT_PUBLIC` copy of the code would ship it to every
+  visitor. Outside production the pixel always logs and the CAPI half feeds the
+  panel — same event id, same custom data, so what lands there is what the pixel
+  would have sent.
+- **`NEXT_PUBLIC_VERCEL_ENV` is derived in `next.config.ts` from `VERCEL_ENV`,
+  not taken from Vercel.** Vercel only exposes the `NEXT_PUBLIC_` copy when
+  "Automatically expose System Environment Variables" is on; absent, it reads as
+  "not production" and would turn the PRODUCTION pixel off with nothing to show
+  for it. `VERCEL_ENV` is always present in a Vercel build.
+- ⚠️ **Verify after the next production deploy that events are still arriving.**
+  The gate's fail-closed direction means a misconfiguration presents as silence,
+  not as an error.
+- **fbc coverage, three holes closed.** `/api/meta/capi` read attribution from
+  the PROFILE ROW only, and the profile is not reliably populated when a browser
+  event fires — `captureAttributionOnce` runs from the (app) layout, so a Lead
+  during onboarding races it, and its body is inside a `catch` by design.
+  `effectiveAttribution()` merges the request cookie under the stored row;
+  first-touch merge means it can only ever ADD. `withDerivedFbc()` rebuilds an
+  fbc from a stored fbclid that has none. `fbclid` is now capped at 500 chars
+  like the UTMs always were — it was an unbounded query param going into a
+  cookie and a DB column.
+- **Verified in the browser with the pixel fully configured**: no `fbevents.js`,
+  `fbq` undefined, zero requests to any facebook host, `SUPPRESSED` logged per
+  route, and `?fbclid=` still reconstructed into `fb.1.<ms>.<id>`.
+- ⚠️ **8 of 12 `auth.spec.ts` tests and 3 of `attribution.spec.ts` fail on
+  mobile-safari, before and after this change** — `fill()` does not commit to the
+  email input on WebKit, so login submits with an empty field. Unrelated to Meta;
+  worth its own pass.
 
 **What 8.2 / 8.3 left you.**
 

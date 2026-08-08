@@ -1,0 +1,33 @@
+{
+  "viewport": {
+    "width": 1280,
+    "height": 1180
+  },
+  "deviceScaleFactor": 2,
+  "shots": [
+    {
+      "name": "dashboard",
+      "file": "/screenshots/web/dashboard.png"
+    },
+    {
+      "name": "ranges",
+      "file": "/screenshots/web/ranges.png"
+    },
+    {
+      "name": "lesson",
+      "file": "/screenshots/web/lesson.png"
+    },
+    {
+      "name": "drill",
+      "file": "/screenshots/web/drill.png"
+    },
+    {
+      "name": "feedback",
+      "file": "/screenshots/web/feedback.png"
+    },
+    {
+      "name": "table",
+      "file": "/screenshots/web/table.png"
+    }
+  ]
+}

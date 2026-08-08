@@ -14,6 +14,7 @@ const COLUMNS: readonly { heading: string; links: readonly { label: string; href
   {
     heading: "Product",
     links: [
+      { label: "Features", href: "/features" },
       { label: "How it works", href: "/#how" },
       { label: "Pricing", href: "/pricing" },
       // /methodology is deliberately UNLINKED from the public site. It still
@@ -47,8 +48,8 @@ export function SiteFooter() {
           <div>
             <Wordmark />
             <p className="text-text-secondary text-body-md mt-3 max-w-xs">
-              Solver-based poker training that explains itself, for players who are past the rules
-              and stuck on the rest.
+              Poker training that explains itself, for players who are past the rules and stuck on
+              the rest.
             </p>
           </div>
 

@@ -19,8 +19,8 @@ export interface NavLink {
 }
 
 export const NAV: readonly NavLink[] = [
+  { label: "Features", href: "/features" },
   { label: "How it works", href: "/#how" },
-  { label: "The idea", href: "/#mix" },
   // /methodology is deliberately absent from the public navigation — header
   // and footer both. The page still exists, still renders and is still in the
   // sitemap; it is a long read that was pulling people sideways out of the
@@ -30,11 +30,11 @@ export const NAV: readonly NavLink[] = [
 ];
 
 export const HERO = {
-  eyebrow: "Solver-based training for beginners",
+  eyebrow: "GTO training for beginners",
   /** Two lines. The break is deliberate — see the component. */
   title: "Stop guessing.",
   titleAccent: "Start knowing.",
-  body: "Learn exactly what a solver would do — explained in plain English, one hand at a time. Built for players who know the rules and are stuck on everything after that.",
+  body: "Learn the strategy behind every decision — explained in plain English, one hand at a time. Built for players who know the rules and are stuck on everything after that.",
   cta: "Find my biggest leak",
   ctaNote: "Eight questions and one real hand. About two minutes.",
   secondary: "See how it works",

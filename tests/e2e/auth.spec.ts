@@ -35,9 +35,9 @@ function uniqueEmail(): string {
 /**
  * A confirmed user WITH an active subscription.
  *
- * The subscription is not incidental. Since 1.3, /dashboard is behind the
+ * The subscription is not incidental. Since 1.3, the product home is behind the
  * entitlement gate, so an unsubscribed user lands on /paywall — correctly. An
- * auth test that asserts /dashboard would then be measuring entitlement, which
+ * auth test that asserts the home route would then be measuring entitlement, which
  * has its own suite (tests/e2e/entitlement.spec.ts). Granting the subscription
  * keeps these tests about auth and nothing else.
  */
@@ -99,11 +99,8 @@ test.describe("auth", () => {
     await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
     await page.getByRole("button", { name: "Log in" }).click();
 
-    await expect(page).toHaveURL(/\/dashboard/);
-    // The dashboard's h1 is the GREETING ("Evening, Alex"), not the word
-    // "Dashboard" — 5.3 replaced it and this assertion was never updated.
-    // Matched on the section, which is stable across a copy change.
-    await expect(page.locator("[data-section='greeting']")).toBeVisible();
+    await expect(page).toHaveURL(/\/practice/);
+    await expect(page.locator("[data-practice]")).toBeVisible();
   });
 
   test("a wrong password shows friendly copy, never a raw error", async ({ page }) => {
@@ -124,11 +121,11 @@ test.describe("auth", () => {
     await makeConfirmedUser(email);
 
     await login(page, email);
-    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page).toHaveURL(/\/practice/);
 
     await page.reload();
-    await expect(page.locator("[data-section='greeting']")).toBeVisible();
-    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page.locator("[data-practice]")).toBeVisible();
+    await expect(page).toHaveURL(/\/practice/);
   });
 
   test("logging out ends the session and re-protects the app", async ({ page }) => {
@@ -136,7 +133,7 @@ test.describe("auth", () => {
     await makeConfirmedUser(email);
 
     await login(page, email);
-    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page).toHaveURL(/\/practice/);
 
     // Sign-out lives on /account. It used to be on /paywall only, which meant
     // a subscribed user had no way to log out at all — this assertion is what
@@ -154,13 +151,13 @@ test.describe("auth", () => {
     await makeConfirmedUser(email);
 
     await login(page, email);
-    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page).toHaveURL(/\/practice/);
 
     await page.goto("/login");
-    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page).toHaveURL(/\/practice/);
 
     await page.goto("/signup");
-    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page).toHaveURL(/\/practice/);
   });
 
   test("signup creates an account and routes correctly for the project's email setting", async ({
@@ -246,7 +243,7 @@ test.describe("auth", () => {
     await page.getByLabel("New password", { exact: true }).fill(newPassword);
     await page.getByLabel("Confirm new password").fill(newPassword);
     await page.getByRole("button", { name: "Set new password" }).click();
-    await expect(page).toHaveURL(/\/dashboard/, { timeout: 15_000 });
+    await expect(page).toHaveURL(/\/practice/, { timeout: 15_000 });
 
     // The real proof: the new password logs in and the old one does not.
     await page.evaluate(() => {
@@ -262,7 +259,7 @@ test.describe("auth", () => {
     await expect(page.locator("form [role=alert]")).toBeVisible();
 
     await login(page, email, newPassword);
-    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page).toHaveURL(/\/practice/);
   });
 
   test("the Google button reaches Google's consent screen", async ({ page }) => {

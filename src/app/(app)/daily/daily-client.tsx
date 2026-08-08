@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import type { ClientSpot } from "@/poker/generator";
 import type { Grade, GradeName } from "@/poker/grader";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,8 @@ import { buildShareText, MAX_DAILY_SCORE, type DailySpotResult } from "@/lib/dai
 import { capture } from "@/lib/analytics-client";
 import { cn } from "@/lib/utils";
 import { actionLabel } from "@/lib/action-label";
+import { actionGridClass } from "@/lib/action-grid";
+import { APP_HOME } from "@/lib/app-chrome";
 
 /**
  * Module scope: the React Compiler treats a Date.now() inside a component as an
@@ -22,12 +25,19 @@ function nowMs(): number {
   return Date.now();
 }
 
+interface TodayAnswered {
+  spotIndex: number;
+  grade: string | null;
+  evLoss: number;
+}
+
 interface TodayResponse {
   date: string;
   dayNumber: number;
   spots: ClientSpot[];
-  answered: { spotIndex: number; grade: string | null }[];
+  answered: TodayAnswered[];
   completed: boolean;
+  score: number | null;
   streak: number;
 }
 
@@ -39,24 +49,44 @@ interface AnswerResponse extends Grade {
   streak: { count: number; freezeApplied: boolean; milestone: number | null } | null;
 }
 
+function hydrateResults(answered: TodayAnswered[]): DailySpotResult[] {
+  return answered
+    .filter((a): a is TodayAnswered & { grade: GradeName } => a.grade !== null)
+    .map((a) => ({
+      spotIndex: a.spotIndex,
+      grade: a.grade,
+      evLoss: a.evLoss,
+      timeMs: 0,
+    }));
+}
+
 export function DailyClient() {
   const [today, setToday] = useState<TodayResponse | null>(null);
   const [index, setIndex] = useState(0);
   const [result, setResult] = useState<AnswerResponse | null>(null);
   const [results, setResults] = useState<DailySpotResult[]>([]);
+  const [score, setScore] = useState(0);
+  const [showSummary, setShowSummary] = useState(false);
   const [error, setError] = useState("");
   const [startedAt, setStartedAt] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [answering, setAnswering] = useState(false);
 
   const load = useCallback(async () => {
+    setError("");
     const response = await fetch("/api/daily/today");
     if (!response.ok) {
       setError("Could not load today's challenge.");
       return;
     }
     const data = (await response.json()) as TodayResponse;
+    const hydrated = hydrateResults(data.answered);
     setToday(data);
+    setResults(hydrated);
+    setScore(data.score ?? 0);
     setIndex(data.answered.length);
+    setShowSummary(data.completed);
+    setResult(null);
     setStartedAt(nowMs());
   }, []);
 
@@ -67,48 +97,60 @@ export function DailyClient() {
   }, []);
 
   async function answer(action: string): Promise<void> {
-    if (today === null || result !== null) return;
+    if (today === null || result !== null || answering) return;
+    setAnswering(true);
+    setError("");
 
-    const response = await fetch("/api/daily/answer", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ spotIndex: index, action, timeMs: nowMs() - startedAt }),
-    });
-
-    if (response.status === 409) {
-      setError("You've already answered that one — no takebacks.");
-      return;
-    }
-    if (!response.ok) {
-      setError("That answer could not be graded.");
-      return;
-    }
-
-    const graded = (await response.json()) as AnswerResponse;
-    setResult(graded);
-    setResults((r) => [
-      ...r,
-      {
-        spotIndex: graded.spotIndex,
-        grade: graded.grade,
-        evLoss: graded.evLoss,
-        timeMs: nowMs() - startedAt,
-      },
-    ]);
-
-    if (graded.finished) {
-      capture("daily_completed", {
-        score: graded.score,
-        rank: 0,
-        streak: graded.streak?.count ?? 0,
+    try {
+      const response = await fetch("/api/daily/answer", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ spotIndex: index, action, timeMs: nowMs() - startedAt }),
       });
-      if (graded.streak?.milestone != null) {
-        capture("streak_milestone", { days: graded.streak.milestone });
+
+      if (response.status === 409) {
+        setError("You've already answered that one — no takebacks.");
+        return;
       }
+      if (!response.ok) {
+        setError("That answer could not be graded.");
+        return;
+      }
+
+      const graded = (await response.json()) as AnswerResponse;
+      setResult(graded);
+      setScore(graded.score);
+      setResults((r) => [
+        ...r,
+        {
+          spotIndex: graded.spotIndex,
+          grade: graded.grade,
+          evLoss: graded.evLoss,
+          timeMs: nowMs() - startedAt,
+        },
+      ]);
+
+      if (graded.finished) {
+        capture("daily_completed", {
+          score: graded.score,
+          rank: 0,
+          streak: graded.streak?.count ?? 0,
+        });
+        if (graded.streak?.milestone != null) {
+          capture("streak_milestone", { days: graded.streak.milestone });
+        }
+      }
+    } finally {
+      setAnswering(false);
     }
   }
 
   function next(): void {
+    if (result?.finished === true) {
+      setShowSummary(true);
+      setResult(null);
+      return;
+    }
     setResult(null);
     setIndex((i) => i + 1);
     setStartedAt(nowMs());
@@ -135,15 +177,12 @@ export function DailyClient() {
     return <Shimmer className="h-96 w-full" />;
   }
 
-  const finished = result?.finished === true || today.completed;
-  const spot = today.spots[index];
-
-  if (finished) {
+  if (showSummary) {
     return (
       <Summary
         dayNumber={today.dayNumber}
         results={results}
-        score={result?.score ?? 0}
+        score={score}
         streak={result?.streak?.count ?? today.streak}
         freezeApplied={result?.streak?.freezeApplied ?? false}
         milestone={result?.streak?.milestone ?? null}
@@ -156,8 +195,11 @@ export function DailyClient() {
     );
   }
 
+  const spot = today.spots[index];
+  const progressValue = result !== null ? index + 1 : index;
+
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5" data-daily>
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-display-md">Daily #{today.dayNumber}</h1>
@@ -169,7 +211,7 @@ export function DailyClient() {
       </header>
 
       <SegmentedMeter
-        value={index}
+        value={progressValue}
         max={today.spots.length}
         segments={today.spots.length}
         label="Daily progress"
@@ -207,36 +249,20 @@ export function DailyClient() {
               actionHistory={spot.actionHistory}
             />
             {spot.actionHistory.length > 1 && (
-              <p className="text-text-tertiary text-caption text-center">
+              <p className="text-text-secondary text-body-sm text-center">
                 {spot.actionHistory.join(" · ")}
               </p>
             )}
           </div>
 
-          <div
-            /*
-             * Two columns when there are four actions, not four.
-             *
-             * A postflop node offers check / bet 33 / bet 66 / bet pot, and
-             * four of those across 358px gives each label 80px — "Raise small"
-             * ran straight out of its button. Wrapping to two rows costs one
-             * row of height on a screen that has it.
-             */
-            className={cn(
-              "grid gap-2.5",
-              spot.legalActions.length >= 4
-                ? "grid-cols-2 sm:grid-cols-4"
-                : spot.legalActions.length === 3
-                  ? "grid-cols-3"
-                  : "grid-cols-2",
-            )}
-          >
+          <div className={cn("grid gap-2.5", actionGridClass(spot.legalActions.length))}>
             {spot.legalActions.map((action) => (
               <Button
                 key={action}
                 variant="action"
                 size="action"
-                disabled={result !== null}
+                disabled={result !== null || answering}
+                data-action={action}
                 onClick={() => void answer(action)}
                 className="w-full"
               >
@@ -247,7 +273,18 @@ export function DailyClient() {
         </>
       )}
 
-      {result !== null && !result.finished && <Feedback result={result} onNext={next} />}
+      {/*
+        Always show Feedback after an answer — including the fifth hand.
+        Summary opens only when the player taps Done on that last grade.
+      */}
+      {result !== null && (
+        <Feedback
+          result={result}
+          explanation={null}
+          onNext={next}
+          nextLabel={result.finished ? "Done" : "Next hand"}
+        />
+      )}
     </div>
   );
 }
@@ -274,7 +311,7 @@ function Summary({
   const shareText = buildShareText({ dayNumber, results, streak });
 
   return (
-    <section className="flex flex-col gap-6">
+    <section className="flex flex-col gap-6" data-daily-summary>
       <header>
         <h1 className="text-display-md">Daily #{dayNumber} complete</h1>
         <p className="text-display-lg mt-2 font-mono tabular-nums">
@@ -322,6 +359,12 @@ function Summary({
           onClick={() => onCopy(shareText)}
         >
           {copied ? "Copied" : "Copy result"}
+        </Button>
+      </div>
+
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Button variant="accent" size="lg" className="w-full" asChild>
+          <Link href={APP_HOME}>Back to Practice</Link>
         </Button>
       </div>
     </section>

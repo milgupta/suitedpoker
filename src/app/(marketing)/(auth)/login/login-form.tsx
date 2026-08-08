@@ -13,6 +13,7 @@ import { createClient } from "@/lib/supabase/client";
 import { authErrorMessage } from "@/lib/supabase/errors";
 import { identify } from "@/lib/analytics-client";
 import { FormError } from "../auth-shell";
+import { APP_HOME } from "@/lib/app-chrome";
 
 export function LoginForm() {
   const router = useRouter();
@@ -53,7 +54,7 @@ export function LoginForm() {
     // Honour where they were headed before being bounced to login. Only
     // same-origin paths — an open redirect here would be a phishing gift.
     const destination =
-      next !== null && next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
+      next !== null && next.startsWith("/") && !next.startsWith("//") ? next : APP_HOME;
 
     router.replace(destination);
     // The session cookie was set by the client; refresh so server components

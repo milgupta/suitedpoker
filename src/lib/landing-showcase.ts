@@ -32,11 +32,17 @@ export const SHOWCASE_NODE_REF = "BB:vs_rfi_BTN";
 /**
  * The featured hand.
  *
- * Ordinary on purpose. A beginner has an instinct about QJo and it is wrong in
- * an interesting way — the hand is a call more often than a fold, and folding
- * it is cheap rather than a blunder. Both halves of that are the product.
+ * Ordinary-looking on purpose, and the solver does something with it that a
+ * beginner will not predict: ace-five suited defends a button open by RAISING
+ * two times in five, as a bluff, and calling the other three. Nobody who has
+ * only ever been told "play good hands" expects a five to be re-raising, and
+ * nobody expects both answers to be right.
+ *
+ * It was QJo, which the repaired big-blind range defends as a pure call — a
+ * true strategy and a useless illustration, since the page's whole argument is
+ * that one hand can have two correct answers.
  */
-export const SHOWCASE_HAND: HandKey = "QJo";
+export const SHOWCASE_HAND: HandKey = "A5s";
 
 export interface Showcase {
   readonly nodeRef: string;

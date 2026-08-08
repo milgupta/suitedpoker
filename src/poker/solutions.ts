@@ -136,6 +136,17 @@ export function nodeRefOf(heroPos: HeroPosition, actionSeq: string): string {
   return `${heroPos}:${actionSeq}`;
 }
 
+/**
+ * Preflop refs are `POSITION:actionSeq`; a postflop node's ref is its file id
+ * (`srp-btn-cbet-wet-two-tone`), which carries no colon. The distinction has to
+ * be derivable from the ref alone because the AI guard is handed a graded
+ * decision, not the spot that produced it, and "is there a board" decides
+ * whether board language is truth or invention.
+ */
+export function isPreflopNodeRef(ref: string): boolean {
+  return ref.includes(":");
+}
+
 /** Throws a SyntaxError naming the exact hand and rule that failed. */
 export function parsePreflopNode(input: unknown, source = "<inline>"): PreflopNode {
   const result = preflopNodeSchema.safeParse(input);

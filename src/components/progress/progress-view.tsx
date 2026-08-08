@@ -5,135 +5,33 @@ import { AnimatedNumber } from "@/components/motion";
 import { Button } from "@/components/ui/button";
 import { RingGauge } from "@/components/ui/ring-gauge";
 import { StatTile } from "@/components/ui/stat-tile";
-import { Streak } from "@/components/ui/streak";
 import { evColor } from "@/lib/ev-color";
 import { MIN_HANDS_FOR_LEAKS } from "@/lib/dashboard";
 import type { DashboardData } from "@/lib/dashboard-server";
 import { cn } from "@/lib/utils";
 
 /**
- * The dashboard.
+ * Progress — the numbers that used to live under the fold on Home.
  *
- * Above the fold at 390x844 is exactly three things — greeting, the daily
- * challenge, and continue learning — because that is the whole answer to "what
- * do I do right now?". Everything else is a scroll for the user who wants it.
- *
- * The other rule here is that a brand-new paying user must never meet a wall of
- * zeros. Before there is data, the stats are replaced by a path: play the
- * daily, read the lesson, and come back. Zeros on day one read as "this thing
- * is empty", and that is a refund.
+ * Same arithmetic as before (`loadDashboard`); only the route changed so Home
+ * can answer "what now?" without a wall of stats.
  */
 
-export interface DashboardViewProps {
+export interface ProgressViewProps {
   data: DashboardData;
-  email: string | null;
 }
 
-export function DashboardView({ data, email }: DashboardViewProps) {
-  /**
-   * A greeting, not an identifier.
-   *
-   * Falling back to the email's local part means unbroken strings like
-   * `christopherjohnson1985` — no spaces, no wrap points — which overflowed the
-   * heading and pushed the whole page sideways at 390px. Capped and allowed to
-   * break: a name is a courtesy, and no courtesy is worth a broken layout.
-   */
-  const name = displayNameFor(data.displayName, email);
+export function ProgressView({ data }: ProgressViewProps) {
   const hasData = data.totalHands > 0;
 
   return (
-    <div className="mx-auto flex w-full max-w-[34rem] flex-col gap-6 pb-20" data-dashboard>
-      {/*
-        THE FOLD.
-        These three own the first screen on a phone: who you are, the one thing
-        to do now, and where you left off. The min-height reserves the viewport
-        so statistics can never creep up into it as cards change size — the
-        question above the fold is "what now?", and a number is not an answer.
-      */}
-      <div
-        className="flex flex-col gap-6 sm:min-h-0"
-        // Only the shell's TOP padding sits above this block, so subtracting
-        // both would end it a gap short of the fold — which is exactly how the
-        // rating card crept up into it.
-        style={{ minHeight: "calc(100dvh - var(--app-shell-py))" }}
-        data-fold
-      >
-        {/* 1 · Greeting */}
-        <header data-section="greeting">
-          <h1 className="text-display-md break-words">
-            {data.greeting}
-            {name === "" ? "" : `, ${name}`}
-          </h1>
-          {data.goal !== null && (
-            <p className="text-text-secondary text-body-md mt-1">Working toward: {data.goal}</p>
-          )}
-        </header>
-
-        {/* 2 · The daily. The most prominent thing on the screen. */}
-        <section
-          className="border-border bg-surface-1 flex flex-col gap-4 rounded-lg border p-5"
-          data-section="daily"
-        >
-          {data.dailyDoneToday ? (
-            <>
-              <div className="flex items-baseline justify-between">
-                <h2 className="text-overline text-text-tertiary uppercase">
-                  Today&rsquo;s challenge
-                </h2>
-                <Streak days={data.streak} />
-              </div>
-              <p className="text-display-lg font-mono tabular-nums">
-                <AnimatedNumber value={data.dailyScore ?? 0} />
-                <span className="text-text-tertiary text-body-lg font-sans"> points</span>
-              </p>
-              <p className="text-text-secondary text-body-md">
-                Done for today. The next one lands at midnight.
-              </p>
-              <Button variant="ghost" size="lg" className="w-full" asChild>
-                <Link href="/daily">See the leaderboard</Link>
-              </Button>
-            </>
-          ) : (
-            <>
-              <div className="flex items-baseline justify-between">
-                <h2 className="text-heading-lg">Today&rsquo;s challenge</h2>
-                <Streak days={data.streak} />
-              </div>
-              <p className="text-text-secondary text-body-md">5 hands · about 3 minutes</p>
-              <Button variant="accent" size="lg" className="w-full" asChild>
-                <Link href="/daily" data-cta="daily">
-                  Play today&rsquo;s five
-                </Link>
-              </Button>
-            </>
-          )}
-        </section>
-
-        {/* 3 · Continue learning */}
-        {data.nextLessonHref !== null && (
-          <section
-            className="border-border bg-surface-1 flex items-center gap-4 rounded-lg border p-4"
-            data-section="continue"
-          >
-            <RingGauge
-              value={data.courseFraction}
-              size={48}
-              label={`${Math.round(data.courseFraction * 100)}% of the course`}
-            />
-            <div className="min-w-0 flex-1">
-              <p className="text-overline text-text-tertiary uppercase">Continue learning</p>
-              <p className="text-body-lg truncate">{data.nextLessonTitle}</p>
-            </div>
-            <Button variant="primary" size="sm" asChild>
-              <Link href={data.nextLessonHref} data-cta="lesson">
-                Open
-              </Link>
-            </Button>
-          </section>
-        )}
-      </div>
-
-      {/* ── Everything below here is a scroll ─────────────────────────────── */}
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 pb-16" data-progress>
+      <header className="flex flex-col gap-1">
+        <h1 className="text-display-md">Progress</h1>
+        <p className="text-text-secondary text-body-md">
+          Your rating, leaks, and the numbers behind them.
+        </p>
+      </header>
 
       {!hasData ? (
         <StartHere />
@@ -183,8 +81,6 @@ export function DashboardView({ data, email }: DashboardViewProps) {
 
           <section className="flex flex-col gap-3" data-section="numbers">
             <h2 className="text-heading-lg">Your numbers</h2>
-            {/* Every tile carries an (i). A beginner reading "VPIP 33%" with no
-                definition and no target has learned nothing. */}
             <div className="grid grid-cols-2 gap-3">
               <StatTile label="Accuracy" value={data.accuracy * 100} suffix="%" stat="accuracy" />
               <StatTile label="VPIP" value={data.vpip * 100} suffix="%" stat="vpip" />
@@ -218,8 +114,6 @@ export function DashboardView({ data, email }: DashboardViewProps) {
                     {street.street}
                   </span>
                   <span className="text-caption font-mono tabular-nums">
-                    {/* No attempts means no verdict — never tell someone they
-                        are bad at something they have not tried. */}
                     {street.attempts === 0 ? "—" : `${Math.round(street.accuracy * 100)}%`}
                   </span>
                 </div>
@@ -254,40 +148,10 @@ export function DashboardView({ data, email }: DashboardViewProps) {
           </section>
         </>
       )}
-
-      <section className="flex flex-col gap-3" data-section="actions">
-        <h2 className="text-heading-lg">Jump in</h2>
-        <div className="grid grid-cols-3 gap-2">
-          <QuickAction href="/arena" label="Arena" />
-          <QuickAction href="/table" label="Table sim" />
-          <QuickAction href="/ranges" label="Ranges" />
-        </div>
-
-        {/* Settings and billing have to be reachable from the home screen.
-            Burying them is what turns "how do I cancel" into a support email
-            and then into a chargeback. */}
-        <Link
-          href="/account"
-          className="text-text-tertiary text-body-sm tap-target mt-2 self-start underline"
-          data-cta="account"
-        >
-          Account and billing
-        </Link>
-      </section>
     </div>
   );
 }
 
-const MAX_NAME = 18;
-
-export function displayNameFor(displayName: string | null, email: string | null): string {
-  const raw = displayName ?? email?.split("@")[0] ?? "";
-  const trimmed = raw.trim();
-  if (trimmed === "") return "";
-  return trimmed.length <= MAX_NAME ? trimmed : `${trimmed.slice(0, MAX_NAME - 1)}…`;
-}
-
-/** The brand-new-user screen: a path, not a wall of zeros. */
 function StartHere() {
   return (
     <section
@@ -306,18 +170,6 @@ function StartHere() {
         </Link>
       </Button>
     </section>
-  );
-}
-
-function QuickAction({ href, label }: { href: string; label: string }) {
-  return (
-    <Link
-      href={href}
-      data-quick={label}
-      className="border-border bg-surface-1 hover:border-accent flex min-h-[56px] items-center justify-center rounded-md border text-sm transition-colors"
-    >
-      {label}
-    </Link>
   );
 }
 
@@ -362,7 +214,6 @@ function WeekStat({
   );
 }
 
-/** A 30-point rating line. Flat means "did not play", never a cliff to zero. */
 function Sparkline({ points }: { points: readonly number[] }) {
   if (points.length < 2) return null;
 

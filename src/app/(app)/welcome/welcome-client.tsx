@@ -16,7 +16,7 @@ import { PURCHASE_EVENT_ID_KEY } from "@/lib/meta-storage";
  * within a second or two but occasionally later. For that window the user has
  * paid and the database does not know it.
  *
- * Sending them to /dashboard in that window bounces them off the entitlement
+ * Sending them to /practice in that window bounces them off the entitlement
  * gate and back to the paywall, seconds after paying. So this page sits outside
  * the gate, polls until the webhook lands, and only then moves them on. It is
  * the difference between "setting up your account" and "it charged me and it is
@@ -117,7 +117,7 @@ export function WelcomeClient({ hasSession }: { hasSession: boolean }) {
   // Prefetched during the wait so the first paid screen is instant.
   useEffect(() => {
     router.prefetch("/onboarding");
-    router.prefetch("/dashboard");
+    router.prefetch("/practice");
   }, [router]);
 
   const waiting = phase === "checking";

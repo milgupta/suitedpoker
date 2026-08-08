@@ -39,7 +39,7 @@ async function login(page: Page, email: string): Promise<void> {
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
   await page.getByRole("button", { name: "Log in" }).click();
-  await page.waitForURL(/\/(dashboard|onboarding|paywall)/, { timeout: 25_000 });
+  await page.waitForURL(/\/(practice|onboarding|paywall)/, { timeout: 25_000 });
 }
 
 test.describe("attribution", () => {
@@ -129,7 +129,7 @@ test.describe("attribution", () => {
   });
 
   test("a user who arrives with no attribution signs up fine", async ({ page }) => {
-    // The overwhelming majority of organic traffic. A missing cookie must be a
+    // The overwhelming majority of organic traffic. No ad attribution must be a
     // non-event, not an error path.
     const user = await makeUser();
 
@@ -137,8 +137,27 @@ test.describe("attribution", () => {
     await login(page, user.email);
     await page.goto("/onboarding");
 
+    /*
+     * NO AD IDENTIFIERS — not "no cookie".
+     *
+     * This asserted the `sp_attr` cookie was absent entirely, which was only
+     * ever true because no pixel was configured. With one live, Meta's pixel
+     * sets `_fbp` for EVERY visitor, ad or not, and the proxy correctly carries
+     * it — `fbp` is how Meta matches an organic signup back to a person, and
+     * dropping it would throw away match quality on the majority of traffic.
+     *
+     * What must be absent is a click id and a campaign: those only exist if
+     * this person came from an ad, and inventing them would attribute an
+     * organic signup to a channel that did not pay for it.
+     */
     const cookies = await page.context().cookies();
-    expect(cookies.find((c) => c.name === "sp_attr")).toBeUndefined();
+    const attribution = cookies.find((c) => c.name === "sp_attr");
+    if (attribution !== undefined) {
+      const parsed = JSON.parse(decodeURIComponent(attribution.value)) as Record<string, unknown>;
+      expect(Object.keys(parsed).sort(), `unexpected keys in ${attribution.value}`).toEqual([
+        "fbp",
+      ]);
+    }
 
     const { data } = await admin
       .from("profiles")
@@ -161,5 +180,61 @@ test.describe("attribution", () => {
     });
 
     expect(response.status()).toBe(400);
+  });
+
+  /**
+   * NOTHING BUT PRODUCTION MAY REACH THE LIVE DATASET.
+   *
+   * 1.5K events arrived from localhost before this gate existed, into the one
+   * dataset the ad account optimises against — which cannot be cleaned, only
+   * diluted. The pixel and the CAPI token ARE configured in .env.local, so this
+   * is not passing because the pixel is switched off; it is passing because the
+   * environment gate holds with a live pixel id sitting right there.
+   */
+  test("a non-production run reaches Meta zero times", async ({ page }) => {
+    const requests: string[] = [];
+    page.on("request", (r) => {
+      const url = r.url();
+      if (/facebook\.(com|net)|fbcdn/.test(url)) requests.push(url);
+    });
+
+    const logs: string[] = [];
+    page.on("console", (m) => {
+      if (m.text().includes("[meta]")) logs.push(m.text());
+    });
+
+    await page.goto("/?fbclid=IwAR_e2e_gate&utm_source=meta");
+    await page.waitForLoadState("networkidle");
+
+    // `fbq('init')` fires a PageView the moment it runs, so gating only our own
+    // track calls would still have shipped every dev page load. The script must
+    // not be on the page at all.
+    expect(await page.locator("script#meta-pixel").count()).toBe(0);
+    expect(await page.evaluate(() => typeof (window as { fbq?: unknown }).fbq)).toBe("undefined");
+    expect(requests).toEqual([]);
+
+    // Suppressed, not merely absent. "Nothing happened" and "it was stopped"
+    // have to be distinguishable or dev verification is impossible.
+    expect(logs.some((l) => l.includes("SUPPRESSED") && l.includes("PageView"))).toBe(true);
+  });
+
+  test("the click id still becomes an fbc with the pixel switched off", async ({ page }) => {
+    // The whole point of reconstructing fbc: it covers exactly the users whose
+    // pixel never ran. Here nothing wrote _fbc, so ours is the only one.
+    await page.goto("/?fbclid=IwAR_e2e_fbc_only");
+
+    const cookies = await page.context().cookies();
+    expect(cookies.some((c) => c.name === "_fbc")).toBe(false);
+
+    const raw = cookies.find((c) => c.name === "sp_attr")?.value ?? "";
+    const attribution = JSON.parse(decodeURIComponent(raw)) as {
+      fbclid?: string;
+      fbc?: string;
+    };
+
+    expect(attribution.fbclid).toBe("IwAR_e2e_fbc_only");
+    // Meta's exact format — `fb.1.<click time ms>.<click id>`. A malformed one
+    // is accepted by the API and matches nobody.
+    expect(attribution.fbc).toMatch(/^fb\.1\.\d{13}\.IwAR_e2e_fbc_only$/);
   });
 });

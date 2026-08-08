@@ -18,6 +18,14 @@ const clientSchema = z.object({
   NEXT_PUBLIC_POSTHOG_KEY: z.string().optional().or(z.literal("")),
   NEXT_PUBLIC_POSTHOG_HOST: z.string().optional().default("https://us.i.posthog.com"),
   NEXT_PUBLIC_META_PIXEL_ID: z.string().optional().or(z.literal("")),
+  /**
+   * Vercel's own system variable, exposed to the browser by the platform.
+   *
+   * The pixel needs to know whether it is running on the production deploy, and
+   * `NODE_ENV` cannot tell it — a preview build is also `NODE_ENV=production`.
+   * Absent means "not production", which is the safe direction.
+   */
+  NEXT_PUBLIC_VERCEL_ENV: z.string().optional().or(z.literal("")),
 });
 
 export function parse<T extends z.ZodTypeAny>(
@@ -48,6 +56,7 @@ export const clientEnv = parse(
     NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
     NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
     NEXT_PUBLIC_META_PIXEL_ID: process.env.NEXT_PUBLIC_META_PIXEL_ID,
+    NEXT_PUBLIC_VERCEL_ENV: process.env.NEXT_PUBLIC_VERCEL_ENV,
   },
   "client",
 );

@@ -21,6 +21,7 @@ import {
   reviewRisk,
   validatePreflopNode,
 } from "@/poker/solutions";
+import { isServableNode } from "@/poker/node-status";
 
 const results: Array<[string, string]> = [];
 function record(check: string, detail: string): void {
@@ -345,7 +346,12 @@ describe("query helpers", () => {
   it("keeps mixed hands nearly indifferent — that is why they mix", () => {
     let worstGap = 0;
     let mixedCount = 0;
-    for (const node of nodes) {
+    // SERVABLE nodes only. The quarantined files still carry the old generated
+    // EV column, and failing to meet this bar is a large part of why they are
+    // quarantined — asserting it over data the product deliberately withholds
+    // would either fail forever or force the bar down to what the worst file
+    // manages.
+    for (const node of nodes.filter((n) => isServableNode(n.ref))) {
       for (const key of HAND_KEYS) {
         const strategy = getStrategy(node, key);
         const played = Object.entries(strategy).filter(([, f]) => (f ?? 0) > 0.05);
@@ -355,8 +361,17 @@ describe("query helpers", () => {
         worstGap = Math.max(worstGap, Math.max(...evs) - Math.min(...evs));
       }
     }
-    expect(mixedCount).toBeGreaterThan(500);
-    expect(worstGap).toBeLessThan(1.5);
+    // The bar moved DOWN and the guarantee moved UP.
+    //
+    // The repaired ranges are written as poker charts: large pure regions with
+    // mixing at the boundaries, which is both what a published chart looks like
+    // and fewer mixed cells than a formula that mixed almost everything. What
+    // matters is that the mixing which remains is REAL — the widest gap between
+    // two actions a node claims to split was 1.49bb, one hundredth inside a bar
+    // set to accommodate it. It is under 0.05 now, which is the grader's own
+    // "costs nothing" threshold.
+    expect(mixedCount).toBeGreaterThan(300);
+    expect(worstGap).toBeLessThan(0.05);
     record(
       "indifference holds",
       `${mixedCount.toLocaleString("en-US")} mixed hands, widest EV gap between mixed actions ${worstGap.toFixed(2)}bb`,

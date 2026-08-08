@@ -256,9 +256,16 @@ describe("the tier instructions", () => {
 
   it("bumps the prompt version, because the prompt changed", () => {
     // The cache key includes it. Editing a prompt without bumping serves stale
-    // explanations for thirty days.
-    expect(PROMPT_VERSION).toBe("v2");
+    // explanations for thirty days. v3 added the board statement — the prompt
+    // now tells the model explicitly when there are no community cards, after
+    // it explained a preflop spot in terms of the draws on the flop.
+    expect(PROMPT_VERSION).toBe("v3");
     expect(COACH_SYSTEM_PROMPT.length).toBeGreaterThan(100);
+  });
+
+  it("tells the model what to do when there is no board", () => {
+    expect(COACH_SYSTEM_PROMPT).toContain("THE BOARD");
+    expect(COACH_SYSTEM_PROMPT).toContain("NONE");
   });
 });
 

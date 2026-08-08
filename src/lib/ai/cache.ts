@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { cacheGet, cacheSet } from "@/lib/redis";
 import { getDb } from "@/db";
 import { coachCache } from "@/db/schema";
+import { solutionSetVersion } from "@/lib/solution-data";
 import { PROMPT_VERSION } from "./prompts";
 
 /**
@@ -23,12 +24,30 @@ export function cacheKeyFor(input: {
   handKey: string;
   chosenAction: string;
   skillTier: string;
+  /**
+   * Both are derived from the node and the chosen action — but only via the EV
+   * table, which is exactly the thing an edit changes. Two users choosing the
+   * same action on the same hand can be graded differently once the numbers
+   * move, and the explanation's whole job is to justify the grade.
+   */
+  grade: string;
+  displayMode: string;
 }): string {
   // The prompt version is part of the key, so editing a prompt invalidates only
-  // what it produced rather than needing a manual flush.
+  // what it produced rather than needing a manual flush. The solution hash does
+  // the same for the strategy data — see solutionSetVersion().
   return createHash("sha256")
     .update(
-      [input.nodeRef, input.handKey, input.chosenAction, input.skillTier, PROMPT_VERSION].join("|"),
+      [
+        input.nodeRef,
+        input.handKey,
+        input.chosenAction,
+        input.skillTier,
+        input.grade,
+        input.displayMode,
+        PROMPT_VERSION,
+        solutionSetVersion(),
+      ].join("|"),
     )
     .digest("hex");
 }

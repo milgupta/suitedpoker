@@ -3,9 +3,8 @@ import { z } from "zod";
 import { withEntitlement } from "@/lib/api-guard";
 import { getSession, putSession } from "@/lib/sessionstore";
 import { loadSolutionData } from "@/lib/solution-data";
+import { gradeSpot } from "@/lib/grade-spot";
 import { generateSpot } from "@/poker/generator";
-import { grade as gradePreflop } from "@/poker/grader";
-import { nodeRefOf, type PreflopActionName } from "@/poker/solutions";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { drillAttempts, profiles } from "@/db/schema";
@@ -83,12 +82,11 @@ export const POST = withEntitlement(async (request, auth) => {
     return NextResponse.json({ error: "illegal_action" }, { status: 400 });
   }
 
-  const node = data.preflop.find((n) => nodeRefOf(n.heroPos, n.actionSeq) === spot.nodeRef);
-  if (node === undefined) {
+  const result = gradeSpot(data, spot, action, stored.config.type);
+
+  if (result === null) {
     return NextResponse.json({ error: "node_missing" }, { status: 500 });
   }
-
-  const result = gradePreflop(node, spot.handKey, action as PreflopActionName);
 
   // The level the user actually reached, from the session. The client sends its
   // own `hintsUsed` for analytics, but a rating penalty computed from a number

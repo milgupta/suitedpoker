@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import Script from "next/script";
 import { usePathname, useSearchParams } from "next/navigation";
 import { clientEnv } from "@/lib/env";
-import { isPixelConfigured, trackPixel } from "@/lib/meta-client";
+import { isPixelConfigured, shouldLoadPixel, trackPixel } from "@/lib/meta-client";
 
 /**
  * The Meta pixel.
@@ -16,6 +16,11 @@ import { isPixelConfigured, trackPixel } from "@/lib/meta-client";
  * PageView is fired MANUALLY on each route change. The App Router does not
  * reload between routes, so the pixel's automatic pageview fires once and never
  * again — the same trap PostHog has in 8.1.
+ *
+ * THE SCRIPT IS NOT INJECTED OUTSIDE PRODUCTION. `fbq('init')` alone fires a
+ * PageView the moment it runs, so gating only our own `track` calls would still
+ * have put every dev and preview page load into the live dataset. The `useEffect`
+ * still runs, and `trackPixel` logs what it would have sent.
  */
 export function MetaPixel() {
   const pathname = usePathname();
@@ -27,7 +32,7 @@ export function MetaPixel() {
     trackPixel("PageView");
   }, [pathname, searchParams]);
 
-  if (!isPixelConfigured()) return null;
+  if (!shouldLoadPixel()) return null;
 
   return (
     <Script id="meta-pixel" strategy="afterInteractive">

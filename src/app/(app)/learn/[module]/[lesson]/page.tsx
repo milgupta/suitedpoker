@@ -5,6 +5,7 @@ import { getLesson } from "@/lib/curriculum";
 import { canOpen, loadPath } from "@/lib/curriculum-server";
 import { LESSON_MODULES } from "@/content/curriculum/registry";
 import { LessonShell } from "./lesson-shell";
+import { drillConfigOf } from "@/lib/curriculum";
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
@@ -47,6 +48,7 @@ export default async function LessonPage({ params }: Params) {
       status={row?.status ?? "not_started"}
       attempts={row?.attempts ?? 0}
       initialScroll={row?.scrollPos ?? 0}
+      drillConfig={drillConfigOf(lesson)}
     >
       <Body />
     </LessonShell>

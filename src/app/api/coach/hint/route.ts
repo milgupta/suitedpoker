@@ -6,9 +6,8 @@ import { getSession, putSession } from "@/lib/sessionstore";
 import { getDb } from "@/db";
 import { aiUsage } from "@/db/schema";
 import { loadSolutionData } from "@/lib/solution-data";
+import { strategyForSpot } from "@/lib/grade-spot";
 import { generateSpot, toClientSpot } from "@/poker/generator";
-import { nodeRefOf } from "@/poker/solutions";
-import { getStrategy } from "@/poker/solutions";
 import { generateHint } from "@/lib/ai/hint";
 import { MAX_HINTS_PER_DAY, preflopContextOf, streetOf, type HintLevel } from "@/lib/hints";
 import { COACH_MODEL, costUsd } from "@/lib/ai/client";
@@ -113,12 +112,8 @@ export const POST = withEntitlement(async (request, auth) => {
     return NextResponse.json({ error: "spot_mismatch" }, { status: 409 });
   }
 
-  const node = data.preflop.find((n) => nodeRefOf(n.heroPos, n.actionSeq) === spot.nodeRef);
-  if (node === undefined) return NextResponse.json({ error: "node_missing" }, { status: 500 });
-
-  const strategyMix = getStrategy(node, spot.handKey);
-  const bestAction =
-    Object.entries(strategyMix).sort((a, b) => b[1] - a[1])[0]?.[0] ?? spot.legalActions[0] ?? "";
+  const strategy = strategyForSpot(data, spot, stored.config.type);
+  if (strategy === null) return NextResponse.json({ error: "node_missing" }, { status: 500 });
 
   const hint = await generateHint(
     {
@@ -134,9 +129,12 @@ export const POST = withEntitlement(async (request, auth) => {
         legalActions: spot.legalActions,
         handClass: spot.handClass,
         boardCards: spot.board.length,
-        preflop: spot.board.length === 0 ? preflopContextOf(node.actionSeq) : null,
+        preflop:
+          stored.config.type === "preflop" && spot.nodeRef.includes(":")
+            ? preflopContextOf(spot.nodeRef.split(":")[1] ?? "rfi")
+            : null,
       },
-      strategy: { bestAction, mix: strategyMix },
+      strategy: { bestAction: strategy.bestAction, mix: strategy.mix },
     },
     level,
     // Hints are the CHEAP path — the first thing the circuit breaker gives up,

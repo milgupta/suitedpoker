@@ -38,6 +38,7 @@ const DEVICES = [
 /** Public routes, and the paid ones that need a session. */
 const PUBLIC_ROUTES = [
   "/",
+  "/features",
   "/pricing",
   "/methodology",
   "/legal/terms",
@@ -45,7 +46,16 @@ const PUBLIC_ROUTES = [
   "/login",
   "/signup",
 ];
-const APP_ROUTES = ["/dashboard", "/arena", "/ranges", "/learn", "/daily", "/account", "/table"];
+const APP_ROUTES = [
+  "/practice",
+  "/progress",
+  "/arena",
+  "/ranges",
+  "/learn",
+  "/daily",
+  "/account",
+  "/table",
+];
 
 let admin: SupabaseClient;
 const created: string[] = [];
@@ -79,7 +89,7 @@ async function login(page: Page, email: string): Promise<void> {
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
   await page.getByRole("button", { name: "Log in" }).click();
-  await page.waitForURL(/\/(dashboard|onboarding|paywall)/, { timeout: 30_000 });
+  await page.waitForURL(/\/(practice|onboarding|paywall)/, { timeout: 30_000 });
 }
 
 /** Anything wider than the viewport, named. */
@@ -258,7 +268,7 @@ test.describe("the sweep", () => {
     const user = await makeSubscriber();
     await login(page, user.email);
 
-    for (const route of ["/dashboard", "/arena", "/ranges"]) {
+    for (const route of ["/practice", "/arena", "/ranges"]) {
       await page.goto(route, { waitUntil: "domcontentloaded" });
       await page.waitForTimeout(1_200);
 
@@ -295,7 +305,7 @@ test.describe("the sweep", () => {
 
     const small: string[] = [];
 
-    for (const route of ["/dashboard", "/arena", "/account", "/ranges"]) {
+    for (const route of ["/practice", "/arena", "/account", "/ranges"]) {
       await page.goto(route, { waitUntil: "domcontentloaded" });
       await page.waitForTimeout(900);
 

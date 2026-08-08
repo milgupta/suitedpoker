@@ -7,6 +7,7 @@ import { GradeBadge } from "@/components/ui/grade-badge";
 import { Button } from "@/components/ui/button";
 import { Shimmer } from "@/components/motion";
 import { DURATION, SPRING } from "@/lib/motion";
+import { actionLabel, actionPhrase, actionVerb } from "@/lib/action-label";
 import { FrequencyBar, type FrequencySegment } from "./FrequencyBar";
 import { cn } from "@/lib/utils";
 
@@ -28,17 +29,13 @@ export interface FeedbackProps {
    * arena renders it with a live stream.
    */
   explanation?: ReactNode;
+  /**
+   * When false, the frequency bar / mix disclosure is omitted — for surfaces
+   * that already show the mix above the action buttons (Arena capsules).
+   */
+  showMix?: boolean;
   className?: string;
 }
-
-const VERB: Record<string, string> = {
-  fold: "folded",
-  call: "called",
-  check: "checked",
-  raise: "raised",
-  bet: "bet",
-  allin: "shoved",
-};
 
 function toSegments(result: Grade): FrequencySegment[] {
   const lossByAction = new Map(result.alternativeActions.map((a) => [a.action, a.evLoss]));
@@ -49,30 +46,47 @@ function toSegments(result: Grade): FrequencySegment[] {
     .sort((a, b) => b.freq - a.freq);
 }
 
+/**
+ * The actions the strategy actually takes here, most-played first.
+ *
+ * The mixed-spot copy used to list the first three keys of `frequencies`
+ * unfiltered, so a spot that never folds still read "splits between fold,
+ * call, raise" — naming an action at 0% as part of the mix, on the one screen
+ * whose entire job is to teach what the mix is.
+ */
+function playedActions(result: Grade): string[] {
+  return Object.entries(result.frequencies)
+    .filter(([, freq]) => freq > 0)
+    .sort((a, b) => b[1] - a[1])
+    .map(([action]) => action);
+}
+
 /** One line of why, generated from the solution data — no AI round trip. */
 function whyLine(result: Grade): string {
   const topPct = Math.round(result.topFreq * 100);
+  const best = actionPhrase(result.bestAction);
 
   if (result.displayMode === "mixed") {
-    return `No single action is right here — a solver splits between ${Object.keys(
-      result.frequencies,
-    )
-      .slice(0, 3)
-      .join(", ")}, so both lines are part of a balanced strategy.`;
+    const played = playedActions(result).slice(0, 3).map(actionPhrase);
+    const list =
+      played.length > 1
+        ? `${played.slice(0, -1).join(", ")} and ${played[played.length - 1]}`
+        : (played[0] ?? best);
+    return `No single action is right here — the strategy splits between ${list}, so more than one line is part of a balanced approach.`;
   }
 
   if (result.isBalancedAlternative) {
     // The rule that stops grading and display contradicting each other: if the
     // action is genuinely part of the mix, the copy has to say so.
     const chosenPct = Math.round((result.frequencies[result.chosenAction] ?? 0) * 100);
-    return `A solver ${VERB[result.chosenAction] ?? result.chosenAction} here ${chosenPct}% of the time, so this is a real part of the strategy — just not the most common one.`;
+    return `The chart ${actionVerb(result.chosenAction)} here ${chosenPct}% of the time, so this is a real part of the strategy — just not the most common one.`;
   }
 
   if (result.evLoss === 0) {
-    return `${result.bestAction} is the highest-EV action here, taken ${topPct}% of the time.`;
+    return `${actionLabel(result.bestAction)} wins the most in the long run here, taken ${topPct}% of the time.`;
   }
 
-  return `${result.bestAction} is the highest-EV action here (${topPct}% of the time); ${result.chosenAction} gives up ${result.evLoss.toFixed(2)}bb.`;
+  return `${actionLabel(result.bestAction)} wins the most in the long run here (${topPct}% of the time); ${actionPhrase(result.chosenAction)} gives up ${result.evLoss.toFixed(2)}bb.`;
 }
 
 function RatingDelta({ delta }: { delta: number }) {
@@ -103,6 +117,7 @@ export function Feedback({
   chat,
   nextLabel,
   explanation,
+  showMix = true,
   className,
 }: FeedbackProps) {
   const reduced = useReducedMotion() ?? false;
@@ -144,12 +159,17 @@ export function Feedback({
       {/* 1. Result line */}
       <div className="flex flex-wrap items-center gap-3">
         <span className="text-overline text-text-tertiary font-mono uppercase">
-          You {VERB[result.chosenAction] ?? result.chosenAction}
+          You {actionVerb(result.chosenAction)}
         </span>
         <GradeBadge grade={result.grade} />
-        <span className="text-body-md font-mono tabular-nums">
-          {result.evLoss === 0 ? "0.00bb" : `−${result.evLoss.toFixed(2)}bb`}
-        </span>
+        {/*
+          Only print EV given up when there is some. "0.00bb" next to Best is
+          true and empty — the badge already said they found the top line, and
+          a zero loss reads as a missing figure rather than a clean result.
+        */}
+        {result.evLoss > 0 && (
+          <span className="text-body-md font-mono tabular-nums">−{result.evLoss.toFixed(2)}bb</span>
+        )}
         <RatingDelta delta={ratingDelta} />
       </div>
 
@@ -164,48 +184,60 @@ export function Feedback({
       ) : (
         <div className="flex flex-wrap items-baseline gap-3">
           <span className="text-display-md" style={{ color: "var(--color-grade-best)" }}>
-            {result.bestAction.charAt(0).toUpperCase() + result.bestAction.slice(1)}.
+            {actionLabel(result.bestAction)}.
           </span>
           {result.displayMode === "preferred" && (
             <span className="text-text-secondary text-body-lg">
-              — but {segments[1]?.action ?? "the alternative"} is close
+              — but{" "}
+              {segments[1]?.action === undefined
+                ? "the alternative"
+                : actionPhrase(segments[1].action)}{" "}
+              is close
             </span>
           )}
         </div>
       )}
 
-      {/* 3. The frequency bar. Expanded for a mix; behind a disclosure otherwise. */}
-      {result.displayMode === "mixed" ? (
-        <FrequencyBar segments={segments} chosenAction={result.chosenAction} />
-      ) : (
-        <div>
-          <Button
-            variant="bare"
-            size="sm"
-            onClick={() => setMixOpen((v) => !v)}
-            aria-expanded={mixOpen}
-            aria-controls="solver-mix"
-          >
-            {result.displayMode === "preferred" ? `Full mix · ${splitLabel}` : "Full solver mix"}
-            <span aria-hidden="true">{mixOpen ? "▴" : "▾"}</span>
-          </Button>
-          {mixOpen && (
-            <div id="solver-mix" className="mt-3">
-              <FrequencyBar segments={segments} chosenAction={result.chosenAction} />
-            </div>
-          )}
-        </div>
-      )}
+      {/* 3. The frequency bar. Expanded for a mix; behind a disclosure otherwise.
+          Skipped when the parent already draws the mix (Arena capsules). */}
+      {showMix &&
+        (result.displayMode === "mixed" ? (
+          <FrequencyBar segments={segments} chosenAction={result.chosenAction} />
+        ) : (
+          <div>
+            <Button
+              variant="bare"
+              size="sm"
+              onClick={() => setMixOpen((v) => !v)}
+              aria-expanded={mixOpen}
+              aria-controls="strategy-mix"
+            >
+              {result.displayMode === "preferred"
+                ? `Full mix · ${splitLabel}`
+                : "Full strategy mix"}
+              <span aria-hidden="true">{mixOpen ? "▴" : "▾"}</span>
+            </Button>
+            {mixOpen && (
+              <div id="strategy-mix" className="mt-3">
+                <FrequencyBar segments={segments} chosenAction={result.chosenAction} />
+              </div>
+            )}
+          </div>
+        ))}
 
       {/* 4. One line of why, always present */}
       <p className="text-text-secondary text-body-md">{whyLine(result)}</p>
 
-      {/* 5. AI explanation slot */}
-      {explanation ?? (
+      {/* 5. AI explanation slot.
+          `undefined` = still loading (shimmer). `null` = no explanation for this
+          surface (Daily). A node = the streamed / template text. */}
+      {explanation === undefined ? (
         <div className="flex flex-col gap-2" aria-hidden="true">
           <Shimmer className="h-3 w-full" />
           <Shimmer className="h-3 w-4/5" />
         </div>
+      ) : (
+        explanation
       )}
 
       {/* 6. Ask about this hand (4.4). Never between the user and "next". */}

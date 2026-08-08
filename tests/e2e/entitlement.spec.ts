@@ -97,10 +97,8 @@ test.describe("entitlement gating", () => {
     await giveSubscription(id, "active", future());
 
     await login(page, email);
-    await expect(page).toHaveURL(/\/dashboard/);
-    // The dashboard's h1 is the GREETING ("Evening, Alex"); 5.3 replaced the
-    // word "Dashboard" and this assertion outlived it.
-    await expect(page.locator("[data-section='greeting']")).toBeVisible();
+    await expect(page).toHaveURL(/\/practice/);
+    await expect(page.locator("[data-practice]")).toBeVisible();
   });
 
   test("STATE 4 — 'active' with a PAST period end is NOT admitted", async ({ page }) => {
@@ -118,7 +116,7 @@ test.describe("entitlement gating", () => {
     await giveSubscription(id, "trialing", future());
 
     await login(page, email);
-    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page).toHaveURL(/\/practice/);
   });
 
   test("a cancelled subscription is not admitted", async ({ page }) => {
@@ -212,7 +210,7 @@ test.describe("api guards", () => {
     const { id, email } = await makeUser();
     await giveSubscription(id, "active", future());
     await login(page, email);
-    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page).toHaveURL(/\/practice/);
 
     const response = await page.request.get("/api/guard-probe/entitled");
     expect(response.status()).toBe(200);

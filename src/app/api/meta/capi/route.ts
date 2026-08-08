@@ -4,7 +4,7 @@ import { withAuth } from "@/lib/api-guard";
 import { limit, RULES } from "@/lib/ratelimit";
 import { clientEnv } from "@/lib/env";
 import { sendEvent, buildUserData, isCapiConfigured } from "@/lib/meta-capi";
-import { loadAttribution, requestIdentity } from "@/lib/attribution-server";
+import { effectiveAttribution, requestIdentity } from "@/lib/attribution-server";
 
 /**
  * The server half of a browser-side pixel event.
@@ -58,8 +58,11 @@ export const POST = withAuth(async (request, auth) => {
     data: { user },
   } = await auth.supabase.auth.getUser();
 
+  // The profile row FILLED IN FROM THE COOKIE. A Lead fired during onboarding
+  // can beat the layout's capture to the database, and the fbc it would have
+  // carried is on this very request.
   const [attribution, identity] = await Promise.all([
-    loadAttribution(auth.userId),
+    effectiveAttribution(auth.userId),
     requestIdentity(),
   ]);
 
@@ -76,5 +79,12 @@ export const POST = withAuth(async (request, auth) => {
     customData: parsed.data.customData,
   });
 
-  return NextResponse.json({ sent: result.ok, queued: result.queued, reason: result.reason });
+  // `sent` means it reached Meta. Outside production `delivery` is "logged" and
+  // `sent` is false — a dev run must not be indistinguishable from a live one.
+  return NextResponse.json({
+    sent: result.delivery === "sent",
+    delivery: result.delivery,
+    queued: result.queued,
+    reason: result.reason,
+  });
 });

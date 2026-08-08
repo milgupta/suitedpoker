@@ -23,6 +23,7 @@ const PUBLIC = join(process.cwd(), "public");
 const MARKETING_SOURCES = [
   "src/app/page.tsx",
   "src/app/pricing/page.tsx",
+  "src/app/features/page.tsx",
   "src/components/Wordmark.tsx",
   "src/components/marketing/SiteHeader.tsx",
   "src/components/marketing/SiteFooter.tsx",
@@ -157,5 +158,24 @@ describe("landing page assets", () => {
       `\n${"=".repeat(72)}\nDELIVERED ASSETS\n${"=".repeat(72)}\n${lines.join("\n")}\n` +
         `  ${"TOTAL".padEnd(26)} ${kb(total.png).padStart(7)} → ${kb(total.avif).padStart(7)} avif\n\n${hero.join("\n")}\n`,
     );
+  });
+});
+
+const HUB_ART = [
+  "hub-daily.png",
+  "hub-arena.png",
+  "hub-table.png",
+  "hub-learn.png",
+  "hub-ranges.png",
+  "hub-progress.png",
+];
+
+describe("hub card art", () => {
+  it.each(HUB_ART)("%s exists on disk", (file) => {
+    const path = join(PUBLIC, "brand", "hub", file);
+    expect(existsSync(path), `${file} missing — run npx tsx scripts/generate-hub-art.ts`).toBe(
+      true,
+    );
+    expect(statSync(path).size, `${file} is empty`).toBeGreaterThan(500);
   });
 });

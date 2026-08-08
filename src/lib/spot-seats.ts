@@ -60,36 +60,67 @@ export function seatActivity(
   heroPos: HeroPosition,
   actionHistory: readonly string[],
 ): Record<HeroPosition, SeatActivity> {
-  const acted = new Map<HeroPosition, string>();
-  for (const line of actionHistory) {
-    const parsed = parseLine(line);
-    if (parsed !== null) acted.set(parsed.position, parsed.action);
+  const events = actionHistory
+    .map(parseLine)
+    .filter((parsed): parsed is { position: HeroPosition; action: string } => parsed !== null);
+
+  const lastAction = new Map<HeroPosition, string>();
+  const acted = new Set<HeroPosition>();
+  const folded = new Set<HeroPosition>();
+
+  /*
+   * Nobody tells us who folded, so it is inferred by WALKING the betting order
+   * the way the action actually travelled — never by comparing seat indices
+   * against the hero's.
+   *
+   * The index comparison was wrong the moment a hand had two betting rounds.
+   * On `MP:vs_3bet_BTN` the hero opens from MP and the button 3bets, so the
+   * action has already passed CO, the small blind and the big blind before it
+   * returns to the hero — all three folded. Comparing indices drew all three as
+   * still to act, telling the player three opponents were live in a pot that
+   * was heads-up. A table that lies about who is in the hand is worse than no
+   * table.
+   */
+  let pointer = 0;
+
+  function advanceTo(target: HeroPosition): void {
+    const targetIndex = PREFLOP_ORDER.indexOf(target);
+    for (let step = 0; step < PREFLOP_ORDER.length; step++) {
+      if (pointer === targetIndex) return;
+      const seat = PREFLOP_ORDER[pointer];
+      // The hero is never folded by inference — they are the one deciding.
+      if (seat !== undefined && seat !== heroPos && !acted.has(seat)) folded.add(seat);
+      pointer = (pointer + 1) % PREFLOP_ORDER.length;
+    }
   }
 
-  const heroIndex = PREFLOP_ORDER.indexOf(heroPos);
+  for (const event of events) {
+    advanceTo(event.position);
+    lastAction.set(event.position, event.action);
+    acted.add(event.position);
+    pointer = (pointer + 1) % PREFLOP_ORDER.length;
+  }
+
+  // The action is on the hero now, so everyone it passed on the way here is out.
+  advanceTo(heroPos);
 
   const out = {} as Record<HeroPosition, SeatActivity>;
   for (const position of PREFLOP_ORDER) {
+    const action = lastAction.get(position) ?? null;
+
     if (position === heroPos) {
-      out[position] = { ...EMPTY, action: acted.get(position) ?? null };
+      out[position] = { ...EMPTY, action };
       continue;
     }
-
-    const action = acted.get(position) ?? null;
     if (action !== null) {
       out[position] = { action, folded: false, toAct: false };
       continue;
     }
-
-    /*
-     * Nobody tells us who folded, so it is inferred from turn order, which is
-     * the same inference a player makes looking at a real table: the seats in
-     * front of you that said nothing are out, the seats behind you have not
-     * spoken yet. Getting this backwards would draw a table that lies about
-     * who is still in the hand.
-     */
-    const index = PREFLOP_ORDER.indexOf(position);
-    out[position] = { action: null, folded: index < heroIndex, toAct: index > heroIndex };
+    out[position] = {
+      action: null,
+      folded: folded.has(position),
+      toAct: !folded.has(position),
+    };
   }
 
   return out;

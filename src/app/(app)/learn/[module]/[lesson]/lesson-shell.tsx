@@ -9,6 +9,7 @@ import { capture } from "@/lib/analytics-client";
 import { buildArenaLink } from "@/lib/arena-preset";
 import { PRACTICE_SPOTS, type LessonStatus } from "@/lib/curriculum-progress";
 import { SPRING } from "@/lib/motion";
+import type { SpotConfig } from "@/poker/generator";
 
 /**
  * The reading shell around a lesson's MDX.
@@ -26,6 +27,8 @@ export interface LessonShellProps {
   status: LessonStatus;
   attempts: number;
   initialScroll: number;
+  /** The lesson's own drill filter — Practice must open THIS concept, not a random open. */
+  drillConfig: SpotConfig;
   children: ReactNode;
 }
 
@@ -37,6 +40,7 @@ export function LessonShell({
   status,
   attempts,
   initialScroll,
+  drillConfig,
   children,
 }: LessonShellProps) {
   const router = useRouter();
@@ -155,7 +159,7 @@ export function LessonShell({
   }, [params]);
 
   const practiceHref = buildArenaLink({
-    config: { type: "preflop" },
+    config: drillConfig,
     length: PRACTICE_SPOTS,
     label: title,
     returnTo: `/learn/${moduleSlug}/${slug}`,

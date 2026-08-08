@@ -10,7 +10,7 @@ import {
   hasAttribution,
   type Attribution,
 } from "@/lib/attribution";
-import { EMPTY_ATTRIBUTION } from "@/lib/meta";
+import { EMPTY_ATTRIBUTION, mergeAttribution } from "@/lib/meta";
 import { cacheGet, cacheSet } from "@/lib/redis";
 
 /**
@@ -150,4 +150,24 @@ export async function loadAttribution(userId: string): Promise<Attribution> {
   } catch {
     return EMPTY_ATTRIBUTION;
   }
+}
+
+/**
+ * The profile row, with any gaps filled from the request's own cookie.
+ *
+ * THE PROFILE IS NOT RELIABLY POPULATED YET AT THE MOMENT A BROWSER EVENT
+ * FIRES. `captureAttributionOnce` runs from the (app) layout, so a Lead fired
+ * during onboarding can race it, and its whole body is inside a `catch` that
+ * swallows a failed write by design — in both cases the cookie still holds the
+ * fbc and the profile does not. Dropping it there is a click Meta charged us
+ * for and we then failed to report, which is exactly what shows up as low fbc
+ * coverage and a poor Event Match Quality score.
+ *
+ * `mergeAttribution` is first-touch-wins, so the stored row always beats the
+ * cookie and this can only ever ADD a field. The cookie costs no query — it is
+ * already on the request.
+ */
+export async function effectiveAttribution(userId: string): Promise<Attribution> {
+  const [stored, cookie] = await Promise.all([loadAttribution(userId), readAttributionCookie()]);
+  return mergeAttribution(stored, cookie);
 }

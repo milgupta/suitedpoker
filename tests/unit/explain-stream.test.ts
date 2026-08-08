@@ -146,7 +146,7 @@ describe("the guard, mid-stream", () => {
 
     // And the user is left with something TRUE, not with half an explanation.
     expect(events.some((e) => e.type === "reset")).toBe(true);
-    expect(textOf(events)).toContain("raise");
+    expect(textOf(events).toLowerCase()).toContain("raise");
 
     const done = events.at(-1);
     if (done?.type !== "done") throw new Error("no done event");
@@ -260,7 +260,7 @@ describe("degradation", () => {
 
     expect(done.source).toBe("template");
     expect(done.redactedFor).toBe("not_configured");
-    expect(textOf(events)).toContain("raise");
+    expect(textOf(events).toLowerCase()).toContain("raise");
     expect(streamTextMock).not.toHaveBeenCalled();
   });
 

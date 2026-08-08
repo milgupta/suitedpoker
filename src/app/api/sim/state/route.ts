@@ -25,7 +25,15 @@ export const GET = withEntitlement(async (request, auth) => {
   if (live === null) return NextResponse.json({ error: "session_not_found" }, { status: 404 });
 
   return NextResponse.json({
-    state: toClientSimState(sessionId, live, heroLegalActions(live), null),
+    state: toClientSimState(
+      sessionId,
+      live,
+      heroLegalActions(live),
+      // A refresh on the "hand over" screen used to lose the grade banner
+      // because resume always passed null. The finished hand is already in
+      // records — surface it whenever the current game is complete.
+      live.game?.complete === true ? (live.records[live.records.length - 1] ?? null) : null,
+    ),
     botMoves: [],
   });
 });

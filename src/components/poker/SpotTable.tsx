@@ -176,7 +176,7 @@ export function SpotTable({
         ))}
       </div>
 
-      <p className="text-text-tertiary text-caption text-center font-mono">
+      <p className="text-text-secondary text-body-sm text-center font-mono">
         {effStackBb.toFixed(0)}BB effective
       </p>
     </div>
@@ -191,9 +191,11 @@ export function SpotTable({
  * a roulette wheel, which is the one image this product must never show.
  */
 function BetChip({ amount }: { amount: string }) {
+  // body-md, not caption: these chips are how the pot is read. At caption size
+  // the figure that decides the hand is smaller than the seat label next to it.
   return (
-    <span className="border-border-strong bg-surface-2/90 text-caption flex items-center gap-1.5 rounded-full border py-0.5 pr-2 pl-1 font-mono font-semibold whitespace-nowrap tabular-nums backdrop-blur-sm">
-      <svg viewBox="0 0 24 24" className="block size-3.5" aria-hidden="true">
+    <span className="border-border-strong bg-surface-2/90 text-body-md flex items-center gap-2 rounded-full border py-1 pr-2.5 pl-1.5 font-mono font-semibold whitespace-nowrap tabular-nums backdrop-blur-sm">
+      <svg viewBox="0 0 24 24" className="block size-5" aria-hidden="true">
         <circle cx="12" cy="12" r="10" fill="var(--color-accent)" />
         <circle
           cx="12"
@@ -233,7 +235,7 @@ function DealerButton() {
 
 function PotChip({ potBb }: { potBb: number }) {
   return (
-    <span className="border-border-strong bg-surface-2/80 text-body-sm rounded-full border px-3 py-1 font-mono font-semibold tabular-nums backdrop-blur-sm">
+    <span className="border-border-strong bg-surface-2/80 text-body-md rounded-full border px-3.5 py-1.5 font-mono font-semibold tabular-nums backdrop-blur-sm">
       {potBb.toFixed(1)}
       <span className="text-text-tertiary ml-1">BB pot</span>
     </span>
@@ -311,7 +313,7 @@ function SpotSeat({
         >
           {position}
         </span>
-        <span className="text-caption font-mono font-semibold tabular-nums">
+        <span className="text-body-sm font-mono font-semibold tabular-nums">
           {stackBb.toFixed(0)}
           <span className="text-text-tertiary ml-0.5">BB</span>
         </span>
@@ -322,7 +324,7 @@ function SpotSeat({
 
       {action !== null && !folded && (
         <motion.span
-          className="border-accent/40 bg-accent/10 text-accent-bright text-caption rounded-full border px-2 py-0.5 whitespace-nowrap"
+          className="border-accent/40 bg-accent/10 text-accent-bright text-body-sm rounded-full border px-2.5 py-1 whitespace-nowrap"
           initial={reduced ? false : { opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={SPRING.snappy}

@@ -23,6 +23,7 @@ import { capture } from "@/lib/analytics-client";
 import { cn } from "@/lib/utils";
 import { GRADES } from "@/lib/grade";
 import { actionLabel } from "@/lib/action-label";
+import { actionGridClass, capsuleSegments } from "@/lib/action-grid";
 import { evColor } from "@/lib/ev-color";
 
 interface Answered {
@@ -57,6 +58,7 @@ export function ArenaClient() {
   const [history, setHistory] = useState<Answered[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [leakFocus, setLeakFocus] = useState<string | null>(null);
   const startedAt = useRef(0);
   const [finished, setFinished] = useState(false);
   const [hintsRemaining, setHintsRemaining] = useState<number | null>(null);
@@ -64,12 +66,18 @@ export function ArenaClient() {
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const hintLevel = useRef(0);
+  /** Set in `next()` before fetch — never read a render-time ref copy. */
+  const advancingRef = useRef(false);
 
   const loadNext = useCallback(async () => {
+    // Remember whether we were leaving a graded hand. Clearing the grade
+    // before the fetch succeeds used to leave a burned spot playable again —
+    // the buttons came back, /answer said already_answered, and the only
+    // recovery was a full refresh.
+    const advancing = advancingRef.current;
+
     setLoading(true);
     setError("");
-    setResult(null);
-    setAnsweredAction(null);
 
     try {
       const response = await fetch("/api/drills/next", {
@@ -84,17 +92,41 @@ export function ArenaClient() {
             ? "Your subscription has lapsed."
             : "Could not load the next hand. Try again.",
         );
+        if (advancing) {
+          setSpot(null);
+          setSpotId(null);
+          setResult(null);
+          setAnsweredAction(null);
+          setAttemptId(null);
+        }
         return;
       }
 
-      const data = (await response.json()) as { spotId: string; spot: ClientSpot };
+      const data = (await response.json()) as {
+        spotId: string;
+        spot: ClientSpot;
+        leakTag?: string | null;
+      };
+      setResult(null);
+      setAnsweredAction(null);
+      setAttemptId(null);
+      setChatOpen(false);
       setSpotId(data.spotId);
       setSpot(data.spot);
+      setLeakFocus(data.leakTag ?? null);
       hintLevel.current = 0;
       startedAt.current = nowMs();
     } catch {
       setError("Could not reach the server.");
+      if (advancing) {
+        setSpot(null);
+        setSpotId(null);
+        setResult(null);
+        setAnsweredAction(null);
+        setAttemptId(null);
+      }
     } finally {
+      advancingRef.current = false;
       setLoading(false);
     }
   }, [preset.config]);
@@ -186,6 +218,7 @@ export function ArenaClient() {
       setFinished(true);
       return;
     }
+    advancingRef.current = true;
     void loadNext();
   }
 
@@ -227,16 +260,17 @@ export function ArenaClient() {
     );
   }
 
-  const capsuleSegments =
-    result === null
-      ? []
-      : Object.entries(result.frequencies)
-          .map(([action, freq]) => ({
-            action,
-            freq,
-            evLoss: result.alternativeActions.find((a) => a.action === action)?.evLoss ?? 0,
-          }))
-          .sort((a, b) => b.freq - a.freq);
+  /*
+   * Built from `legalActions`, in that order, and NEVER sorted.
+   *
+   * Each capsule is read as the frequency of the button directly under it. This
+   * was sorted descending by frequency while the buttons stayed in node order,
+   * so a hand the solver calls 60% of the time printed "60%" above Fold. The
+   * screen was telling a paying user the opposite of the strategy it had just
+   * graded them against.
+   */
+  const segments =
+    result === null || spot === null ? [] : capsuleSegments(spot.legalActions, result);
 
   return (
     <div className="flex flex-col gap-4">
@@ -256,11 +290,23 @@ export function ArenaClient() {
             {preset.label}
           </span>
         )}
+        {leakFocus !== null && (
+          <span
+            className="border-border text-text-secondary text-caption rounded-full border px-3 py-0.5"
+            data-leak-focus={leakFocus}
+          >
+            Focusing on {leakFocusLabel(leakFocus)}
+          </span>
+        )}
         <Hud label="Hands" value={hands} />
         <Hud label="Accuracy" value={accuracy} decimals={0} suffix="%" />
-        <Hud label="bb lost" value={bbLost} decimals={2} />
         <Hud label="Streak" value={streak} />
-        <Hud label="Sharp" value={sharpCount} />
+        {/* bb lost and Sharp sit in the secondary line — three above the fold
+            on 390px, the rest available without crowding the table. */}
+        <span className="text-text-tertiary flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[0.9em]">
+          <Hud label="bb lost" value={bbLost} decimals={2} />
+          <Hud label="Sharp" value={sharpCount} />
+        </span>
         {preset.length !== undefined && (
           <span className="text-caption font-mono">
             {hands} / {preset.length}
@@ -269,15 +315,21 @@ export function ArenaClient() {
       </div>
 
       {error !== "" && (
-        <p
+        <div
           role="alert"
-          className="border-danger-border bg-danger-fill text-danger-bright text-body-md rounded-md border px-3 py-2"
+          className="border-danger-border bg-danger-fill text-danger-bright flex flex-col gap-3 rounded-md border px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
         >
-          {error}
-        </p>
+          <p className="text-body-md">{error}</p>
+          {spot === null && (
+            <Button variant="primary" size="sm" onClick={() => void loadNext()}>
+              Try again
+            </Button>
+          )}
+        </div>
       )}
 
-      {loading || spot === null ? (
+      {/* Error first: a failed load must never sit behind an eternal skeleton. */}
+      {error !== "" && spot === null ? null : loading || spot === null ? (
         /*
          * The skeleton mirrors SpotTable's GEOMETRY, not just its existence.
          *
@@ -304,27 +356,10 @@ export function ArenaClient() {
               until the answer is in — revealing them earlier would give away
               the strategy before the decision. */}
           {result !== null && (
-            <FrequencyCapsules segments={capsuleSegments} topAction={result.topAction} revealed />
+            <FrequencyCapsules segments={segments} topAction={result.topAction} revealed />
           )}
 
-          <div
-            /*
-             * Two columns when there are four actions, not four.
-             *
-             * A postflop node offers check / bet 33 / bet 66 / bet pot, and
-             * four of those across 358px gives each label 80px — "Raise small"
-             * ran straight out of its button. Wrapping to two rows costs one
-             * row of height on a screen that has it.
-             */
-            className={cn(
-              "grid gap-2.5",
-              spot.legalActions.length >= 4
-                ? "grid-cols-2 sm:grid-cols-4"
-                : spot.legalActions.length === 3
-                  ? "grid-cols-3"
-                  : "grid-cols-2",
-            )}
-          >
+          <div className={cn("grid gap-2.5", actionGridClass(spot.legalActions.length))}>
             {spot.legalActions.map((action) => (
               <Button
                 key={action}
@@ -362,6 +397,7 @@ export function ArenaClient() {
               result={result}
               ratingDelta={result.ratingDelta ?? 0}
               onNext={next}
+              showMix={false}
               explanation={
                 spotId === null ? undefined : (
                   <Explanation
@@ -423,6 +459,18 @@ function Hud({
   );
 }
 
+/** Plain English for the onboarding leak keys the chip surfaces. */
+function leakFocusLabel(tag: string): string {
+  const labels: Record<string, string> = {
+    overcalling: "overcalling",
+    postflop_fundamentals: "postflop play",
+    preflop_ranges: "preflop ranges",
+    bluff_catching: "bluff catching",
+    tilt_control: "tilt spots",
+  };
+  return labels[tag] ?? tag.replace(/_/g, " ");
+}
+
 function SpotView({ spot }: { spot: ClientSpot }) {
   /**
    * `Card` is a branded NUMBER, so it survives JSON as a number and needs no
@@ -452,7 +500,7 @@ function SpotView({ spot }: { spot: ClientSpot }) {
           says it, and repeating it underneath is the wall of text this screen
           was rebuilt to get rid of. */}
       {spot.actionHistory.length > 1 && (
-        <p className="text-text-tertiary text-caption text-center">
+        <p className="text-text-secondary text-body-sm text-center">
           {spot.actionHistory.join(" · ")}
         </p>
       )}
@@ -532,7 +580,7 @@ function SessionSummary({
             {worst.map((h, i) => (
               <li key={i} className="flex items-center justify-between gap-3">
                 <span className="text-body-sm font-mono">
-                  {h.spot.heroPos} · {h.action}
+                  {h.spot.heroPos} · {actionLabel(h.action)}
                 </span>
                 <span
                   className="text-body-sm font-mono tabular-nums"

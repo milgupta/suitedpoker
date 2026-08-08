@@ -270,11 +270,42 @@ function comboFor(handKey: HandKey, dead: readonly Card[], rng: Rng): Combo {
   return pick(live, rng);
 }
 
+/**
+ * The hands the hero can actually be holding at this node.
+ *
+ * A `vs_3bet` node means the hero OPENED and was raised, so the hand has to be
+ * one the hero opens. Sampling across all 169 dealt spots that cannot exist —
+ * "you opened 2.5bb from UTG with 72o and the big blind 3bet you" — to a user
+ * being taught opening ranges by the same product, twenty minutes after being
+ * told UTG folds 72o. That is not a rounding error in a frequency, it is the
+ * table describing an impossible hand, and it discredits every correct number
+ * next to it.
+ *
+ * `null` means every hand is reachable: at an `rfi` node the hero has not acted,
+ * and at `vs_rfi` they are yet to act for the first time.
+ */
+export function reachableHands(node: PreflopNode, data: SolutionData): ReadonlySet<HandKey> | null {
+  if (!node.actionSeq.startsWith("vs_3bet_")) return null;
+
+  const open = data.preflop.find((n) => n.heroPos === node.heroPos && n.actionSeq === "rfi");
+  if (open === undefined) return null;
+
+  const keys = HAND_KEYS.filter((key) => frequencyOf(open, key, "raise") > 0);
+  // An empty set would make the node undealable; a missing opening range is a
+  // data problem to surface elsewhere, not a reason to deal nothing here.
+  return keys.length === 0 ? null : new Set(keys);
+}
+
 /** Weighted sample of a hand key by instructiveness. */
-function sampleInstructiveHand(node: PreflopNode, rng: Rng): HandKey {
+function sampleInstructiveHand(
+  node: PreflopNode,
+  rng: Rng,
+  reachable: ReadonlySet<HandKey> | null,
+): HandKey {
+  const pool = reachable === null ? HAND_KEYS : HAND_KEYS.filter((key) => reachable.has(key));
   const weights: Array<{ key: HandKey; weight: number }> = [];
   let total = 0;
-  for (const key of HAND_KEYS) {
+  for (const key of pool) {
     // A flat floor so no hand is unreachable — folding correctly is a skill
     // too. Deliberately NOT larger for hands the node plays: that variant gave
     // AA a bigger floor than trash and undid the instructiveness weighting.
@@ -329,8 +360,10 @@ function generatePreflop(config: SpotConfig, data: SolutionData, rng: Rng, seed:
     };
   }
 
+  const reachable = reachableHands(node, data);
+
   for (let i = 0; i < draws; i++) {
-    const handKey = sampleInstructiveHand(node, rng);
+    const handKey = sampleInstructiveHand(node, rng, reachable);
     const strategy = getStrategy(node, handKey);
     const difficulty = difficultyOf({
       entropy: strategyEntropy(node.actions.map((a) => strategy[a] ?? 0)),

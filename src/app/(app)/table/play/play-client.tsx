@@ -169,6 +169,9 @@ export function TablePlayClient() {
           state={game}
           heroSeat={state.heroSeat}
           actionsOverride={state.legalActions as readonly LegalAction[]}
+          seatTags={Object.fromEntries(
+            state.seats.filter((s) => s.botName !== null).map((s) => [s.seat, s.botName as string]),
+          )}
           onAction={(action: Action) => void post("/api/sim/action", { action })}
         />
       )}
@@ -193,21 +196,28 @@ export function TablePlayClient() {
 
       {state.handComplete && (
         <div className="border-border bg-surface-1 flex items-center justify-between gap-3 rounded-lg border px-4 py-3">
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 flex-col gap-0.5">
             <p className="text-body-md">{state.lastResult?.resultLine ?? "Hand over"}</p>
+            {state.lastResult?.grade ? (
+              <p className="text-text-tertiary text-caption">
+                Preflop grade vs chart: {state.lastResult.grade}
+              </p>
+            ) : null}
+          </div>
+          <div className="flex shrink-0 items-center gap-3">
             {/* The divergence nudge: a dot, not a modal. Flow is the point. */}
             {state.lastResult?.heroEvLoss != null && state.lastResult.heroEvLoss > 0.25 && (
               <span
-                title={`Preflop: ${state.lastResult.grade ?? ""}`}
+                title={`vs chart: ${state.lastResult.grade ?? ""}`}
                 data-grade-dot
                 className="size-2.5 shrink-0 rounded-full"
                 style={{ background: evColor(state.lastResult.heroEvLoss) }}
               />
             )}
+            <Button variant="primary" size="default" onClick={() => void post("/api/sim/next", {})}>
+              Next hand
+            </Button>
           </div>
-          <Button variant="primary" size="default" onClick={() => void post("/api/sim/next", {})}>
-            Next hand
-          </Button>
         </div>
       )}
 

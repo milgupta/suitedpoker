@@ -90,7 +90,10 @@ export const POST = withAuth(async (request, auth) => {
       // The webhook can land after this redirect. /welcome is outside the
       // entitlement gate precisely so a paying user is never bounced back here.
       success_url: `${origin}/welcome?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/paywall?cancelled=1`,
+      // The plan rides back so `checkout_abandoned` can name what they walked
+      // away from. Without it the drop-off is one undifferentiated number, and
+      // "people abandon the annual card" is the actionable half of it.
+      cancel_url: `${origin}/paywall?cancelled=1&plan=${plan}`,
     });
 
     if (session.url === null) {

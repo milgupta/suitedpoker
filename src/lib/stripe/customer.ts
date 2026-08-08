@@ -52,10 +52,23 @@ export async function ensureCustomer(userId: string, email: string): Promise<str
     return recovered;
   }
 
-  const created = await stripe.customers.create({
-    email,
-    metadata: { userId },
-  });
+  /*
+   * IDEMPOTENCY KEYED ON THE USER, so this cannot create two.
+   *
+   * Neither guard above is watertight on its own. The database write can fail —
+   * it did, silently, for every checkout until the pooler was fixed — and
+   * Stripe's search index is EVENTUALLY consistent, lagging creation by up to a
+   * minute, so two checkouts a few seconds apart both miss it. That is not a
+   * rare race: it is what "start checkout, change your mind, come back" looks
+   * like, which is a completely ordinary thing to do on a payment screen.
+   *
+   * With this key Stripe itself collapses the second create into the first and
+   * returns the same customer, whatever our own state says.
+   */
+  const created = await stripe.customers.create(
+    { email, metadata: { userId } },
+    { idempotencyKey: `customer:${userId}` },
+  );
 
   await rememberCustomer(userId, created.id);
   return created.id;
@@ -87,8 +100,21 @@ async function rememberCustomer(userId: string, customerId: string): Promise<voi
         .set({ stripeCustomerId: customerId })
         .where(eq(subscriptions.id, row.id));
     }
-  } catch {
-    // Checkout must still work. The webhook writes the customer id again, so a
-    // failure here costs a duplicate-customer check, not the sale.
+  } catch (error) {
+    /*
+     * LOUD, not silent. Checkout must still work — the webhook writes the
+     * customer id again, so a failure here costs a duplicate-customer check
+     * rather than the sale — but a bare `catch {}` on a defence mechanism is
+     * how that defence stops existing without anybody finding out.
+     *
+     * It did exactly that: DATABASE_URL was pointing at Supabase's SESSION-mode
+     * pooler, which caps at 15 clients, so `getDb()` threw on every checkout,
+     * this swallowed it, no row was ever written, and every checkout minted a
+     * fresh Stripe customer. Nothing in the logs, nothing in the tests, right
+     * up until the first end-to-end run against test-mode keys.
+     */
+    console.error(
+      `[stripe] could not record customer ${customerId} for user ${userId}: ${String(error)}`,
+    );
   }
 }

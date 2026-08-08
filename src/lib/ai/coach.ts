@@ -2,11 +2,31 @@ import "server-only";
 
 import type { Grade } from "@/poker/grader";
 import type { Spot } from "@/poker/generator";
+import type { Card } from "@/poker/cards";
+import { isPreflopNodeRef } from "@/poker/solutions";
 import { generateCoached, costUsd, isAiConfigured, streamCoached } from "./client";
 import { buildCoachContext, type CoachProfile } from "./context";
 import { COACH_SYSTEM_PROMPT, explanationInstruction } from "./prompts";
 import { redact, templateExplanation } from "./redact";
 import { cacheKeyFor, getCachedExplanation, putCachedExplanation } from "./cache";
+
+type CoachSpot = Pick<
+  Spot,
+  "nodeRef" | "handKey" | "heroPos" | "potBb" | "effStackBb" | "actionHistory"
+> & {
+  readonly handClass?: string | null;
+  readonly board?: readonly Card[];
+};
+
+/**
+ * The board is read from the spot when it carries one and from the ref
+ * otherwise, so a caller that hands over a partial spot still gets the honest
+ * answer rather than the permissive one.
+ */
+function guardOptions(spot: CoachSpot): { hasBoard: boolean } {
+  if (spot.board !== undefined) return { hasBoard: spot.board.length > 0 };
+  return { hasBoard: !isPreflopNodeRef(spot.nodeRef) };
+}
 
 export interface Explanation {
   text: string;
@@ -26,7 +46,7 @@ export interface Explanation {
  * truth, so a user whose request timed out still learns something true.
  */
 export async function explainDecision(
-  spot: Pick<Spot, "nodeRef" | "handKey" | "heroPos" | "potBb" | "effStackBb" | "actionHistory">,
+  spot: CoachSpot,
   grade: Grade,
   profile: CoachProfile,
   rationale?: string | null,
@@ -36,6 +56,8 @@ export async function explainDecision(
     handKey: spot.handKey,
     chosenAction: grade.chosenAction,
     skillTier: profile.skillTier,
+    grade: grade.grade,
+    displayMode: grade.displayMode,
   });
 
   const cached = await getCachedExplanation(key);
@@ -78,7 +100,7 @@ export async function explainDecision(
     };
   }
 
-  const checked = redact(result.text, grade, profile.skillTier);
+  const checked = redact(result.text, grade, profile.skillTier, guardOptions(spot));
 
   // Only a clean explanation is cached. Caching a redacted one would serve the
   // template forever to everyone who hits that spot.
@@ -138,7 +160,7 @@ function splitAtLastSentence(buffer: string): { emit: string; rest: string } {
  * not streaming at all.
  */
 export async function* streamExplanation(
-  spot: Pick<Spot, "nodeRef" | "handKey" | "heroPos" | "potBb" | "effStackBb" | "actionHistory">,
+  spot: CoachSpot,
   grade: Grade,
   profile: CoachProfile,
   rationale?: string | null,
@@ -154,6 +176,8 @@ export async function* streamExplanation(
     handKey: spot.handKey,
     chosenAction: grade.chosenAction,
     skillTier: profile.skillTier,
+    grade: grade.grade,
+    displayMode: grade.displayMode,
   });
 
   const cached = await getCachedExplanation(key);
@@ -208,7 +232,7 @@ export async function* streamExplanation(
       if (emit === "") continue;
 
       const candidate = accumulated + emit;
-      const checked = redact(candidate, grade, profile.skillTier);
+      const checked = redact(candidate, grade, profile.skillTier, guardOptions(spot));
       if (!checked.safe) {
         yield { type: "reset" };
         for (const event of template(checked.reason)) yield event;
@@ -229,7 +253,7 @@ export async function* streamExplanation(
 
   // The trailing fragment, and the final whole-text check.
   const full = (accumulated + buffer).trim();
-  const checked = redact(full, grade, profile.skillTier);
+  const checked = redact(full, grade, profile.skillTier, guardOptions(spot));
 
   if (!checked.safe) {
     yield { type: "reset" };

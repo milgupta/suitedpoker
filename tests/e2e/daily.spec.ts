@@ -51,7 +51,7 @@ async function login(page: Page, email: string): Promise<void> {
   // Generous on purpose. Under a loaded dev server with parallel workers this
   // redirect chain — middleware, entitlement check, render — regularly takes
   // ten seconds, and a 5s default turns that into a fake product failure.
-  await expect(page).toHaveURL(/\/dashboard/, { timeout: 30_000 });
+  await expect(page).toHaveURL(/\/practice/, { timeout: 30_000 });
 }
 
 test.describe("daily challenge", () => {
@@ -246,5 +246,30 @@ test.describe("daily challenge", () => {
     await expect(page).toHaveURL(/\/paywall/, { timeout: 30_000 });
 
     expect((await page.request.get("/api/daily/today")).status()).toBe(402);
+  });
+
+  test("UI shows Feedback on the last hand, then Summary with a real score", async ({ page }) => {
+    const { email } = await makeEntitledUser();
+    await login(page, email);
+    await page.goto("/daily");
+    await expect(page.locator("[data-daily]")).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator("[data-app-chrome='compact']")).toBeVisible();
+
+    for (let i = 0; i < 5; i++) {
+      const decision = page.locator("[data-action]").first();
+      await expect(decision).toBeEnabled({ timeout: 15_000 });
+      await decision.click();
+
+      const nextLabel = i === 4 ? "Done" : "Next hand";
+      await expect(page.getByRole("button", { name: nextLabel })).toBeVisible({
+        timeout: 15_000,
+      });
+      await page.getByRole("button", { name: nextLabel }).click();
+    }
+
+    await expect(page.locator("[data-daily-summary]")).toBeVisible();
+    const summary = await page.locator("[data-daily-summary]").innerText();
+    expect(summary).toMatch(/\d+\/500/);
+    await expect(page.getByRole("link", { name: "Back to Practice" })).toBeVisible();
   });
 });

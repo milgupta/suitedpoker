@@ -5,6 +5,7 @@ import { useState } from "react";
 import { evColor } from "@/lib/ev-color";
 import { DURATION, staggerDelay } from "@/lib/motion";
 import { actionLabel } from "@/lib/action-label";
+import { actionGridClass } from "@/lib/action-grid";
 import { cn } from "@/lib/utils";
 
 export interface FrequencySegment {
@@ -119,6 +120,11 @@ export function FrequencyBar({ segments, chosenAction, className }: FrequencyBar
  * Hidden before the decision and revealed with the feedback. It demonstrates
  * what "GTO" means in one glance with zero copy, which is why it belongs on the
  * landing page and in ad creative too.
+ *
+ * The caller MUST pass segments in the same order as the buttons — a capsule
+ * means nothing except as a label for the control underneath it. The grid comes
+ * from `actionGridClass` for the same reason: an inline `repeat(n, 1fr)` here
+ * kept one row while the buttons wrapped to two.
  */
 export function FrequencyCapsules({
   segments,
@@ -132,10 +138,7 @@ export function FrequencyCapsules({
   className?: string;
 }) {
   return (
-    <div
-      className={cn("grid gap-3", className)}
-      style={{ gridTemplateColumns: `repeat(${segments.length}, minmax(0, 1fr))` }}
-    >
+    <div className={cn("grid gap-3", actionGridClass(segments.length), className)}>
       {segments.map((segment) => {
         const isTop = segment.action === topAction;
         return (

@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/supabase/server";
 import { captureAttributionOnce } from "@/lib/attribution-server";
+import { AnalyticsIdentity } from "@/components/AnalyticsIdentity";
+import { AppChrome } from "@/components/app/AppChrome";
 
 /**
  * Everything in this group requires a session.
@@ -21,5 +23,13 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   // attribution on their profile before the Stripe webhook reads it.
   await captureAttributionOnce(user.id);
 
-  return <div className="mx-auto max-w-(--container-app) px-4 py-(--app-shell-py)">{children}</div>;
+  return (
+    <AppChrome>
+      {/* Same "first authenticated render" hook as the attribution call above:
+          without it the client stays anonymous and never joins the server-side
+          purchase, so every funnel ending in a sale scores zero. */}
+      <AnalyticsIdentity userId={user.id} signupDate={user.created_at} />
+      {children}
+    </AppChrome>
+  );
 }

@@ -15,6 +15,8 @@ export interface SeatProps {
   bigBlind: number;
   /** Show the hole cards face up. Hero only, or at showdown. */
   revealCards?: boolean;
+  /** Optional archetype under the seat (Station, Nit, TAG) — sim tables only. */
+  tag?: string | null;
   className?: string;
 }
 
@@ -31,6 +33,7 @@ export function Seat({
   isActive = false,
   bigBlind,
   revealCards = false,
+  tag = null,
   className,
 }: SeatProps) {
   const reduced = useReducedMotion() ?? false;
@@ -92,6 +95,7 @@ export function Seat({
       >
         <span className="text-overline text-text-tertiary font-mono uppercase">
           {player.position}
+          {tag ? ` · ${tag}` : ""}
         </span>
         <span className="text-body-sm font-mono font-semibold tabular-nums">
           {stackBb.toFixed(stackBb < 10 ? 1 : 0)}
@@ -105,7 +109,7 @@ export function Seat({
       {/* Chips committed this street, animating toward the pot. */}
       {betBb > 0 && (
         <motion.span
-          className="border-border-strong bg-surface-2 text-caption rounded-full border px-2 py-0.5 font-mono tabular-nums"
+          className="border-border-strong bg-surface-2 text-body-md rounded-full border px-2.5 py-1 font-mono font-semibold tabular-nums"
           initial={reduced ? false : { opacity: 0, scale: 0.7 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={SPRING.snappy}

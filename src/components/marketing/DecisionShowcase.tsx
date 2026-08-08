@@ -2,6 +2,7 @@
 
 import { FrequencyBar } from "@/components/poker/FrequencyBar";
 import { GradeBadge } from "@/components/ui/grade-badge";
+import { actionVerb } from "@/lib/action-label";
 import type { Showcase } from "@/lib/landing-showcase";
 
 /**
@@ -44,13 +45,25 @@ export function DecisionShowcase({ showcase }: { showcase: Showcase }) {
         <div className="border-border flex flex-wrap items-center gap-x-3 gap-y-2 border-t pt-4">
           <GradeBadge grade={showcase.alternativeGrade} size="sm" static />
           <p className="text-text-secondary text-body-md">
-            {/* Every figure here is read off the same segments the bar drew. */}A solver{" "}
-            {top.action}s this {Math.round(top.freq * 100)}% of the time and {alternative.action}s
-            it {Math.round(alternative.freq * 100)}%. Taking the second one gives up{" "}
-            <span className="text-text-primary font-mono tabular-nums">
-              {alternative.evLoss.toFixed(2)}bb
-            </span>{" "}
-            — a different line, not a mistake.
+            {/* Every figure here is read off the same segments the bar drew. */}The chart{" "}
+            {actionVerb(top.action)} this {Math.round(top.freq * 100)}% of the time and{" "}
+            {actionVerb(alternative.action)} it {Math.round(alternative.freq * 100)}%.{" "}
+            {/*
+             * A genuinely mixed hand costs NOTHING to play either way — that is
+             * what mixing means, and printing "gives up 0.00bb" turns the
+             * strongest sentence available into a rounding artefact.
+             */}
+            {alternative.evLoss < 0.005 ? (
+              <>Both are worth exactly the same, which is the only reason to split a hand at all.</>
+            ) : (
+              <>
+                Taking the second one gives up{" "}
+                <span className="text-text-primary font-mono tabular-nums">
+                  {alternative.evLoss.toFixed(2)}bb
+                </span>{" "}
+                — a different line, not a mistake.
+              </>
+            )}
           </p>
         </div>
       ) : null}

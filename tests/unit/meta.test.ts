@@ -13,11 +13,16 @@ import {
   attributionFromQuery,
   ATTRIBUTION_MAX_AGE_DAYS,
   EMPTY_ATTRIBUTION,
+  FBCLID_MAX_LENGTH,
   fbcFromClickId,
+  formatSuppressedEvent,
   isValidEventTime,
   mergeAttribution,
+  metaDelivery,
   normaliseForHash,
   purchaseEventId,
+  withDerivedFbc,
+  type Attribution,
 } from "../../src/lib/meta";
 import {
   nextAttributionCookie,
@@ -283,6 +288,11 @@ describe("failures are queued, never dropped", () => {
   function configure() {
     vi.stubEnv("NEXT_PUBLIC_META_PIXEL_ID", "1234567890");
     vi.stubEnv("META_CAPI_ACCESS_TOKEN", "test-token");
+    // The retry machinery only runs when the event is actually being sent.
+    // Without this every assertion below would pass vacuously against a gate
+    // that suppressed the request before it was ever attempted.
+    vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("META_TEST_EVENT_CODE", undefined);
   }
 
   it("backs off between attempts", async () => {
@@ -413,5 +423,307 @@ describe("failures are queued, never dropped", () => {
 
     expect(called).toBe(false);
     expect(result.reason).toBe("not_configured");
+  });
+});
+
+/* ── the environment gate ────────────────────────────────────────────────── */
+
+/**
+ * There is ONE Meta dataset and it cannot be cleaned.
+ *
+ * 1.5K events reached it from localhost before this gate existed. Every one is
+ * a conversion the optimiser now believes in, attributed to a person who never
+ * paid — and the only remedy is to dilute it with real data. These assertions
+ * are the reason that cannot happen again.
+ */
+describe("only production may reach the live dataset", () => {
+  const originalFetch = globalThis.fetch;
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  function configured() {
+    vi.stubEnv("NEXT_PUBLIC_META_PIXEL_ID", "1234567890");
+    vi.stubEnv("META_CAPI_ACCESS_TOKEN", "test-token");
+    // Explicitly absent unless a test sets it — otherwise a developer's own
+    // META_TEST_EVENT_CODE would flip these from "log" to "test" and the
+    // suppression assertions would pass for the wrong reason.
+    vi.stubEnv("META_TEST_EVENT_CODE", undefined);
+  }
+
+  it("sends on a production deploy and nowhere else", () => {
+    expect(metaDelivery("production")).toBe("send");
+    expect(metaDelivery("preview")).toBe("log");
+    expect(metaDelivery("development")).toBe("log");
+    // A laptop, CI, any non-Vercel host. FAILS CLOSED — the cost of being wrong
+    // this way is a missing log line; the other way is permanent.
+    expect(metaDelivery(undefined)).toBe("log");
+    expect(metaDelivery("")).toBe("log");
+    expect(metaDelivery(null)).toBe("log");
+  });
+
+  it("routes to Test Events when a code is set, OUTSIDE production only", () => {
+    // The deliberate opt-out of the console: watch events land in Events
+    // Manager instead of reading them in a terminal. Meta excludes test-coded
+    // events from reporting and optimisation, so nothing is diluted.
+    expect(metaDelivery(undefined, "TEST12345")).toBe("test");
+    expect(metaDelivery("preview", "TEST12345")).toBe("test");
+
+    // PRODUCTION IGNORES IT. A test-coded Purchase is a Purchase Meta never
+    // counts — the build already refuses this env, and this is the runtime
+    // backstop under that refusal.
+    expect(metaDelivery("production", "TEST12345")).toBe("send");
+
+    // An empty or whitespace value is not a code.
+    expect(metaDelivery(undefined, "")).toBe("log");
+    expect(metaDelivery(undefined, "   ")).toBe("log");
+    expect(metaDelivery(undefined, null)).toBe("log");
+  });
+
+  it("attaches the test code, and only when the code put it in test mode", async () => {
+    configured();
+    vi.stubEnv("VERCEL_ENV", undefined);
+    vi.stubEnv("META_TEST_EVENT_CODE", "TEST12345");
+    vi.resetModules();
+    const { sendEvent } = await import("../../src/lib/meta-capi");
+
+    let body: { test_event_code?: string } = {};
+    globalThis.fetch = ((_url: string, init: { body: string }) => {
+      body = JSON.parse(init.body) as { test_event_code?: string };
+      return Promise.resolve(new Response("{}", { status: 200 }));
+    }) as unknown as typeof fetch;
+
+    const result = await sendEvent({
+      eventName: "Lead",
+      eventId: "l_test_events",
+      userData: {},
+      nowMs: Date.now(),
+    });
+
+    expect(body.test_event_code).toBe("TEST12345");
+    // Reached Meta, but NOT reporting. Calling this "sent" would make a test
+    // run read as a conversion in every log and every downstream assertion.
+    expect(result.delivery).toBe("test");
+  });
+
+  it("never attaches a test code to a real production conversion", async () => {
+    // env-required.ts refuses this build; this is the runtime backstop for the
+    // env var landing in the wrong Vercel scope.
+    configured();
+    vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("META_TEST_EVENT_CODE", "TEST12345");
+    vi.resetModules();
+    const { sendEvent } = await import("../../src/lib/meta-capi");
+
+    let body: { test_event_code?: string } = {};
+    globalThis.fetch = ((_url: string, init: { body: string }) => {
+      body = JSON.parse(init.body) as { test_event_code?: string };
+      return Promise.resolve(new Response("{}", { status: 200 }));
+    }) as unknown as typeof fetch;
+
+    const result = await sendEvent({
+      eventName: "Purchase",
+      eventId: "p_prod",
+      userData: {},
+      nowMs: Date.now(),
+    });
+
+    expect(body.test_event_code).toBeUndefined();
+    expect(result.delivery).toBe("sent");
+  });
+
+  it("never opens a socket to Meta from a laptop", async () => {
+    configured();
+    vi.stubEnv("VERCEL_ENV", undefined);
+    vi.stubEnv("NEXT_PUBLIC_VERCEL_ENV", undefined);
+    vi.resetModules();
+    const { sendEvent } = await import("../../src/lib/meta-capi");
+
+    let called = false;
+    globalThis.fetch = (() => {
+      called = true;
+      return Promise.resolve(new Response("{}"));
+    }) as typeof fetch;
+
+    const result = await sendEvent({
+      eventName: "Purchase",
+      eventId: "p_local",
+      userData: { fbc: `fb.1.${NOW}.abc` },
+      nowMs: Date.now(),
+    });
+
+    expect(called).toBe(false);
+    // Not a failure — nothing to retry, nothing to queue.
+    expect(result.delivery).toBe("logged");
+    expect(result.queued).toBe(false);
+    expect(await (await import("../../src/lib/meta-capi")).queuedEvents()).toHaveLength(0);
+  });
+
+  it("suppresses a PREVIEW deploy too — NODE_ENV cannot tell the two apart", async () => {
+    configured();
+    // Exactly the case a NODE_ENV check would wave through: a preview build is
+    // also NODE_ENV=production.
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("VERCEL_ENV", "preview");
+    vi.resetModules();
+    const { sendEvent } = await import("../../src/lib/meta-capi");
+
+    let called = false;
+    globalThis.fetch = (() => {
+      called = true;
+      return Promise.resolve(new Response("{}"));
+    }) as typeof fetch;
+
+    const result = await sendEvent({
+      eventName: "Lead",
+      eventId: "l_preview",
+      userData: {},
+      nowMs: Date.now(),
+    });
+
+    expect(called).toBe(false);
+    expect(result.delivery).toBe("logged");
+  });
+
+  it("posts for real when VERCEL_ENV is production", async () => {
+    configured();
+    vi.stubEnv("VERCEL_ENV", "production");
+    vi.resetModules();
+    const { sendEvent } = await import("../../src/lib/meta-capi");
+
+    let url = "";
+    globalThis.fetch = ((input: string) => {
+      url = String(input);
+      return Promise.resolve(new Response("{}", { status: 200 }));
+    }) as unknown as typeof fetch;
+
+    const result = await sendEvent({
+      eventName: "Lead",
+      eventId: "l_prod",
+      userData: {},
+      nowMs: Date.now(),
+    });
+
+    expect(result.delivery).toBe("sent");
+    expect(url).toContain("graph.facebook.com");
+  });
+
+  it("will not let a queue written elsewhere drain from a laptop", async () => {
+    // The second, independent force-off. A queue can outlive the process that
+    // wrote it, and `drainQueue` runs from a cron that does not build an event.
+    configured();
+    vi.stubEnv("VERCEL_ENV", "production");
+    vi.resetModules();
+
+    const failing = await import("../../src/lib/meta-capi");
+    globalThis.fetch = (() =>
+      Promise.resolve(new Response("boom", { status: 500 }))) as typeof fetch;
+    await failing.sendEvent({
+      eventName: "Purchase",
+      eventId: "p_queued",
+      userData: {},
+      nowMs: Date.now(),
+      sleep: () => Promise.resolve(),
+    });
+    expect(await failing.queuedEvents()).toHaveLength(1);
+
+    // Same Redis, now on a laptop.
+    vi.stubEnv("VERCEL_ENV", undefined);
+    vi.resetModules();
+    const local = await import("../../src/lib/meta-capi");
+
+    let called = false;
+    globalThis.fetch = (() => {
+      called = true;
+      return Promise.resolve(new Response("{}"));
+    }) as typeof fetch;
+
+    await local.drainQueue();
+    expect(called).toBe(false);
+  });
+
+  it("prints the match-quality fields, and never a raw email", () => {
+    const line = formatSuppressedEvent(
+      {
+        event_name: "Purchase",
+        event_time: Math.floor(NOW / 1000),
+        event_id: "p_1",
+        action_source: "system_generated",
+        user_data: {
+          em: [createHash("sha256").update("alice@example.com").digest("hex")],
+          fbc: `fb.1.${NOW}.abc`,
+          fbp: "fb.1.999.111",
+        },
+        custom_data: { value: 39.99, currency: "USD" },
+      },
+      undefined,
+    );
+
+    // "did it fire, and did it carry an fbc" is the whole question.
+    expect(line).toContain("SUPPRESSED");
+    expect(line).toContain("Purchase");
+    expect(line).toContain(`fbc=fb.1.${NOW}.abc`);
+    expect(line).toContain("fbp=fb.1.999.111");
+    expect(line).toContain("no VERCEL_ENV");
+    expect(line).not.toContain("alice@example.com");
+  });
+});
+
+/* ── fbc coverage ────────────────────────────────────────────────────────── */
+
+/**
+ * Meta scores Event Match Quality largely on fbc. A click id captured and then
+ * dropped before the event goes out is a click the ad account paid for and
+ * cannot claim.
+ */
+describe("fbc coverage", () => {
+  it("caps an absurd fbclid rather than writing it, and still derives fbc", () => {
+    // Same reasoning as the UTM cap: this lands in a cookie and then in a
+    // database column.
+    const found = attributionFromQuery(
+      new URL(`https://x.test/?fbclid=${"a".repeat(5000)}`).searchParams,
+      NOW,
+    );
+    expect(found.fbclid).toHaveLength(FBCLID_MAX_LENGTH);
+    expect(found.fbc).toBe(`fb.1.${NOW}.${"a".repeat(FBCLID_MAX_LENGTH)}`);
+  });
+
+  it("derives fbc from a stored fbclid that has none", () => {
+    const derived = withDerivedFbc({ fbclid: "abc", fbc: null }, NOW);
+    expect(derived.fbc).toBe(`fb.1.${NOW}.abc`);
+  });
+
+  it("never overwrites an fbc it already has", () => {
+    // The stored one carries the REAL click time; re-deriving would stamp now
+    // on a click that happened days ago.
+    const kept = withDerivedFbc({ fbclid: "abc", fbc: "fb.1.111.abc" }, NOW);
+    expect(kept.fbc).toBe("fb.1.111.abc");
+  });
+
+  it("invents nothing when there is no click id", () => {
+    expect(withDerivedFbc({ fbclid: null, fbc: null }, NOW).fbc).toBeNull();
+    expect(withDerivedFbc({} as Partial<Attribution>, NOW).fbc).toBeUndefined();
+  });
+
+  it("puts the derived fbc on the outgoing event", async () => {
+    const { buildUserData } = await import("../../src/lib/meta-capi");
+    const data = buildUserData({
+      attribution: { fbclid: "abc", fbc: null },
+      clickTimeMs: NOW,
+    });
+    expect(data.fbc).toBe(`fb.1.${NOW}.abc`);
+  });
+
+  it("fills an fbc the profile is missing from the request cookie", () => {
+    // The (app) layout's capture can lose the race with a Lead fired during
+    // onboarding, and its whole body is inside a catch. The cookie still has it.
+    const profile = { ...EMPTY_ATTRIBUTION, utmSource: "meta" };
+    const cookie = { ...EMPTY_ATTRIBUTION, fbc: `fb.1.${NOW}.abc`, fbclid: "abc" };
+
+    const merged = mergeAttribution(profile, cookie);
+    expect(merged.fbc).toBe(`fb.1.${NOW}.abc`);
+    // First touch still wins: the cookie can only ever ADD.
+    expect(merged.utmSource).toBe("meta");
   });
 });

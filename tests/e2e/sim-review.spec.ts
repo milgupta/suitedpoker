@@ -46,7 +46,7 @@ async function login(page: Page, email: string): Promise<void> {
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
   await page.getByRole("button", { name: "Log in" }).click();
-  await expect(page).toHaveURL(/\/dashboard/, { timeout: 30_000 });
+  await expect(page).toHaveURL(/\/practice/, { timeout: 30_000 });
 }
 
 interface SimState {

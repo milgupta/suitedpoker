@@ -137,7 +137,9 @@ describe("explainDecision degrades to the template", () => {
 
     expect(result.source).toBe("template");
     expect(result.costUsd).toBe(0);
-    expect(result.text).toContain("raise");
+    // Case-insensitive: the template capitalises an action that opens a
+    // sentence. What matters is that the ground-truth action is named.
+    expect(result.text.toLowerCase()).toContain("raise");
     expect(redact(result.text, grade).safe).toBe(true);
   });
 
