@@ -4,6 +4,7 @@ import { render } from "@react-email/render";
 import { Resend } from "resend";
 import { serverEnv } from "@/lib/env.server";
 import { FROM_ADDRESS, REPLY_TO } from "@/emails/theme";
+import { subjectFor, TEMPLATES, type TransactionalTemplate } from "@/emails/subjects";
 import {
   PasswordResetEmail,
   PaymentFailedEmail,
@@ -31,27 +32,7 @@ import {
  * failed.
  */
 
-export type TransactionalTemplate =
-  | "welcome"
-  | "password_reset"
-  | "verify_email"
-  | "receipt"
-  | "payment_failed"
-  | "payment_failed_reminder"
-  | "payment_failed_final"
-  | "subscription_cancelled";
-
-/** The whole set, so a test can enumerate them rather than trusting a list. */
-export const TEMPLATES: readonly TransactionalTemplate[] = [
-  "welcome",
-  "password_reset",
-  "verify_email",
-  "receipt",
-  "payment_failed",
-  "payment_failed_reminder",
-  "payment_failed_final",
-  "subscription_cancelled",
-];
+export { subjectFor, TEMPLATES, type TransactionalTemplate };
 
 export interface TemplateData {
   welcome: WelcomeProps;
@@ -62,23 +43,6 @@ export interface TemplateData {
   payment_failed_reminder: DunningProps;
   payment_failed_final: DunningProps;
   subscription_cancelled: { accessEndsOn?: string | null };
-}
-
-const SUBJECTS: Record<TransactionalTemplate, string> = {
-  welcome: "You're in — here's where to start",
-  password_reset: "Reset your SuitedPoker password",
-  verify_email: "Confirm your email",
-  receipt: "Your SuitedPoker receipt",
-  // No "ACTION REQUIRED", no urgency theatre. A calm subject on a real problem
-  // gets opened; a shouted one gets filtered.
-  payment_failed: "Your card was declined",
-  payment_failed_reminder: "We still can't take payment",
-  payment_failed_final: "Last one about this",
-  subscription_cancelled: "Your subscription is cancelled",
-};
-
-export function subjectFor(template: TransactionalTemplate): string {
-  return SUBJECTS[template];
 }
 
 function elementFor<T extends TransactionalTemplate>(
@@ -124,7 +88,7 @@ export async function renderEmail<T extends TransactionalTemplate>(
   const element = elementFor(template, data);
   const [html, text] = await Promise.all([render(element), render(element, { plainText: true })]);
 
-  return { subject: SUBJECTS[template], html, text };
+  return { subject: subjectFor(template), html, text };
 }
 
 let client: Resend | null = null;

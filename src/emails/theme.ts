@@ -33,6 +33,27 @@ export const email = {
 export const font =
   '-apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif';
 
+/**
+ * The wordmark's face. Geist Mono cannot be webfont-loaded here — Gmail strips
+ * @font-face — so this is the same fallback chain --font-mono declares, minus
+ * the variable. A mail client that has none of them lands on its default
+ * monospace, which still reads as the lockup rather than as body text.
+ */
+export const monoFont = 'ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace';
+
+/**
+ * The mark, at 2x the size it is displayed at.
+ *
+ * PNG, not the brand SVG: Gmail strips an <img> with an SVG source outright,
+ * which would leave a hole where the logo is in the client most of these are
+ * read in. Generated from spade-tile.svg by `npm run icons` like every other
+ * icon, so it cannot drift from the mark on the site.
+ */
+export const LOGO_DISPLAY_PX = 40;
+export function logoUrl(): string {
+  return link("/brand/icon-email-80.png");
+}
+
 export const type = {
   display: { fontSize: "28px", lineHeight: "34px", fontWeight: 600, letterSpacing: "-0.02em" },
   heading: { fontSize: "18px", lineHeight: "24px", fontWeight: 600 },

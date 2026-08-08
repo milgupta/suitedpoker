@@ -30,6 +30,7 @@
     "screenshots": "tsx scripts/capture-screenshots.ts",
     "optimize:assets": "tsx scripts/optimize-assets.ts",
     "icons": "tsx scripts/gen-icons.ts",
+    "emails:supabase": "tsx scripts/gen-supabase-emails.ts",
     "hero:video": "tsx scripts/capture-hero-video.ts",
     "mutation": "tsx scripts/mutation-check.ts",
     "test:live": "vitest run --config vitest.live.config.mts",

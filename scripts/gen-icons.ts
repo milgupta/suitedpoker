@@ -114,6 +114,12 @@ async function main(): Promise<void> {
   emit(join(BRAND, "icon-512.png"), await render(TILE, 512));
   emit(join(BRAND, "icon-maskable-512.png"), await render(SQUARE, 512));
 
+  // The email lockup's mark, at exactly 2x the 40px it is displayed at.
+  // Reusing icon-192 would mean Outlook's Word rendering engine downscaling
+  // 192px into a 40px slot, which it does badly enough to look like a
+  // compression artefact — on the one asset whose entire job is looking real.
+  emit(join(BRAND, "icon-email-80.png"), await render(TILE, 80));
+
   for (const { file, bytes } of written) {
     console.log(`${file.padEnd(38)} ${String(Math.round(bytes / 100) / 10).padStart(6)}KB`);
   }

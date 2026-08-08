@@ -39,6 +39,42 @@ NEXT_PUBLIC_SITE_URL=https://suitedpoker.com
 and a test asserts no email contains a relative or `localhost` URL — but only
 the env var stops a staging deploy emailing real customers links to staging.
 
+## 2b. The two auth emails Supabase sends
+
+**Signup confirmation and password reset do not go through Resend.** Supabase
+Auth sends them, because Supabase mints the one-time token in the link. So the
+first email a new user ever receives is Supabase's stock template — unbranded,
+on Supabase's shared IPs, rate-limited to a few an hour.
+
+Both are branded and in the repo. Getting them out:
+
+```bash
+npm run emails:supabase
+```
+
+That writes `docs/supabase-emails/`. Paste each file into
+**Supabase → Authentication → Emails → Templates** and set the subject the
+script prints beside it:
+
+| File | Supabase template | Subject |
+|---|---|---|
+| `confirm-signup.html` | Confirm signup | Confirm your email |
+| `reset-password.html` | Reset password | Reset your SuitedPoker password |
+
+The link URL is left as Supabase's `{{ .ConfirmationURL }}`, which it
+substitutes server-side. The script fails rather than writing a file where that
+variable did not survive rendering — a template that looks right in the
+dashboard and mails everyone a dead link is the failure worth catching.
+
+Then point **Auth → SMTP** at Resend with the same from-address below. Until you
+do, these two emails keep Supabase's sending limits, which is what makes the
+signup e2e skip.
+
+🔴 **This is a copy that WILL drift.** Nothing in the build can reach into the
+Supabase dashboard, so `npm run verify` cannot tell you the pasted version is
+stale. Re-run the script and paste again after touching anything in
+`src/emails/`.
+
 ## 3. From-address convention
 
 | Purpose | Address |

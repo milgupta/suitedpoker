@@ -20,6 +20,7 @@ import type { HintLine } from "@/components/poker";
 import type { HintLevel } from "@/lib/hints";
 import { parseArenaPreset, type ArenaPreset } from "@/lib/arena-preset";
 import { capture } from "@/lib/analytics-client";
+import { cn } from "@/lib/utils";
 import { GRADES } from "@/lib/grade";
 import { actionLabel } from "@/lib/action-label";
 import { evColor } from "@/lib/ev-color";
@@ -307,8 +308,22 @@ export function ArenaClient() {
           )}
 
           <div
-            className="grid gap-3"
-            style={{ gridTemplateColumns: `repeat(${spot.legalActions.length}, minmax(0, 1fr))` }}
+            /*
+             * Two columns when there are four actions, not four.
+             *
+             * A postflop node offers check / bet 33 / bet 66 / bet pot, and
+             * four of those across 358px gives each label 80px — "Raise small"
+             * ran straight out of its button. Wrapping to two rows costs one
+             * row of height on a screen that has it.
+             */
+            className={cn(
+              "grid gap-2.5",
+              spot.legalActions.length >= 4
+                ? "grid-cols-2 sm:grid-cols-4"
+                : spot.legalActions.length === 3
+                  ? "grid-cols-3"
+                  : "grid-cols-2",
+            )}
           >
             {spot.legalActions.map((action) => (
               <Button

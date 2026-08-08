@@ -16,6 +16,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import manifest from "../../src/app/manifest";
+import { LOGO_DISPLAY_PX } from "../../src/emails/theme";
 
 const ROOT = process.cwd();
 const PUBLIC = join(ROOT, "public");
@@ -63,6 +64,16 @@ describe("the brand icons", () => {
     expect(pngSize(join(ROOT, "src", "app", "apple-icon.png"))).toEqual({
       width: 180,
       height: 180,
+    });
+  });
+
+  it("ships the email mark at 2x the size it is displayed at", () => {
+    // Nothing in a build checks an <img src> pointing at an absolute URL, so a
+    // renamed or unregenerated file here is a broken-image glyph at the top of
+    // every transactional email and no error anywhere.
+    expect(pngSize(join(PUBLIC, "brand", "icon-email-80.png"))).toEqual({
+      width: LOGO_DISPLAY_PX * 2,
+      height: LOGO_DISPLAY_PX * 2,
     });
   });
 

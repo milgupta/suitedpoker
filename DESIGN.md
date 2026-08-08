@@ -197,6 +197,12 @@ their own hand has been handed a second problem.
 Hearts and diamonds share one red, exactly as a real deck does. The pip shape is
 what tells them apart, and that is discrimination the audience already has.
 
+The face is the RANK OVER ITS SUIT, both centred, at every size. A full English
+pip layout — ten pips for a ten, a drawn court figure for a king — was built and
+then removed: it is more faithful to a physical card and worse to use, because a
+centred rank is read at a glance and a pip field has to be counted. The reference
+is a poker app, not a deck of cards.
+
 These are **not** the grade ramp and must never borrow from it: a card is red
 because it is a heart, never because the play was bad. They sit on a white card
 face, so every one is measured against white rather than the canvas.

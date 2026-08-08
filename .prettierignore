@@ -8,6 +8,9 @@ package-lock.json
 
 # generated artifacts (not source)
 docs/build-tracker.html
+# rendered email HTML, pasted verbatim into the Supabase dashboard — reflowing
+# it would rewrite output nobody edits, and email HTML is whitespace-sensitive
+docs/supabase-emails
 SUITEDPOKER_BUILD_PLAN.md
 docs/COMPETITOR-*.md
 

@@ -219,20 +219,30 @@ export function TableStates() {
 
       <Frame
         title="The deck"
-        note="Classic two colours: red hearts and diamonds, near-black clubs and spades. Corner index and one large pip, the way a real card is laid out."
+        note="Classic two colours, the English pip pattern, and a drawn court figure. Every rank at xl, so a wrong pip count is visible rather than inferred."
       >
-        <div className="flex flex-wrap items-end gap-3">
-          {cardsFromString("Ah Kd Qc Js Th 9d 8c 7s").map((card, i) => (
+        {/* Every rank of one suit, then every suit of one rank. A layout table
+            is exactly the kind of thing that is right for twelve ranks and
+            wrong for the thirteenth, and only a full row shows that. */}
+        <div className="flex flex-wrap items-end gap-2">
+          {cardsFromString("2s 3s 4s 5s 6s 7s 8s 9s Ts Js Qs Ks As").map((card, i) => (
+            <PlayingCard key={i} card={card} size="xl" index={i} dealCount={13} />
+          ))}
+        </div>
+        <div className="mt-4 flex flex-wrap items-end gap-2">
+          {cardsFromString("Th Td Tc Ts Qh Qd Qc Qs").map((card, i) => (
             <PlayingCard key={i} card={card} size="lg" index={i} dealCount={8} />
           ))}
           <PlayingCard faceDown size="lg" />
           <PlayingCard placeholder size="lg" />
         </div>
         <div className="mt-4 flex items-end gap-3">
-          {cardsFromString("Ah Kd Qc").map((card, i) => (
+          {/* Below 60px a card falls back to one big rank over one big pip —
+              ten pips at 8px each is grey mush, and unreadable beats schematic. */}
+          {cardsFromString("Ah Kd Qc Th").map((card, i) => (
             <PlayingCard key={i} card={card} size="sm" />
           ))}
-          {cardsFromString("Ah Kd Qc").map((card, i) => (
+          {cardsFromString("Ah Kd Qc Th").map((card, i) => (
             <PlayingCard key={i} card={card} size="md" />
           ))}
         </div>

@@ -20,7 +20,7 @@ import {
   type TemplateData,
   type TransactionalTemplate,
 } from "../../src/lib/email";
-import { email as palette } from "../../src/emails/theme";
+import { email as palette, LOGO_DISPLAY_PX, logoUrl } from "../../src/emails/theme";
 import {
   accessEndsAt,
   daysSince,
@@ -134,6 +134,64 @@ describe("every link is absolute and correct", () => {
   it("points at the configured site", async () => {
     const { html } = await renderEmail("welcome", FIXTURES.welcome);
     expect(html).toContain(SITE);
+  });
+
+  it("has no relative image sources either", async () => {
+    // The same failure as a relative href, and easier to miss: a relative src
+    // resolves against the mail client, so the logo is a broken-image glyph in
+    // every inbox while the links all still work.
+    for (const { template, html } of await renderAll()) {
+      for (const src of [...html.matchAll(/src="([^"]+)"/g)].map((m) => m[1]!)) {
+        expect(src, `${template}: relative img src ${src}`).toMatch(/^https?:/);
+        expect(src, `${template}: localhost leaked into an email image`).not.toContain("localhost");
+      }
+    }
+  });
+});
+
+describe("the brand lockup", () => {
+  it("puts the logo at the top of every email", async () => {
+    for (const { template, html } of await renderAll()) {
+      expect(html, `${template} has no logo`).toContain(logoUrl());
+      // Outlook sizes an image from the ATTRIBUTES, not the style. Without
+      // them it renders the asset at its intrinsic 80px, so the mark arrives
+      // at twice the size of the wordmark beside it.
+      expect(html, `${template}'s logo has no width attribute`).toContain(
+        `width="${LOGO_DISPLAY_PX}"`,
+      );
+      expect(html, `${template}'s logo has no height attribute`).toContain(
+        `height="${LOGO_DISPLAY_PX}"`,
+      );
+    }
+  });
+
+  it("SURVIVES BLOCKED IMAGES, because the wordmark is live text", async () => {
+    // Outlook and Gmail block remote images until the reader trusts the
+    // sender — which is exactly the state a first email arrives in. A lockup
+    // baked entirely into a PNG makes that first impression a grey box, so the
+    // name must be text. The plain-text render is the proof: it drops every
+    // image, and the brand still has to be in it.
+    for (const { template, text } of await renderAll()) {
+      expect(text, `${template}'s brand name is inside the image`).toContain("SUITEDPOKER");
+    }
+  });
+
+  it("serves the mark as a PNG, not the brand SVG", async () => {
+    // Gmail strips an <img> with an SVG source outright.
+    expect(logoUrl()).toMatch(/\.png$/);
+  });
+
+  it("lays the lockup out as a table, not a flex row", async () => {
+    // Outlook's Word rendering engine implements no flexbox at all, and its
+    // fallback stacks the mark above the name.
+    const { html } = await renderEmail("verify_email", FIXTURES.verify_email);
+    expect(html).not.toContain("display:flex");
+  });
+
+  it("keeps the wordmark on the accent that passes AA on the panel", () => {
+    // --accent-500 is 4.37 on canvas and fails body-text AA; --accent-400 is
+    // the token that carries accent TEXT. Same rule as the site's Wordmark.
+    expect(palette.accentBright).toBe("#5b8cff");
   });
 });
 

@@ -5,6 +5,7 @@ import type { Card } from "@/poker/cards";
 import type { SeatView } from "@/poker/generator";
 import type { HeroPosition } from "@/poker/solutions";
 import { seatActivity } from "@/lib/spot-seats";
+import { actionVerb, betAmountOf } from "@/lib/bet-chip";
 import { SPRING } from "@/lib/motion";
 import { PlayingCard } from "./PlayingCard";
 import { SeatAvatar } from "./SeatAvatar";
@@ -115,6 +116,32 @@ export function SpotTable({
           <PotChip potBb={potBb} />
         </div>
 
+        {/*
+         * The chips each player has put in, INSIDE the rim between their seat
+         * and the pot — where they sit on a real table, and where a player
+         * looks to price a call. Halfway in clears both the seat pill and the
+         * board.
+         */}
+        {seats.map((seat, i) => {
+          const spot = layout[i];
+          if (spot === undefined) return null;
+          const bet = betAmountOf(activity[seat.position].action);
+          if (bet === null) return null;
+
+          return (
+            <div
+              key={`bet-${seat.seat}`}
+              className="absolute -translate-x-1/2 -translate-y-1/2"
+              style={{
+                left: `${50 + (spot.left - 50) * 0.58}%`,
+                top: `${50 + (spot.top - 50) * 0.58}%`,
+              }}
+            >
+              <BetChip amount={bet} />
+            </div>
+          );
+        })}
+
         {seats.map((seat, i) => {
           const spot = layout[i];
           if (spot === undefined) return null;
@@ -153,6 +180,54 @@ export function SpotTable({
         {effStackBb.toFixed(0)}BB effective
       </p>
     </div>
+  );
+}
+
+/**
+ * A stack of chips with the amount beside it.
+ *
+ * The disc is drawn rather than emoji'd, for the same reason the suit pips are:
+ * a chip emoji is a different picture on every platform and several of them are
+ * a roulette wheel, which is the one image this product must never show.
+ */
+function BetChip({ amount }: { amount: string }) {
+  return (
+    <span className="border-border-strong bg-surface-2/90 text-caption flex items-center gap-1.5 rounded-full border py-0.5 pr-2 pl-1 font-mono font-semibold whitespace-nowrap tabular-nums backdrop-blur-sm">
+      <svg viewBox="0 0 24 24" className="block size-3.5" aria-hidden="true">
+        <circle cx="12" cy="12" r="10" fill="var(--color-accent)" />
+        <circle
+          cx="12"
+          cy="12"
+          r="6.5"
+          fill="none"
+          stroke="var(--color-on-accent)"
+          strokeOpacity="0.85"
+          strokeWidth="2.4"
+          strokeDasharray="4 3.2"
+        />
+      </svg>
+      {amount}
+    </span>
+  );
+}
+
+/**
+ * The dealer button.
+ *
+ * White with dark type, which is what a real one is — and deliberately NOT the
+ * amber a casino button often uses, because amber is `--grade-inaccuracy` and
+ * a token from the grade ramp on a table would read as a judgement about the
+ * seat it is sitting next to.
+ */
+function DealerButton() {
+  return (
+    <span
+      aria-hidden
+      className="bg-text-primary text-canvas text-overline flex size-4 items-center justify-center rounded-full font-bold"
+      style={{ boxShadow: "var(--shadow-card)" }}
+    >
+      D
+    </span>
   );
 }
 
@@ -240,18 +315,19 @@ function SpotSeat({
           {stackBb.toFixed(0)}
           <span className="text-text-tertiary ml-0.5">BB</span>
         </span>
+        {position === "BTN" && <DealerButton />}
       </motion.div>
 
       {isHero && <span className="text-accent-bright text-overline uppercase">you</span>}
 
-      {action !== null && (
+      {action !== null && !folded && (
         <motion.span
           className="border-accent/40 bg-accent/10 text-accent-bright text-caption rounded-full border px-2 py-0.5 whitespace-nowrap"
           initial={reduced ? false : { opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={SPRING.snappy}
         >
-          {action}
+          {actionVerb(action)}
         </motion.span>
       )}
     </div>

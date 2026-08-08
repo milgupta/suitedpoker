@@ -5,12 +5,75 @@ import {
   Head,
   Hr,
   Html,
+  Img,
   Link,
   Preview,
   Section,
   Text,
 } from "@react-email/components";
-import { email, font, link, type } from "./theme";
+import { email, font, link, LOGO_DISPLAY_PX, logoUrl, monoFont, type } from "./theme";
+
+/**
+ * The brand lockup: mark, then wordmark. The email counterpart of
+ * `src/components/Wordmark.tsx`, and deliberately the same shape — a logo that
+ * is subtly different in the email from the one on the page is the kind of
+ * thing that reads as a phishing attempt without anybody being able to say why.
+ *
+ * TWO RULES MAKE THIS SURVIVE A REAL INBOX:
+ *
+ * 1. The wordmark is LIVE TEXT, never part of the image. Outlook and Gmail
+ *    block remote images by default until the reader trusts the sender — which
+ *    is precisely the first email they get from us. A logo baked entirely into
+ *    a PNG makes that first impression a grey box.
+ * 2. It is a table, not a flex row. Nothing in Outlook's Word rendering engine
+ *    implements flexbox, and the fallback is the mark stacked above the name.
+ *
+ * The image is therefore decorative and carries an empty alt: the name is
+ * already right beside it, and alt text would print "SuitedPoker SUITEDPOKER"
+ * with images off and announce the brand twice to a screen reader.
+ */
+function BrandLockup() {
+  return (
+    <Section style={{ margin: "0 0 28px" }}>
+      <table
+        cellPadding={0}
+        cellSpacing={0}
+        role="presentation"
+        style={{ borderCollapse: "collapse" }}
+      >
+        <tbody>
+          <tr>
+            <td style={{ verticalAlign: "middle", paddingRight: "10px" }}>
+              <Img
+                src={logoUrl()}
+                alt=""
+                width={LOGO_DISPLAY_PX}
+                height={LOGO_DISPLAY_PX}
+                // `display: block` kills the baseline gap an inline image leaves
+                // under itself, which otherwise sits the wordmark a few pixels
+                // high of centre in every client that honours it.
+                style={{ display: "block", borderRadius: "9px" }}
+              />
+            </td>
+            <td style={{ verticalAlign: "middle" }}>
+              <Text
+                style={{
+                  ...type.heading,
+                  fontFamily: monoFont,
+                  color: email.accentBright,
+                  letterSpacing: "0.12em",
+                  margin: 0,
+                }}
+              >
+                SUITEDPOKER
+              </Text>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </Section>
+  );
+}
 
 /**
  * The shell every email shares.
@@ -50,17 +113,7 @@ export function EmailLayout({
             padding: "32px",
           }}
         >
-          <Text
-            style={{
-              ...type.small,
-              color: email.textTertiary,
-              margin: "0 0 24px",
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-            }}
-          >
-            SuitedPoker
-          </Text>
+          <BrandLockup />
 
           {children}
 

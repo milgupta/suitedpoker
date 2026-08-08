@@ -157,23 +157,44 @@ export function PaywallClient({ diagnosis, leakBb100, leakLabel }: PaywallClient
           {/* ── The purchase column ────────────────────────────────────────── */}
           <section className="flex flex-col gap-6 lg:col-start-2 lg:row-start-1">
             <header className="flex flex-col gap-3">
-              <h1 className="text-display-lg">Your plan is ready.</h1>
-
-              {/* The leak IS the subhead when there is one. Nothing generic beats
-              a true, specific number about the person reading it. bb/100 only
-              — a dollar figure on a poker result is a compliance boundary. */}
+              {/*
+               * THE EMPHASISED NUMBER IS THE READER'S OWN, AND THAT IS THE
+               * WHOLE POINT.
+               *
+               * The obvious thing to put here is a conversion stat — "92% of
+               * subscribers improved". It is also the one thing this screen may
+               * not say. There are no subscribers yet, so it would be false
+               * rather than merely unsubstantiated, and an unsupported
+               * performance claim on a payment page is an FTC Act §5 problem in
+               * exactly the category (16 CFR Part 465) this codebase already
+               * refuses in `src/content/testimonials.ts`.
+               *
+               * A real figure about the person reading it converts better than
+               * an invented one about strangers anyway. bb/100 only — a dollar
+               * figure on a poker result is a separate compliance boundary.
+               */}
               {leakBb100 == null ? (
-                <p className="text-text-secondary text-body-lg max-w-[42ch]">
-                  Everything below is built and waiting. Pick how you want to pay.
-                </p>
+                <h1 className="text-display-lg text-balance">Your plan is ready.</h1>
               ) : (
-                <p className="text-text-secondary text-body-lg max-w-[42ch]">
-                  {leakLabel == null ? "Your biggest leak" : `Your biggest leak, ${leakLabel},`} is
-                  costing you{" "}
-                  <span className="text-text-primary font-mono font-semibold tabular-nums">
+                <h1 className="text-display-lg text-balance">
+                  Fix the leak costing you{" "}
+                  {/* --accent-bright, which `.panel-light` re-points to
+                      --accent-700 so it stays legible on white. */}
+                  <span className="text-accent-bright font-mono tabular-nums">
                     {leakBb100.toFixed(1)} bb/100
                   </span>
-                  . Fixing it is what this is for.
+                  .
+                </h1>
+              )}
+
+              <p className="text-text-secondary text-body-lg max-w-[42ch]">
+                Join the best poker trainer available.
+              </p>
+
+              {leakBb100 != null && leakLabel != null && (
+                <p className="text-text-tertiary text-body-md max-w-[42ch]">
+                  Yours is {leakLabel} — and every hand you play here is graded against the
+                  solution, then explained.
                 </p>
               )}
 

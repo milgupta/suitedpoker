@@ -4,53 +4,18 @@ import { motion, useReducedMotion } from "motion/react";
 import { rankCharOf, suitCharOf, type Card, type Suit } from "@/poker/cards";
 import { SPRING, staggerDelay } from "@/lib/motion";
 import { cn } from "@/lib/utils";
+import { SUIT_NAME, SUIT_PATH, SUIT_TOKEN } from "./suit-path";
 
 export type CardSize = "sm" | "md" | "lg" | "xl";
 
 /**
  * Width in px per size. Height follows the standard 1:1.4 card ratio.
  *
- * These roughly doubled. The old lg was 52px — smaller than a postage stamp,
- * on the one object in the entire product the player is being asked to read
- * and make a decision about. Everything else on the drill screen was fighting
- * the hand for attention and winning.
- *
  * `xl` is the hero's own two cards. `lg` is the board. `md` is a card shown
  * inside prose or a choice tile. `sm` is a villain's mini-cards on the ring,
  * where the card is a marker rather than something to read.
  */
 const WIDTH: Record<CardSize, number> = { sm: 26, md: 52, lg: 72, xl: 96 };
-
-const SUIT_TOKEN: Record<Suit, string> = {
-  h: "var(--color-suit-hearts)",
-  d: "var(--color-suit-diamonds)",
-  c: "var(--color-suit-clubs)",
-  s: "var(--color-suit-spades)",
-};
-
-const SUIT_NAME: Record<Suit, string> = {
-  h: "hearts",
-  d: "diamonds",
-  c: "clubs",
-  s: "spades",
-};
-
-/**
- * Suit pips as paths rather than unicode glyphs.
- *
- * ♠♥♦♣ render differently on every platform and are frequently emoji-fied on
- * Android — a card that renders as a colour-emoji heart is unreadable at 24px.
- * Drawn on a 24x24 grid.
- */
-const SUIT_PATH: Record<Suit, string> = {
-  h: "M12 21c-1-1-8-5.6-8-11a4.6 4.6 0 0 1 8-3 4.6 4.6 0 0 1 8 3c0 5.4-7 10-8 11Z",
-  d: "M12 2 21 12 12 22 3 12 12 2Z",
-  c: "M12 3a4 4 0 0 1 3.2 6.4A4 4 0 1 1 16 17a5.6 5.6 0 0 1-3-1.2V19h3v2H8v-2h3v-3.2A5.6 5.6 0 0 1 8 17a4 4 0 1 1 .8-7.6A4 4 0 0 1 12 3Z",
-  s: "M12 2c1 2.4 8 6.6 8 11a4 4 0 0 1-7 2.7V19h3v2H8v-2h3v-3.3A4 4 0 0 1 4 13c0-4.4 7-8.6 8-11Z",
-};
-
-/** Below this the corner index is smaller than 10px type and stops being read. */
-const INDEXED_FROM = 56;
 
 export interface PlayingCardProps {
   card?: Card;
@@ -74,69 +39,38 @@ function Pip({ suit, colour, size }: { suit: Suit; colour: string; size: number 
 }
 
 /**
- * The face: corner index top-left, one large pip in the middle.
+ * The face: the rank over its suit, both centred.
  *
- * That arrangement is doing real work rather than decoration — it is how every
- * card the audience has ever held is laid out, so the hand is recognised
- * instead of decoded. Below `INDEXED_FROM` there is no room for it and the card
- * falls back to one big rank over one big pip, which stays legible.
+ * This replaced a corner index with a full English pip layout — ten pips for a
+ * ten, a drawn court figure for a king. That version was more faithful to a
+ * physical card and worse to actually use: at the sizes this product renders
+ * cards, a centred rank is read at a glance and a pip field has to be counted.
+ * The reference this now follows is a poker app, not a deck of cards, and every
+ * one of them lands on the same answer.
  *
- * ONE index, not the mirrored pair a physical card has. The first version had
- * both, and the rotated 9 in the bottom corner reads as a 6 — on a real card
- * that never bites because you hold it and only ever see one corner, but on
- * screen both are visible at once. A beginner misreading their own hand is the
- * worst failure this component has, and the second index bought nothing but
- * authenticity.
+ * One layout at every size, so a board card and a hero card are recognisably
+ * the same object.
  */
 function Face({ card, width }: { card: Card; width: number }) {
   const rank = rankCharOf(card);
   const suit = suitCharOf(card);
   const colour = SUIT_TOKEN[suit];
 
-  const background = `linear-gradient(160deg, var(--color-card-face) 0%, var(--color-card-face) 55%, var(--color-card-face-edge) 100%)`;
-
-  if (width < INDEXED_FROM) {
-    return (
-      <span
-        className="flex h-full w-full flex-col items-center justify-center"
-        style={{ background }}
-      >
-        <span
-          className="font-mono leading-none font-bold tabular-nums"
-          style={{ color: colour, fontSize: width * 0.5 }}
-        >
-          {rank}
-        </span>
-        <Pip suit={suit} colour={colour} size={width * 0.34} />
-      </span>
-    );
-  }
-
-  const cornerIndex = (
-    <span className="flex flex-col items-center" style={{ gap: width * 0.015 }}>
+  return (
+    <span
+      className="flex h-full w-full flex-col items-center justify-center"
+      style={{
+        background: `linear-gradient(160deg, var(--color-card-face) 0%, var(--color-card-face) 55%, var(--color-card-face-edge) 100%)`,
+        gap: width * 0.04,
+      }}
+    >
       <span
         className="font-mono leading-none font-bold tabular-nums"
-        style={{ color: colour, fontSize: width * 0.29 }}
+        style={{ color: colour, fontSize: width * 0.5 }}
       >
         {rank}
       </span>
-      <Pip suit={suit} colour={colour} size={width * 0.17} />
-    </span>
-  );
-
-  return (
-    <span className="relative block h-full w-full" style={{ background }}>
-      <span className="absolute" style={{ top: width * 0.07, left: width * 0.09 }}>
-        {cornerIndex}
-      </span>
-      {/* Nudged down and right of true centre so it sits in the space the index
-          leaves rather than crowding it. */}
-      <span
-        className="absolute inset-0 flex items-center justify-center"
-        style={{ paddingTop: width * 0.16, paddingLeft: width * 0.12 }}
-      >
-        <Pip suit={suit} colour={colour} size={width * 0.44} />
-      </span>
+      <Pip suit={suit} colour={colour} size={width * 0.32} />
     </span>
   );
 }

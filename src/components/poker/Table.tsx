@@ -29,16 +29,27 @@ export interface PokerTableProps {
 }
 
 /**
- * The table is a GLOWING ELLIPTICAL RING, not a felt surface.
+ * The table: a FILLED oval with a lit double rim.
  *
- * A filled green oval is what every poker-room skin does and it fights every piece
- * of data placed on top of it. A stroke on near-black keeps the board cards the
- * brightest objects on screen, which is where the eye should go.
+ * It was a bare stroke on near-black, on the argument that a felt surface
+ * fights the data placed on it. That argument is about GREEN felt — a big
+ * saturated field under a range grid genuinely does destroy it. A deep indigo
+ * well, two shades off the canvas, does the opposite: it gives the ring an
+ * inside and an outside, so the seats read as sitting AROUND something and the
+ * board reads as sitting ON something. Every poker product does this, and the
+ * bare stroke read as a diagram of a table rather than a table.
  *
- * The glow brightens on the arc nearest whoever is to act — the table itself
- * indicates action, so no extra chrome is needed for it.
+ * The rim is doubled — a bright hairline with a soft outer bloom and a dimmer
+ * inner line — because a single stroke at this scale reads as an outline and
+ * two read as an edge with depth.
+ *
+ * The glow brightens on the arc nearest whoever is to act, so the table itself
+ * indicates action and no extra chrome is needed for it.
  */
 export function TableRing({ activeAngle }: { activeAngle: number | null }) {
+  const RX = 46;
+  const RY = 38;
+
   return (
     <svg
       className="pointer-events-none absolute inset-0 h-full w-full"
@@ -47,11 +58,15 @@ export function TableRing({ activeAngle }: { activeAngle: number | null }) {
       aria-hidden="true"
     >
       <defs>
-        <radialGradient id="table-interior" cx="50%" cy="50%" r="60%">
-          {/* No more than 4% lighter at the centre — any more and the ring
-              stops reading as a ring. */}
-          <stop offset="0%" stopColor="var(--color-surface-1)" stopOpacity="0.5" />
-          <stop offset="100%" stopColor="var(--color-canvas)" stopOpacity="0" />
+        {/*
+         * Lit from above, like a lamp over a table. Both stops come from the
+         * accent ladder rather than a new colour: the well is the brand's own
+         * blue at its darkest, which keeps it out of the grade ramp's range.
+         */}
+        <radialGradient id="table-felt" cx="50%" cy="38%" r="72%">
+          <stop offset="0%" stopColor="var(--color-accent-950)" stopOpacity="0.95" />
+          <stop offset="62%" stopColor="var(--color-accent-950)" stopOpacity="0.55" />
+          <stop offset="100%" stopColor="var(--color-canvas-deep)" stopOpacity="0.9" />
         </radialGradient>
         <filter id="table-glow" x="-30%" y="-30%" width="160%" height="160%">
           <feGaussianBlur stdDeviation="2.2" result="blur" />
@@ -60,20 +75,48 @@ export function TableRing({ activeAngle }: { activeAngle: number | null }) {
             <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
+        <filter id="table-rim-bloom" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="1.6" />
+        </filter>
       </defs>
 
-      <ellipse cx="50" cy="50" rx="46" ry="38" fill="url(#table-interior)" />
+      <ellipse cx="50" cy="50" rx={RX} ry={RY} fill="url(#table-felt)" />
 
+      {/* Outer bloom, then the hairline that sits inside it. */}
       <ellipse
         cx="50"
         cy="50"
-        rx="46"
-        ry="38"
+        rx={RX}
+        ry={RY}
         fill="none"
         stroke="var(--color-accent)"
-        strokeWidth="0.7"
-        opacity="0.55"
-        filter="url(#table-glow)"
+        strokeWidth="2.4"
+        opacity="0.45"
+        filter="url(#table-rim-bloom)"
+        vectorEffect="non-scaling-stroke"
+      />
+      <ellipse
+        cx="50"
+        cy="50"
+        rx={RX}
+        ry={RY}
+        fill="none"
+        stroke="var(--color-accent-bright)"
+        strokeWidth="1"
+        opacity="0.8"
+        vectorEffect="non-scaling-stroke"
+      />
+      {/* The inner line. Its inset is a fraction of each radius, so the gap
+          stays even all the way round however the container is stretched. */}
+      <ellipse
+        cx="50"
+        cy="50"
+        rx={RX * 0.94}
+        ry={RY * 0.93}
+        fill="none"
+        stroke="var(--color-accent)"
+        strokeWidth="0.6"
+        opacity="0.4"
         vectorEffect="non-scaling-stroke"
       />
 
@@ -83,11 +126,11 @@ export function TableRing({ activeAngle }: { activeAngle: number | null }) {
         <ellipse
           cx="50"
           cy="50"
-          rx="46"
-          ry="38"
+          rx={RX}
+          ry={RY}
           fill="none"
           stroke="var(--color-accent-bright)"
-          strokeWidth="1.1"
+          strokeWidth="1.8"
           strokeLinecap="round"
           filter="url(#table-glow)"
           vectorEffect="non-scaling-stroke"

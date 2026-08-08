@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Shimmer } from "@/components/motion";
 import { Explanation, Feedback, FrequencyCapsules, SpotTable } from "@/components/poker";
 import { capture } from "@/lib/analytics-client";
+import { cn } from "@/lib/utils";
 import { actionLabel } from "@/lib/action-label";
 import { fadeUp } from "@/lib/motion";
 import { DEMO_INTRO, DEMO_OUTRO_CTA } from "@/lib/demo-hand";
@@ -211,8 +212,16 @@ export function HandClient() {
       )}
 
       <div
-        className="grid gap-3"
-        style={{ gridTemplateColumns: `repeat(${spot.legalActions.length}, minmax(0, 1fr))` }}
+        /* Two columns at four actions — "Raise small" runs out of an 80px
+           button, and this is the one hand that decides whether anybody pays. */
+        className={cn(
+          "grid gap-2.5",
+          spot.legalActions.length >= 4
+            ? "grid-cols-2 sm:grid-cols-4"
+            : spot.legalActions.length === 3
+              ? "grid-cols-3"
+              : "grid-cols-2",
+        )}
       >
         {spot.legalActions.map((action) => (
           <Button
