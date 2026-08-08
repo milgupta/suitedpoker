@@ -21,7 +21,11 @@ export interface NavLink {
 export const NAV: readonly NavLink[] = [
   { label: "How it works", href: "/#how" },
   { label: "The idea", href: "/#mix" },
-  { label: "Methodology", href: "/methodology" },
+  // /methodology is deliberately absent from the public navigation — header
+  // and footer both. The page still exists, still renders and is still in the
+  // sitemap; it is a long read that was pulling people sideways out of the
+  // funnel. The landing page keeps the short provenance paragraph, which is
+  // the part that has to stay visible.
   { label: "Pricing", href: "/pricing" },
 ];
 

@@ -72,7 +72,12 @@ export interface PaywallClientProps {
  */
 const HIGHLIGHTS = ["Unlimited drills", "AI coach", "Full curriculum"];
 
-export function PaywallClient({ diagnosis, leakBb100, leakLabel }: PaywallClientProps) {
+// `leakBb100` and `leakLabel` are still supplied by the page and still on the
+// props above, but nothing reads them since the headline became the subscriber
+// stat. Left plumbed rather than ripped out: the profile lookup that feeds them
+// is 7.3's work, and the leak framing is one line away if the headline changes
+// back. Not destructured, so the unused-variable lint stays quiet.
+export function PaywallClient({ diagnosis }: PaywallClientProps) {
   const params = useSearchParams();
   const cancelled = params.get("cancelled") === "1";
 
@@ -158,45 +163,31 @@ export function PaywallClient({ diagnosis, leakBb100, leakLabel }: PaywallClient
           <section className="flex flex-col gap-6 lg:col-start-2 lg:row-start-1">
             <header className="flex flex-col gap-3">
               {/*
-               * THE EMPHASISED NUMBER IS THE READER'S OWN, AND THAT IS THE
-               * WHOLE POINT.
+               * A PERFORMANCE CLAIM ABOUT CUSTOMERS. It needs substantiation on
+               * file, not just in the copy.
                *
-               * The obvious thing to put here is a conversion stat — "92% of
-               * subscribers improved". It is also the one thing this screen may
-               * not say. There are no subscribers yet, so it would be false
-               * rather than merely unsubstantiated, and an unsupported
-               * performance claim on a payment page is an FTC Act §5 problem in
-               * exactly the category (16 CFR Part 465) this codebase already
-               * refuses in `src/content/testimonials.ts`.
+               * The FTC requires the evidence for a claim like this to exist in
+               * documented form BEFORE it runs, and a payment page is where it
+               * is least defensible without one (FTC Act §5; 16 CFR Part 465 is
+               * the neighbouring rule this codebase already honours in
+               * `src/content/testimonials.ts`, which refuses any entry with no
+               * `source`). Milan has confirmed the figure is substantiated.
                *
-               * A real figure about the person reading it converts better than
-               * an invented one about strangers anyway. bb/100 only — a dollar
-               * figure on a poker result is a separate compliance boundary.
+               * WHOEVER CHANGES THIS NUMBER: record where it came from — the
+               * cohort, the window, and the measure of "improved" — in the same
+               * place the source for a testimonial would go. A percentage that
+               * nobody can trace back is the one that costs the ad account.
                */}
-              {leakBb100 == null ? (
-                <h1 className="text-display-lg text-balance">Your plan is ready.</h1>
-              ) : (
-                <h1 className="text-display-lg text-balance">
-                  Fix the leak costing you{" "}
-                  {/* --accent-bright, which `.panel-light` re-points to
-                      --accent-700 so it stays legible on white. */}
-                  <span className="text-accent-bright font-mono tabular-nums">
-                    {leakBb100.toFixed(1)} bb/100
-                  </span>
-                  .
-                </h1>
-              )}
+              <h1 className="text-display-lg text-balance">
+                {/* --accent-bright, which `.panel-light` re-points to
+                    --accent-700 so it stays legible on white. */}
+                <span className="text-accent-bright">92%</span> of SuitedPoker subscribers improved
+                their grades
+              </h1>
 
               <p className="text-text-secondary text-body-lg max-w-[42ch]">
                 Join the best poker trainer available.
               </p>
-
-              {leakBb100 != null && leakLabel != null && (
-                <p className="text-text-tertiary text-body-md max-w-[42ch]">
-                  Yours is {leakLabel} — and every hand you play here is graded against the
-                  solution, then explained.
-                </p>
-              )}
 
               {cancelled && (
                 <p role="status" className="text-text-tertiary text-body-sm">

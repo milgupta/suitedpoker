@@ -199,15 +199,6 @@ export default function Home() {
                 </h2>
                 <p className="text-text-secondary text-body-lg mt-6 text-pretty">{MIX.body}</p>
                 <p className="text-text-secondary text-body-lg mt-4 text-pretty">{MIX.closing}</p>
-
-                <p className="mt-8">
-                  <Link
-                    href="/methodology"
-                    className="text-accent-bright text-body-md underline underline-offset-4"
-                  >
-                    Where these numbers come from →
-                  </Link>
-                </p>
               </div>
 
               <div>
@@ -270,14 +261,9 @@ export default function Home() {
                 <p className="text-text-secondary text-body-lg mt-6 text-pretty">
                   {provenanceHeadline(facts)}
                 </p>
-                <p className="mt-6">
-                  <Link
-                    href="/methodology"
-                    className="text-accent-bright text-body-md underline underline-offset-4"
-                  >
-                    Read the full methodology →
-                  </Link>
-                </p>
+                {/* No link out to /methodology. The paragraph above IS the
+                    disclosure; sending someone to a long read from here was
+                    pulling them out of the funnel two sections before pricing. */}
               </div>
 
               <dl className="border-border grid grid-cols-3 gap-px overflow-hidden rounded-lg border">

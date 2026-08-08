@@ -16,7 +16,11 @@ const COLUMNS: readonly { heading: string; links: readonly { label: string; href
     links: [
       { label: "How it works", href: "/#how" },
       { label: "Pricing", href: "/pricing" },
-      { label: "Methodology", href: "/methodology" },
+      // /methodology is deliberately UNLINKED from the public site. It still
+      // exists, still renders and is still in the sitemap for crawlers — it is
+      // a long read that was pulling people out of the funnel. The landing
+      // page keeps the short provenance statement, which is the part that has
+      // to be visible.
     ],
   },
   {
