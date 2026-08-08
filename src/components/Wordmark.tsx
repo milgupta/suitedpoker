@@ -16,7 +16,9 @@
 
 const SIZES = {
   sm: { px: 24, text: "text-body-md" },
-  md: { px: 32, text: "text-heading-sm" },
+  // NOT `text-heading-sm` — that token has never existed, and Tailwind drops an
+  // unresolvable utility silently. Dormant only because nothing uses `md` yet.
+  md: { px: 32, text: "text-heading-md" },
 } as const;
 
 export function Wordmark({

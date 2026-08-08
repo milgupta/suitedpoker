@@ -46,7 +46,26 @@ export default async function PaywallPage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-[34rem] flex-col gap-8 pb-16">
+    <div className="mx-auto flex w-full max-w-[34rem] flex-col gap-8 pb-16 lg:max-w-none">
+      {/*
+       * The atmosphere. Fixed to the viewport and behind everything, so it does
+       * not scroll away a third of the way down the page and does not enter
+       * layout — a payment screen is the last place to spend a CLS point.
+       *
+       * DESIGN.md permits ambient glow on marketing, onboarding, diagnosis and
+       * the paywall, and forbids it behind the training canvas. This is one of
+       * the four.
+       */}
+      <div
+        aria-hidden
+        className="paywall-wash pointer-events-none fixed inset-0 -z-10 overflow-hidden"
+      >
+        {/* z-0 beats .ambient-blob's own z-index:-1, which would otherwise put
+            both blobs behind this container's own background. */}
+        <span className="ambient-blob ambient-blob--accent top-[-14rem] right-[-8rem] z-0" />
+        <span className="ambient-blob bottom-[-14rem] left-[-10rem] z-0 opacity-70" />
+      </div>
+
       {/* annualCost is the price, not a results claim — see the note in analytics.ts. */}
       <TrackView
         event="paywall_viewed"

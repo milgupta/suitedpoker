@@ -112,9 +112,6 @@ export function DiagnosisClient({ diagnosis, demoHand = null }: DiagnosisClientP
         {diagnosis.goalLine !== null && (
           <p className="text-text-secondary text-body-md mt-1">{diagnosis.goalLine}</p>
         )}
-        {diagnosis.handLine !== null && (
-          <p className="text-text-secondary text-body-md mt-1">{diagnosis.handLine}</p>
-        )}
       </motion.section>
 
       {/* 2 · The cost */}

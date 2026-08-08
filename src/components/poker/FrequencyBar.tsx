@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
 import { evColor } from "@/lib/ev-color";
 import { DURATION, staggerDelay } from "@/lib/motion";
+import { actionLabel } from "@/lib/action-label";
 import { cn } from "@/lib/utils";
 
 export interface FrequencySegment {
@@ -48,10 +49,17 @@ export function FrequencyBar({ segments, chosenAction, className }: FrequencyBar
 
   return (
     <div className={cn("flex flex-col gap-2", className)}>
+      {/* `role="group"`, NOT `role="img"`. Every segment is a real button, and
+          an img with interactive descendants is an axe `nested-interactive`
+          violation at serious severity — invalid markup that also leaves a
+          screen-reader user unable to reach the buttons the label describes.
+          A group may legitimately contain controls and still carry a name. */}
       <div
         className="border-border flex h-11 w-full overflow-hidden rounded-full border"
-        role="img"
-        aria-label={segments.map((s) => `${s.action} ${Math.round(s.freq * 100)}%`).join(", ")}
+        role="group"
+        aria-label={segments
+          .map((s) => `${actionLabel(s.action)} ${Math.round(s.freq * 100)}%`)
+          .join(", ")}
       >
         {segments.map((segment, i) => {
           const share = total > 0 ? segment.freq / total : 0;
@@ -82,10 +90,10 @@ export function FrequencyBar({ segments, chosenAction, className }: FrequencyBar
                   ? { duration: 0 }
                   : { duration: DURATION.base, delay: i * step, ease: "easeOut" }
               }
-              aria-label={`${segment.action}, ${Math.round(segment.freq * 100)} percent`}
+              aria-label={`${actionLabel(segment.action)}, ${Math.round(segment.freq * 100)} percent`}
             >
               <span className="text-caption text-canvas px-1 font-mono font-semibold whitespace-nowrap">
-                {showName && segment.action}
+                {showName && actionLabel(segment.action)}
                 {showName && showPct && " "}
                 {showPct && `${Math.round(segment.freq * 100)}%`}
               </span>
@@ -97,7 +105,9 @@ export function FrequencyBar({ segments, chosenAction, className }: FrequencyBar
       {/* The chosen action is always named in text, so the outline is never the
           only way to know what you picked. */}
       {chosenAction !== undefined && (
-        <p className="text-text-tertiary text-caption">Outlined: your action — {chosenAction}</p>
+        <p className="text-text-tertiary text-caption">
+          Outlined: your action — {actionLabel(chosenAction)}
+        </p>
       )}
     </div>
   );

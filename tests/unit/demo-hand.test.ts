@@ -223,8 +223,8 @@ describe("the diagnosis opening line", () => {
     // past tense reads as broken English in the one paragraph a prospect
     // reads most carefully.
     const detail = demoHandDetail(record({ chosenAction: "fold", evLoss: 0.3 }));
-    expect(detail).toContain("that fold costs");
-    expect(detail).not.toContain("that folded costs");
+    expect(detail).toContain("That fold costs");
+    expect(detail.toLowerCase()).not.toContain("that folded costs");
 
     expect(nounOf("allin")).toBe("shove");
     expect(nounOf("straddle")).toBe("straddle");
@@ -232,7 +232,7 @@ describe("the diagnosis opening line", () => {
 
   it("congratulates rather than charges when they got it right", () => {
     const detail = demoHandDetail(record({ chosenAction: "raise", evLoss: 0, grade: "best" }));
-    expect(detail).toContain("you found it");
+    expect(detail).toContain("You found it");
     expect(detail).not.toContain("costs");
   });
 

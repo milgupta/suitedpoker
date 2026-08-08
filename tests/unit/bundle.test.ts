@@ -52,8 +52,13 @@ function importsOf(file: string): string[] {
   const found: string[] = [];
   // Static imports and re-exports. A dynamic import() is deliberately excluded:
   // that is exactly the code-splitting boundary this test wants people to use.
+  //
+  // `import type` / `export type` are excluded because they EMIT NOTHING. A
+  // type annotation naming `PreflopNode` costs zero bytes in the browser, and
+  // counting it would report weight that does not exist — the same cry-wolf
+  // failure the `server-only` rule above exists to avoid.
   for (const match of source.matchAll(
-    /(?:^|\n)\s*(?:import|export)[^;]*?from\s+["']([^"']+)["']/g,
+    /(?:^|\n)\s*(?:import|export)(?!\s+type\s)[^;]*?from\s+["']([^"']+)["']/g,
   )) {
     const spec = match[1];
     if (spec !== undefined) found.push(spec);
@@ -103,15 +108,45 @@ describe("the marketing bundle", () => {
     expect(existsSync(landing)).toBe(true);
   });
 
-  it("does NOT reach src/poker", () => {
+  /**
+   * The range grid's own coordinate system, and the only part of `src/poker`
+   * the landing page is allowed to ship.
+   *
+   * `RangeGrid` needs `HAND_KEYS` and `GRID_SIZE` to lay out 169 cells, and
+   * `range.ts` reaches `cards.ts` for rank and suit helpers. The alternative is
+   * a marketing copy of the grid with its own hardcoded list of 169 hands —
+   * a second source of truth for the thing the page exists to prove, which is
+   * a worse outcome than the bytes.
+   *
+   * Everything else stays banned, and that ban is the point: `evaluator.ts`,
+   * `handclass.ts`, `grader.ts`, `generator.ts` and `solutions.ts` are the
+   * moat, and the first version of the new landing page pulled all five in
+   * through one `bandFor` import in a client component.
+   */
+  const GRID_PRIMITIVES = [join("src", "poker", "range.ts"), join("src", "poker", "cards.ts")];
+
+  it("reaches NOTHING in src/poker beyond the range grid's primitives", () => {
     const reached = [...reachableFrom(landing)]
       .map((f) => relative(ROOT, f))
-      .filter((f) => f.startsWith(join("src", "poker")));
+      .filter((f) => f.startsWith(join("src", "poker")))
+      .filter((f) => !GRID_PRIMITIVES.includes(f));
 
     expect(
       reached,
       `the poker engine is reachable from the landing page:\n${reached.join("\n")}`,
     ).toEqual([]);
+  });
+
+  it("never ships the hand evaluator or the grader", () => {
+    // Named separately from the check above so the failure message says which
+    // rule broke. These four are the ones worth a build failure on their own.
+    const reached = [...reachableFrom(landing)].map((f) => relative(ROOT, f));
+
+    for (const engineFile of ["evaluator.ts", "handclass.ts", "grader.ts", "generator.ts"]) {
+      expect(reached, `src/poker/${engineFile} reaches the landing page`).not.toContain(
+        join("src", "poker", engineFile),
+      );
+    }
   });
 
   it("reaches the solution data ONLY behind a server-only boundary", () => {

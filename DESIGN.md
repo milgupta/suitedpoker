@@ -170,10 +170,17 @@ blunder's 24.8), so the two never read as the same signal.
 Destructive intent is never carried by colour alone: the label says what will
 happen, and anything irreversible confirms first.
 
-### Card suits — a four-colour deck
+### Card suits — a classic two-colour deck
 
-Added in 3.1. Four colours rather than two because it measurably reduces
-beginner misreads, and beginners are the entire audience.
+Added in 3.1 as a FOUR-colour deck (blue diamonds, green clubs) on the argument
+that it reduces beginner misreads. Reversed after looking at it: that is the
+convention a poker room gives its regulars, and to somebody whose only reference
+is a physical deck a blue diamond does not read as a convention, it reads as the
+app being broken. A beginner who has to learn a colour code before they can read
+their own hand has been handed a second problem.
+
+Hearts and diamonds share one red, exactly as a real deck does. The pip shape is
+what tells them apart, and that is discrimination the audience already has.
 
 These are **not** the grade ramp and must never borrow from it: a card is red
 because it is a heart, never because the play was bad. They sit on a white card
@@ -182,8 +189,8 @@ face, so every one is measured against white rather than the canvas.
 | Token | Value | On white |
 |---|---|---|
 | `--suit-hearts` | `#D32F2F` | 4.98 |
-| `--suit-diamonds` | `#1565C0` | 5.75 |
-| `--suit-clubs` | `#2E7D32` | 5.13 |
+| `--suit-diamonds` | `#D32F2F` | 4.98 |
+| `--suit-clubs` | `#14131C` | 18.43 |
 | `--suit-spades` | `#14131C` | 18.43 |
 | `--card-face` | `#FFFFFF` | the brightest object on the table, by design |
 | `--card-back` | `#131A2E` | patterned, never a solid block |

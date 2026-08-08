@@ -8,14 +8,15 @@ import { limit, RULES } from "@/lib/ratelimit";
 import { putSession } from "@/lib/sessionstore";
 import { loadSolutionData } from "@/lib/solution-data";
 import { generateSpot, toClientSpot } from "@/poker/generator";
-import { grade as gradePreflop } from "@/poker/grader";
-import { nodeRefOf, type PreflopActionName } from "@/poker/solutions";
+import { nodeRefOf } from "@/poker/solutions";
+import type { HandKey } from "@/poker/range";
 import { tierOf } from "@/lib/explain-policy";
 import {
   demoSeedFor,
+  demoSpotCandidates,
   demoSpotFor,
-  isDemoWorthy,
-  MAX_SEED_ATTEMPTS,
+  mixedHandsAt,
+  pickMixedHand,
   type DemoHandRecord,
 } from "@/lib/demo-hand";
 import { SPOT_TTL_SECONDS } from "../../drills/next/route";
@@ -55,55 +56,49 @@ export const POST = withAuth(async (_request, auth) => {
   }
 
   const tier = tierOf(profile?.skillTier);
-  const choice = demoSpotFor(auth.userId, tier);
   const data = loadSolutionData();
+  const seed = demoSeedFor(auth.userId);
 
   /**
-   * Walk seeds until the sampler lands on a hand whose strategy is genuinely
-   * mixed.
+   * Pick the hand, then build the spot around it.
    *
-   * A pure spot defeats the demo entirely: the frequency capsules would show
-   * one bar at 100% and the user would conclude this is another right/wrong
-   * app, which is what every competitor already is. The walk is deterministic,
-   * so a refresh reproduces the same hand rather than rerolling for an easier
-   * one.
+   * The previous version did the opposite: generate a spot, check whether the
+   * sampled hand happened to be mixed, retry 24 times. Mixed hands are 2-4% of
+   * an RFI node, so that found one about half the time and 503'd otherwise —
+   * and never at all for the `never` tier, whose users are the whole audience
+   * for this screen. Enumerating first cannot fail for a node that has any
+   * mixed hand, and it is one pass instead of twenty-four.
    */
   let spot: ReturnType<typeof generateSpot> | null = null;
-  let seed = "";
+  let choice = demoSpotFor(auth.userId, tier);
 
-  for (let attempt = 0; attempt < MAX_SEED_ATTEMPTS; attempt++) {
-    const candidateSeed = demoSeedFor(auth.userId, attempt);
-    const candidate = generateSpot(
-      {
-        type: "preflop",
-        heroPos: choice.heroPos,
-        actionSeq: choice.actionSeq,
-        difficulty: choice.difficulty,
-      },
-      data,
-      candidateSeed,
-    );
-
-    const node = data.preflop.find((n) => nodeRefOf(n.heroPos, n.actionSeq) === candidate.nodeRef);
+  for (const candidate of demoSpotCandidates(auth.userId, tier)) {
+    const ref = nodeRefOf(candidate.heroPos, candidate.actionSeq);
+    const node = data.preflop.find((n) => n.ref === ref);
     if (node === undefined) continue;
 
-    // Grade against the top action purely to read the display mode out.
-    const probe = gradePreflop(
-      node,
-      candidate.handKey,
-      candidate.legalActions[0] as PreflopActionName,
+    const handKey = pickMixedHand(mixedHandsAt(node.strategy), auth.userId);
+    if (handKey === null) continue;
+
+    spot = generateSpot(
+      {
+        type: "preflop",
+        heroPos: candidate.heroPos,
+        actionSeq: candidate.actionSeq,
+        difficulty: candidate.difficulty,
+        forceHandKey: handKey as HandKey,
+      },
+      data,
+      seed,
     );
-    if (isDemoWorthy(probe.displayMode, probe.topFreq)) {
-      spot = candidate;
-      seed = candidateSeed;
-      break;
-    }
+    choice = candidate;
+    break;
   }
 
   if (spot === null) {
-    // Every shortlisted node has mixed hands, so this means the data changed
-    // under us. Better to say so than to serve a pure spot as the demo.
-    console.error(`[demo-hand] no mixed spot for ${choice.id} after ${MAX_SEED_ATTEMPTS} seeds`);
+    // Not one shortlisted node has a mixed hand, which means the solution data
+    // changed shape under us. Better to say so than to serve a pure spot.
+    console.error(`[demo-hand] no mixed hand at any shortlisted node (tier ${tier})`);
     return NextResponse.json({ error: "no_demo_spot" }, { status: 503 });
   }
 

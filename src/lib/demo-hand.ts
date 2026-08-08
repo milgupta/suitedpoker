@@ -130,8 +130,7 @@ function hashOf(text: string): number {
  * same hand rather than shopping for an easier one.
  */
 export function demoSpotFor(userId: string, skillTier: SkillTier): DemoSpot {
-  const pool = SHORTLIST[skillTier];
-  const spot = pool[hashOf(userId) % pool.length];
+  const spot = demoSpotCandidates(userId, skillTier)[0];
   // The record is exhaustive over SkillTier and every pool is non-empty, but
   // noUncheckedIndexedAccess is right to make this explicit.
   if (spot === undefined) throw new Error(`no demo spot for tier ${skillTier}`);
@@ -139,18 +138,66 @@ export function demoSpotFor(userId: string, skillTier: SkillTier): DemoSpot {
 }
 
 /**
- * The seed for attempt `attempt` at this user's spot.
+ * Every spot this user could be dealt, best first.
  *
- * Deterministic in the user id, so a refresh deals the same hand — but walkable,
- * because the node's sampler may land on a hand whose strategy is pure, and a
- * pure spot is exactly the demo that does not work.
+ * Their tier's pool comes first, rotated by user id; the rest of the shortlist
+ * follows as a fallback. A node whose data changes to all-pure must degrade to
+ * a slightly-off-tier hand, never to an error screen — the alternative is what
+ * shipped: "Couldn't deal a hand" as the first thing a beginner sees.
  */
-export function demoSeedFor(userId: string, attempt: number): string {
+export function demoSpotCandidates(userId: string, skillTier: SkillTier): readonly DemoSpot[] {
+  const pool = SHORTLIST[skillTier];
+  const start = hashOf(userId) % pool.length;
+  const rotated = [...pool.slice(start), ...pool.slice(0, start)];
+  const rest = ALL_DEMO_SPOTS.filter((s) => !rotated.some((r) => r.id === s.id));
+  return [...rotated, ...rest];
+}
+
+/**
+ * The seed for this user's spot. Deterministic, so a refresh deals the same
+ * hand rather than rerolling for an easier one.
+ */
+export function demoSeedFor(userId: string, attempt = 0): string {
   return `demo:${userId}:${attempt}`;
 }
 
-/** How many seeds to try before giving up on finding a mixed hand. */
+/**
+ * @deprecated The seed walk is gone — see `pickMixedHand`. Kept only so the
+ * old signature does not silently change meaning if something still calls it.
+ */
 export const MAX_SEED_ATTEMPTS = 24;
+
+/**
+ * The mixed hands at a node, in a stable order.
+ *
+ * THIS REPLACED A SEED WALK, AND THAT WAS A REAL OUTAGE. The route used to
+ * generate a spot, check whether the sampled hand happened to be mixed, and
+ * retry up to 24 times. Mixed hands are 2-4% of an RFI node, so the walk found
+ * one roughly half the time and returned 503 the rest — for the `never` tier,
+ * every single time. Beginners are the entire audience for this screen.
+ *
+ * Sampling is the wrong algorithm when the caller already knows which hands
+ * qualify. Enumerate, then choose.
+ *
+ * Sorted, because object key order is not a contract and the choice has to be
+ * reproducible across processes.
+ */
+export function mixedHandsAt(strategy: Record<string, Record<string, number>>): readonly string[] {
+  const mixed: string[] = [];
+  for (const [handKey, actions] of Object.entries(strategy)) {
+    const freqs = Object.values(actions);
+    if (freqs.length < 2) continue;
+    const top = Math.max(...freqs);
+    if (top <= MAX_DEMO_TOP_FREQ) mixed.push(handKey);
+  }
+  return mixed.sort();
+}
+
+/** Which of the mixed hands this user gets. Deterministic in the user id. */
+export function pickMixedHand(mixed: readonly string[], userId: string): string | null {
+  if (mixed.length === 0) return null;
+  return mixed[hashOf(`hand:${userId}`) % mixed.length] ?? null;
+}
 
 /**
  * The top action must leave a VISIBLE second bar.
@@ -246,10 +293,10 @@ export function demoHandDetail(record: DemoHandRecord): string {
   const times = timesPerHour(nodeSeqOf(record.nodeRef));
 
   if (record.evLoss <= 0) {
-    return `A solver ${bestVerb} it ${percent}% of the time — you found it, and you'll face this exact spot roughly ${times} times an hour.`;
+    return `A solver ${bestVerb} it ${percent}% of the time. You found it, and you'll face this exact spot roughly ${times} times an hour.`;
   }
 
-  return `A solver ${bestVerb} it ${percent}% of the time — that ${nounOf(record.chosenAction)} costs about ${record.evLoss.toFixed(1)}bb every time it happens, and you'll face this exact spot roughly ${times} times an hour.`;
+  return `A solver ${bestVerb} it ${percent}% of the time. That ${nounOf(record.chosenAction)} costs about ${record.evLoss.toFixed(1)}bb every time it happens, and you'll face this exact spot roughly ${times} times an hour.`;
 }
 
 function nodeSeqOf(nodeRef: string): string {
@@ -298,9 +345,10 @@ export function nounOf(action: string): string {
 
 /** The framing screen, before the hand. */
 export const DEMO_INTRO = {
-  heading: "Before we build your plan — one hand.",
+  heading: "Before we build your plan, one hand.",
   body: "No right or wrong. I just want to see how you think.",
   cta: "Deal me in",
+  skip: "Skip this",
 } as const;
 
 /** The single way out, after the hand. */

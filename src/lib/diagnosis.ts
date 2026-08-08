@@ -108,7 +108,7 @@ const LEAK_TAG_LABEL: Record<string, string> = {
 const GOAL_LINE: Record<string, string> = {
   stop_losing: "You said you want to stop losing. This is the leak doing the losing.",
   beat_friends:
-    "You said you want to beat your friends. They have this leak too — the first to fix it wins.",
+    "You said you want to beat your friends. They have this leak too, and the first to fix it wins.",
   move_up: "You said you want to move up. This leak is what the next stake punishes hardest.",
   serious: "You said you want to take poker seriously. This is the first serious thing to fix.",
 };
@@ -166,8 +166,6 @@ export interface Diagnosis {
   /** Their own Q6 picks, humanised — "also on the list". Empty when none. */
   readonly alsoFixing: readonly string[];
   readonly goalLine: string | null;
-  /** Present only when they told us about a hand. */
-  readonly handLine: string | null;
 }
 
 /** Rounds a dollar estimate to a figure that reads as an estimate. */
@@ -221,7 +219,6 @@ export function buildDiagnosis(answers: Answers): Diagnosis {
     .filter((label): label is string => label !== undefined)
     .slice(0, 3);
 
-  const hand = (answers.hand ?? "").trim();
   const pain = painEcho(answers);
 
   return {
@@ -239,11 +236,5 @@ export function buildDiagnosis(answers: Answers): Diagnosis {
     fixFirst: LEAK_FIX_FIRST[leakKey] ?? LEAK_FIX_FIRST.preflop_ranges!,
     alsoFixing,
     goalLine: GOAL_LINE[answers.goal ?? ""] ?? null,
-    handLine:
-      hand === ""
-        ? null
-        : pain === null
-          ? "That hand you told us about? Leaks like this are usually why it went the way it did."
-          : `That hand you told us about? Players who ${pain} lose that exact spot every session.`,
   };
 }

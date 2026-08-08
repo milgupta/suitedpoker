@@ -7,8 +7,9 @@ import type { ClientSpot } from "@/poker/generator";
 import type { Grade } from "@/poker/grader";
 import { Button } from "@/components/ui/button";
 import { Shimmer } from "@/components/motion";
-import { Explanation, Feedback, FrequencyCapsules, PlayingCard } from "@/components/poker";
+import { Explanation, Feedback, FrequencyCapsules, SpotTable } from "@/components/poker";
 import { capture } from "@/lib/analytics-client";
+import { actionLabel } from "@/lib/action-label";
 import { fadeUp } from "@/lib/motion";
 import { DEMO_INTRO, DEMO_OUTRO_CTA } from "@/lib/demo-hand";
 
@@ -60,7 +61,7 @@ export function HandClient() {
         return;
       }
       if (!response.ok) {
-        setError("Couldn't deal a hand. You can skip ahead — nothing is lost.");
+        setError("Couldn't deal a hand. You can skip ahead, nothing is lost.");
         return;
       }
 
@@ -71,7 +72,7 @@ export function HandClient() {
       startedAt.current = performance.now();
       capture("demo_hand_shown", {});
     } catch {
-      setError("Couldn't reach the server. You can skip ahead — nothing is lost.");
+      setError("Couldn't reach the server. You can skip ahead, nothing is lost.");
     }
   }, [router]);
 
@@ -93,7 +94,7 @@ export function HandClient() {
         });
 
         if (!response.ok) {
-          setError("That hand couldn't be graded. Carry on — nothing is lost.");
+          setError("That hand couldn't be graded. Carry on, nothing is lost.");
           return;
         }
 
@@ -108,7 +109,7 @@ export function HandClient() {
           timeMs,
         });
       } catch {
-        setError("That hand couldn't be graded. Carry on — nothing is lost.");
+        setError("That hand couldn't be graded. Carry on, nothing is lost.");
       }
     },
     [spotId, result],
@@ -154,8 +155,10 @@ export function HandClient() {
         )}
 
         <div className="flex flex-col gap-3">
+          {/* accent, not primary: this is the one lit control on the screen,
+              and a white pill on near-black read as an empty box. */}
           <Button
-            variant="primary"
+            variant="accent"
             size="lg"
             className="w-full"
             onClick={() => void deal()}
@@ -163,11 +166,12 @@ export function HandClient() {
           >
             {DEMO_INTRO.cta}
           </Button>
-          {error !== "" && (
-            <Button variant="ghost" onClick={finish}>
-              Skip ahead
-            </Button>
-          )}
+          {/* Always offered, not only after a failure. A forced step this late
+              in the funnel is friction, and someone who does not want to play
+              a hand still converts on the diagnosis. */}
+          <Button variant="ghost" onClick={finish} data-testid="skip-hand">
+            {DEMO_INTRO.skip}
+          </Button>
         </div>
       </motion.div>
     );
@@ -180,25 +184,26 @@ export function HandClient() {
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-5">
       {/* The hand itself, rendered with the same components the paid product
-          uses. Swapping in a lighter mock here would make the demo a lie. */}
-      <div className="border-border bg-surface-1 flex flex-col items-center gap-3 rounded-lg border p-5">
-        <p className="text-text-tertiary text-body-sm font-mono">
-          {spot.heroPos} · {spot.potBb}BB pot · {spot.effStackBb}BB eff
-        </p>
-        {spot.actionHistory.length > 0 && (
-          <p className="text-text-secondary text-body-md">{spot.actionHistory.join(" · ")}</p>
+          uses — the same table, the same cards. Swapping in a lighter mock here
+          would make the demo a lie, and this is the one hand that decides
+          whether anybody pays. */}
+      <div className="flex flex-col gap-3">
+        <SpotTable
+          seats={spot.seats}
+          heroPos={spot.heroPos}
+          heroCards={spot.heroCards}
+          board={spot.board}
+          potBb={spot.potBb}
+          effStackBb={spot.effStackBb}
+          actionHistory={spot.actionHistory}
+        />
+        {/* Only when there is a SEQUENCE — with one action the seat chip on
+            the table already says it. */}
+        {spot.actionHistory.length > 1 && (
+          <p className="text-text-tertiary text-caption text-center">
+            {spot.actionHistory.join(" · ")}
+          </p>
         )}
-        <div className="flex gap-2">
-          {spot.heroCards.map((card, i) => (
-            <PlayingCard
-              key={i}
-              card={card}
-              size="lg"
-              index={i}
-              dealCount={spot.heroCards.length}
-            />
-          ))}
-        </div>
       </div>
 
       {result !== null && (
@@ -219,7 +224,7 @@ export function HandClient() {
             onClick={() => void answer(action)}
             className="w-full"
           >
-            {action}
+            {actionLabel(action)}
           </Button>
         ))}
       </div>

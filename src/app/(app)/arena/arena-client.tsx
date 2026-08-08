@@ -14,13 +14,14 @@ import {
   Feedback,
   FrequencyCapsules,
   HintButton,
-  PlayingCard,
+  SpotTable,
 } from "@/components/poker";
 import type { HintLine } from "@/components/poker";
 import type { HintLevel } from "@/lib/hints";
 import { parseArenaPreset, type ArenaPreset } from "@/lib/arena-preset";
 import { capture } from "@/lib/analytics-client";
 import { GRADES } from "@/lib/grade";
+import { actionLabel } from "@/lib/action-label";
 import { evColor } from "@/lib/ev-color";
 
 interface Answered {
@@ -237,12 +238,21 @@ export function ArenaClient() {
           .sort((a, b) => b.freq - a.freq);
 
   return (
-    <div className="flex flex-col gap-5">
-      {/* Session HUD */}
-      <div className="border-border bg-surface-1 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border px-4 py-3">
+    <div className="flex flex-col gap-4">
+      {/*
+       * The session HUD, as ONE quiet line rather than a bordered card of five
+       * stat tiles.
+       *
+       * It used to be a filled box taking the top sixth of the screen, and at
+       * the start of a session every figure in it was a zero — so the largest,
+       * most structured object above the hand was a box of nothing. The hand is
+       * what the screen is for; the running totals are glanceable context and
+       * should look like it.
+       */}
+      <div className="text-text-tertiary flex flex-wrap items-baseline gap-x-4 gap-y-1">
         {preset.label !== undefined && (
-          <span className="border-accent text-accent-bright text-caption rounded-full border px-3 py-1">
-            Practising: {preset.label}
+          <span className="border-accent text-accent-bright text-caption rounded-full border px-3 py-0.5">
+            {preset.label}
           </span>
         )}
         <Hud label="Hands" value={hands} />
@@ -251,7 +261,7 @@ export function ArenaClient() {
         <Hud label="Streak" value={streak} />
         <Hud label="Sharp" value={sharpCount} />
         {preset.length !== undefined && (
-          <span className="text-text-tertiary text-caption font-mono">
+          <span className="text-caption font-mono">
             {hands} / {preset.length}
           </span>
         )}
@@ -304,7 +314,7 @@ export function ArenaClient() {
                     : undefined
                 }
               >
-                {action}
+                {actionLabel(action)}
               </Button>
             ))}
           </div>
@@ -372,10 +382,12 @@ function Hud({
   decimals?: number;
   suffix?: string;
 }) {
+  // Label and figure on ONE baseline. Stacked, five of these are five two-line
+  // columns and the eye reads a table where there is only a status line.
   return (
-    <span className="flex flex-col">
-      <span className="text-overline text-text-tertiary uppercase">{label}</span>
-      <span className="text-body-md font-mono font-semibold tabular-nums">
+    <span className="flex items-baseline gap-1.5">
+      <span className="text-overline uppercase">{label}</span>
+      <span className="text-text-secondary text-caption font-mono font-semibold tabular-nums">
         <AnimatedNumber value={value} decimals={decimals} suffix={suffix} />
       </span>
     </span>
@@ -385,38 +397,35 @@ function Hud({
 function SpotView({ spot }: { spot: ClientSpot }) {
   /**
    * `Card` is a branded NUMBER, so it survives JSON as a number and needs no
-   * parsing. The previous version stringified each card and fed the result back
+   * parsing. A previous version stringified each card and fed the result back
    * through `cardsFromString`, which turned card 36 into the token "36" and
    * threw "not a card" — crashing the whole arena into its error boundary.
+   *
+   * The spot is drawn as a TABLE. It used to be a box of text with the action
+   * history as one prose line; see the note at the top of SpotTable for why
+   * that was the wrong presentation of a poker hand.
    */
-  const hero = spot.heroCards;
-
   return (
-    <div className="border-border bg-surface-1 flex flex-col items-center gap-4 rounded-lg border p-5">
-      <div className="text-text-tertiary text-caption flex flex-wrap justify-center gap-x-4 font-mono">
-        <span>{spot.heroPos}</span>
-        <span>{spot.potBb.toFixed(1)}BB pot</span>
-        <span>{spot.effStackBb.toFixed(0)}BB eff</span>
-      </div>
+    <div className="flex flex-col gap-3">
+      <SpotTable
+        seats={spot.seats}
+        heroPos={spot.heroPos}
+        heroCards={spot.heroCards}
+        board={spot.board}
+        potBb={spot.potBb}
+        effStackBb={spot.effStackBb}
+        actionHistory={spot.actionHistory}
+      />
 
-      {spot.actionHistory.length > 0 && (
-        <p className="text-text-secondary text-body-sm text-center">
+      {/* The ordered sequence still has a home. The seat chips say who did
+          what; this says in what order, which the ring cannot show. */}
+      {/* Only when there is a SEQUENCE. With one action the seat chip already
+          says it, and repeating it underneath is the wall of text this screen
+          was rebuilt to get rid of. */}
+      {spot.actionHistory.length > 1 && (
+        <p className="text-text-tertiary text-caption text-center">
           {spot.actionHistory.join(" · ")}
         </p>
-      )}
-
-      <div className="flex gap-2">
-        {hero.map((card, i) => (
-          <PlayingCard key={i} card={card} size="lg" index={i} dealCount={hero.length} />
-        ))}
-      </div>
-
-      {spot.board.length > 0 && (
-        <div className="flex gap-2">
-          {spot.board.map((card, i) => (
-            <PlayingCard key={i} card={card} size="md" index={i} dealCount={spot.board.length} />
-          ))}
-        </div>
       )}
     </div>
   );

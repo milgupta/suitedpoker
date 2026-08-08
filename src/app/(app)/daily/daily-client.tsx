@@ -8,9 +8,10 @@ import { GradeBadge } from "@/components/ui/grade-badge";
 import { Streak } from "@/components/ui/streak";
 import { SegmentedMeter } from "@/components/ui/segmented-meter";
 import { AnimatedNumber, Shimmer } from "@/components/motion";
-import { Feedback, PlayingCard } from "@/components/poker";
+import { Feedback, SpotTable } from "@/components/poker";
 import { buildShareText, MAX_DAILY_SCORE, type DailySpotResult } from "@/lib/daily";
 import { capture } from "@/lib/analytics-client";
+import { actionLabel } from "@/lib/action-label";
 
 /**
  * Module scope: the React Compiler treats a Date.now() inside a component as an
@@ -184,28 +185,31 @@ export function DailyClient() {
 
       {spot !== undefined && (
         <>
-          <div className="border-border bg-surface-1 flex flex-col items-center gap-4 rounded-lg border p-5">
-            <div className="text-text-tertiary text-caption flex gap-4 font-mono">
-              <span>{spot.heroPos}</span>
-              <span>{spot.potBb.toFixed(1)}BB pot</span>
-            </div>
-            {spot.actionHistory.length > 0 && (
-              <p className="text-text-secondary text-body-sm text-center">
+          {/*
+            Drawn as a table, the same as the arena — a daily spot is a drill
+            spot and there is no reason for the two to look like two products.
+
+            `Card` is a BRANDED NUMBER and already the right type on the wire.
+            Stringifying each one and feeding it back through cardsFromString
+            threw `not a card: "43"` and blanked the whole daily behind the
+            error boundary. 7.1 fixed exactly this in the arena; the same line
+            survived here. SpotTable takes the cards as they arrive.
+          */}
+          <div className="flex flex-col gap-3">
+            <SpotTable
+              seats={spot.seats}
+              heroPos={spot.heroPos}
+              heroCards={spot.heroCards}
+              board={spot.board}
+              potBb={spot.potBb}
+              effStackBb={spot.effStackBb}
+              actionHistory={spot.actionHistory}
+            />
+            {spot.actionHistory.length > 1 && (
+              <p className="text-text-tertiary text-caption text-center">
                 {spot.actionHistory.join(" · ")}
               </p>
             )}
-            <div className="flex gap-2">
-              {/*
-                `Card` is a BRANDED NUMBER and already the right type on the
-                wire. Stringifying each one and feeding it back through
-                cardsFromString threw `not a card: "43"` and blanked the whole
-                daily behind the error boundary. 7.1 fixed exactly this in the
-                arena; the same line survived here.
-              */}
-              {spot.heroCards.map((card, i) => (
-                <PlayingCard key={i} card={card} size="lg" index={i} dealCount={2} />
-              ))}
-            </div>
           </div>
 
           <div
@@ -221,7 +225,7 @@ export function DailyClient() {
                 onClick={() => void answer(action)}
                 className="w-full"
               >
-                {action}
+                {actionLabel(action)}
               </Button>
             ))}
           </div>

@@ -8,6 +8,7 @@ import { capture } from "@/lib/analytics-client";
 import { trackDeduplicated } from "@/lib/meta-client";
 import { SPRING } from "@/lib/motion";
 import {
+  isChartStep,
   progressAt,
   questionAt,
   resumeIndex,
@@ -15,6 +16,7 @@ import {
   type Answers,
   type Question,
 } from "@/lib/onboarding";
+import { ComparisonChart } from "@/components/onboarding/ComparisonChart";
 import { cn } from "@/lib/utils";
 
 /**
@@ -161,7 +163,8 @@ export function OnboardingClient({ initialAnswers }: OnboardingClientProps) {
     );
   }
 
-  if (question === undefined) return null;
+  const chart = isChartStep(step);
+  if (question === undefined && !chart) return null;
 
   return (
     <div
@@ -208,54 +211,52 @@ export function OnboardingClient({ initialAnswers }: OnboardingClientProps) {
       </div>
 
       <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key={question.id}
-          {...slide}
-          transition={reduced ? { duration: 0 } : SPRING.smooth}
-          className="flex flex-1 flex-col gap-6"
-        >
-          {/* Left-aligned: you are answering. Interstitials centre theirs. */}
-          <h1 className="text-display-md text-left">{question.prompt(answers)}</h1>
-          {question.hint !== undefined && (
-            <p className="text-text-tertiary text-body-sm -mt-4">{question.hint}</p>
-          )}
+        {chart ? (
+          <motion.div
+            key="chart"
+            {...slide}
+            transition={reduced ? { duration: 0 } : SPRING.smooth}
+            className="flex flex-1 flex-col"
+          >
+            <ComparisonChart onContinue={() => goTo(step + 1, 1)} />
+          </motion.div>
+        ) : (
+          <motion.div
+            key={question!.id}
+            {...slide}
+            transition={reduced ? { duration: 0 } : SPRING.smooth}
+            className="flex flex-1 flex-col gap-6"
+          >
+            {/* Left-aligned: you are answering. Interstitials centre theirs. */}
+            <h1 className="text-display-md text-left">{question!.prompt(answers)}</h1>
+            {question!.hint !== undefined && (
+              <p className="text-text-tertiary text-body-sm -mt-4">{question!.hint}</p>
+            )}
 
-          {question.kind === "text" ? (
-            <FreeText
-              question={question}
-              label={question.prompt(answers)}
-              value={answers.hand ?? ""}
-              busy={busy}
-              onChange={(value) => setAnswers((a) => ({ ...a, hand: value }))}
-              onSubmit={(value) => {
-                void record("hand", value);
-                void finish({ ...answers, hand: value });
-              }}
-              onSkip={() => void finish(answers)}
-            />
-          ) : question.kind === "multi" ? (
-            <MultiSelect
-              question={question}
-              label={question.prompt(answers)}
-              selected={answers.leaks ?? []}
-              onToggle={(value) => {
-                const current = answers.leaks ?? [];
-                const next = current.includes(value)
-                  ? current.filter((v) => v !== value)
-                  : [...current, value];
-                void record("leaks", next);
-              }}
-              onContinue={() => goTo(step + 1, 1)}
-            />
-          ) : (
-            <SingleSelect
-              question={question}
-              label={question.prompt(answers)}
-              selected={answers[question.id] as string | undefined}
-              onSelect={(value) => selectSingle(question.id, value)}
-            />
-          )}
-        </motion.div>
+            {question!.kind === "multi" ? (
+              <MultiSelect
+                question={question!}
+                label={question!.prompt(answers)}
+                selected={answers.leaks ?? []}
+                onToggle={(value) => {
+                  const current = answers.leaks ?? [];
+                  const next = current.includes(value)
+                    ? current.filter((v) => v !== value)
+                    : [...current, value];
+                  void record("leaks", next);
+                }}
+                onContinue={() => goTo(step + 1, 1)}
+              />
+            ) : (
+              <SingleSelect
+                question={question!}
+                label={question!.prompt(answers)}
+                selected={answers[question!.id] as string | undefined}
+                onSelect={(value) => selectSingle(question!.id, value)}
+              />
+            )}
+          </motion.div>
+        )}
       </AnimatePresence>
 
       <p className="text-text-tertiary text-caption text-center italic">{FOOTER}</p>
@@ -386,54 +387,6 @@ function MultiSelect({
           onClick={onContinue}
         >
           Continue
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function FreeText({
-  question,
-  label,
-  value,
-  busy,
-  onChange,
-  onSubmit,
-  onSkip,
-}: {
-  question: Question;
-  label: string;
-  value: string;
-  busy: boolean;
-  onChange: (value: string) => void;
-  onSubmit: (value: string) => void;
-  onSkip: () => void;
-}) {
-  return (
-    <div className="flex flex-1 flex-col gap-3">
-      <textarea
-        aria-label={label}
-        placeholder={question.placeholder}
-        value={value}
-        maxLength={500}
-        rows={4}
-        onChange={(event) => onChange(event.target.value)}
-        className="border-border bg-surface-1 text-body-lg focus:border-accent w-full resize-none rounded-lg border px-4 py-3 outline-none"
-      />
-
-      <div className="mt-auto flex flex-col gap-2 pt-4">
-        <Button
-          variant="accent"
-          size="lg"
-          className="w-full"
-          loading={busy}
-          onClick={() => onSubmit(value)}
-        >
-          Show me my leak
-        </Button>
-        {/* Optional means optional. A skip that costs a hunt is not one. */}
-        <Button variant="bare" size="sm" className="w-full" disabled={busy} onClick={onSkip}>
-          Skip
         </Button>
       </div>
     </div>

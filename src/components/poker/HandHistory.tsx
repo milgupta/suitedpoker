@@ -30,7 +30,7 @@ const STREET_LABEL: Record<Street, string> = {
   showdown: "Showdown",
 };
 
-/** Board cards inline, in the four-colour deck. */
+/** Board cards inline, in the same deck the table uses. */
 function BoardCards({ cards }: { cards: readonly Card[] }) {
   return (
     <span className="ml-3 inline-flex gap-1.5 font-mono">

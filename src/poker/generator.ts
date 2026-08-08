@@ -40,6 +40,18 @@ export interface SpotConfig {
   templateId?: string;
   /** Node refs already shown this session, so a user never repeats a spot. */
   excludeNodeRefs?: string[];
+  /**
+   * Deal this exact hand rather than sampling for one.
+   *
+   * The sampler is right for drills: a spot the user cannot predict is the
+   * whole point. It is wrong when the CALLER has already decided which hands
+   * qualify — the demo hand needs a genuinely mixed strategy, and mixed hands
+   * are only 2-4% of an RFI node, so sampling and retrying found one about
+   * half the time and 503'd the rest.
+   *
+   * Server-side only. Nothing reachable from a request body sets it.
+   */
+  forceHandKey?: HandKey;
 }
 
 export interface SeatView {
@@ -301,7 +313,22 @@ function generatePreflop(config: SpotConfig, data: SolutionData, rng: Rng, seed:
   // difficulty. Sampling once and hoping would make `difficulty` decorative.
   const target = config.difficulty;
   let best: { handKey: HandKey; difficulty: number } | null = null;
-  const draws = target === undefined ? 1 : 12;
+  const forced = config.forceHandKey;
+  const draws = forced !== undefined ? 0 : target === undefined ? 1 : 12;
+
+  if (forced !== undefined) {
+    const strategy = getStrategy(node, forced);
+    best = {
+      handKey: forced,
+      difficulty: difficultyOf({
+        entropy: strategyEntropy(node.actions.map((a) => strategy[a] ?? 0)),
+        evGap: evGapOf(node, forced),
+        street: "preflop",
+        classAmbiguity: 0,
+      }),
+    };
+  }
+
   for (let i = 0; i < draws; i++) {
     const handKey = sampleInstructiveHand(node, rng);
     const strategy = getStrategy(node, handKey);

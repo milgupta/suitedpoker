@@ -8,6 +8,7 @@ import { limit, RULES } from "@/lib/ratelimit";
 import { getSession, putSession } from "@/lib/sessionstore";
 import { loadSolutionData } from "@/lib/solution-data";
 import { generateSpot } from "@/poker/generator";
+import type { HandKey } from "@/poker/range";
 import { grade as gradePreflop } from "@/poker/grader";
 import { nodeRefOf, type PreflopActionName } from "@/poker/solutions";
 import { spotConfigSchema } from "@/lib/arena-preset";
@@ -23,7 +24,7 @@ const bodySchema = z.object({
 interface StoredSpot {
   seed: string;
   nodeRef: string;
-  handKey: string;
+  handKey: HandKey;
   config: z.infer<typeof spotConfigSchema>;
   answered: boolean;
   demo?: boolean;
@@ -89,7 +90,20 @@ export const POST = withAuth(async (request, auth) => {
     return NextResponse.json({ error: "illegal_action" }, { status: 400 });
   }
 
-  const result = gradePreflop(node, spot.handKey, parsed.data.action as PreflopActionName);
+  /**
+   * GRADE THE STORED HAND, NOT THE REGENERATED ONE.
+   *
+   * The deal route CHOOSES its hand (it needs a mixed strategy, and mixed hands
+   * are a few percent of a node), so regenerating from the config alone
+   * re-samples and lands somewhere else — which graded a different hand than
+   * the one the user was looking at, usually a pure one. The e2e caught it as
+   * "the demo served a pure spot".
+   *
+   * `stored.handKey` is written server-side at deal time and is the only record
+   * of what was actually on screen. It is also the authoritative one: it cannot
+   * be influenced by the request.
+   */
+  const result = gradePreflop(node, stored.handKey, parsed.data.action as PreflopActionName);
 
   // Burned before the write, so a double submit cannot produce two records.
   await putSession(
@@ -102,7 +116,8 @@ export const POST = withAuth(async (request, auth) => {
 
   const record: DemoHandRecord = {
     nodeRef: spot.nodeRef,
-    handKey: spot.handKey,
+    // Same reason as the grade above: the stored key is what was on screen.
+    handKey: stored.handKey,
     heroPos: spot.heroPos,
     chosenAction: parsed.data.action,
     bestAction: result.bestAction,

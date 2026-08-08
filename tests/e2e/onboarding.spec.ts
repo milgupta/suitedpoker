@@ -67,6 +67,19 @@ async function pick(page: Page, value: string): Promise<void> {
   await page.locator(`[data-value='${value}']`).click();
 }
 
+/**
+ * Step 7 asks nothing: it is the comparison-chart interstitial.
+ *
+ * Its caveat is asserted here rather than only in the happy path, because the
+ * "illustrative, not a guarantee" line is the entire reason a with/without
+ * performance chart is allowed to sit in a pre-purchase funnel at all.
+ */
+async function passChart(page: Page): Promise<void> {
+  await expect(page.locator("[data-chart='comparison']")).toBeVisible();
+  await expect(page.getByText(/Illustrative only/i)).toBeVisible();
+  await page.getByRole("button", { name: "Keep going" }).click();
+}
+
 const PATH = [
   { step: 1, value: "live_1_2" },
   { step: 2, value: "call_too_much" },
@@ -88,7 +101,7 @@ test.describe("onboarding", () => {
     }
   });
 
-  test("completes all eight questions and derives the profile", async ({ page }) => {
+  test("completes every question and derives the profile", async ({ page }) => {
     const { id, email } = await makeUser("full");
     await login(page, email);
     await startQuiz(page);
@@ -107,12 +120,16 @@ test.describe("onboarding", () => {
     await expect(continueButton).toBeEnabled();
     await continueButton.click();
 
+    // Step 7 asks nothing: it is the comparison-chart interstitial. It must
+    // render its caveat, because that caption is the whole reason the screen
+    // is allowed to exist.
     await expect(page.locator("[data-step='7']")).toBeVisible();
-    await pick(page, "10");
+    await expect(page.locator("[data-chart='comparison']")).toBeVisible();
+    await expect(page.getByText(/Illustrative only/i)).toBeVisible();
+    await page.getByRole("button", { name: "Keep going" }).click();
 
     await expect(page.locator("[data-step='8']")).toBeVisible();
-    await page.getByRole("textbox").fill("Folded top pair to a river shove and it still bugs me.");
-    await page.getByRole("button", { name: "Show me my leak" }).click();
+    await pick(page, "10");
 
     // 7.2b: the quiz now hands off to the demo hand, which is what the
     // diagnosis opens with. The hand is the evidence; the quiz is the context.
@@ -134,7 +151,6 @@ test.describe("onboarding", () => {
     expect(onboarding.study).toBe("charts");
     expect(onboarding.leaks).toEqual(["facing_aggression", "bet_sizing"]);
     expect(onboarding.minutes).toBe("10");
-    expect(String(onboarding.hand)).toContain("river shove");
 
     expect(data?.skill_tier).toBe("charts");
     expect(data?.primary_leak_key).toBe("overcalling");
@@ -258,11 +274,12 @@ test.describe("onboarding", () => {
     await page.getByRole("button", { name: "Continue" }).click();
     await page.waitForTimeout(400);
 
-    await assertFits("Q7");
-    await pick(page, "5");
+    await assertFits("the comparison chart");
+    await passChart(page);
     await page.waitForTimeout(400);
 
-    await assertFits("Q8");
+    await assertFits("Q7 (minutes)");
+    await pick(page, "5");
   });
 
   test("every option clears a 44px touch target at 390px", async ({ page }) => {
@@ -313,9 +330,9 @@ test.describe("onboarding", () => {
     await page.locator("[data-value='bluffing']").click();
     await page.getByRole("button", { name: "Continue" }).click();
     await page.waitForTimeout(300);
-    await pick(page, "5");
+    await passChart(page);
     await page.waitForTimeout(300);
-    await page.getByRole("button", { name: "Skip" }).click();
+    await pick(page, "5");
     // 7.2b: the quiz now hands off to the demo hand, which is what the
     // diagnosis opens with. The hand is the evidence; the quiz is the context.
     await expect(page).toHaveURL(/\/onboarding\/hand/);
@@ -325,8 +342,11 @@ test.describe("onboarding", () => {
     expect(elapsed, `took ${elapsed.toFixed(1)}s`).toBeLessThan(75);
   });
 
-  test("the optional last question really is skippable", async ({ page }) => {
-    const { id, email } = await makeUser("skip");
+  test("the chart interstitial is not a dead end", async ({ page }) => {
+    // It asks nothing, so the only way it can fail is by trapping someone. Both
+    // directions have to work: forward to the last question, and back to the
+    // answers they already gave.
+    const { id, email } = await makeUser("chart");
     await login(page, email);
     await startQuiz(page);
 
@@ -337,20 +357,26 @@ test.describe("onboarding", () => {
     await page.locator("[data-value='bluffing']").click();
     await page.getByRole("button", { name: "Continue" }).click();
     await page.waitForTimeout(400);
-    await pick(page, "5");
-    await page.waitForTimeout(400);
 
-    await page.getByRole("button", { name: "Skip" }).click();
-    // 7.2b: the quiz now hands off to the demo hand, which is what the
-    // diagnosis opens with. The hand is the evidence; the quiz is the context.
+    await expect(page.locator("[data-chart='comparison']")).toBeVisible();
+
+    // Back returns to the multi-select with the pick intact.
+    await page.getByRole("button", { name: "Back" }).click();
+    await expect(page.locator("[data-step='6']")).toBeVisible();
+    await page.getByRole("button", { name: "Continue" }).click();
+    await page.waitForTimeout(400);
+    await passChart(page);
+
+    await expect(page.locator("[data-step='8']")).toBeVisible();
+    await pick(page, "5");
     await expect(page).toHaveURL(/\/onboarding\/hand/);
 
-    // Skipping still completes the derivation — it is optional, not required.
     const { data } = await admin
       .from("profiles")
-      .select("skill_tier, primary_leak_key, rating")
+      .select("skill_tier, rating")
       .eq("id", id)
       .single();
+    console.log(`AFTER CHART DETOUR: ${JSON.stringify(data)}`);
     expect(data?.skill_tier).toBe("charts");
     expect(data?.rating).toBe(1000);
   });

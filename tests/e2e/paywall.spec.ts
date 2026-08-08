@@ -72,9 +72,12 @@ test.describe("paywall", () => {
     await expect(page.locator("[data-plan=monthly]")).toHaveAttribute("data-selected", "false");
     await expect(page.getByText("Save 75%")).toBeVisible();
 
-    // Both the per-week headline and the real billed price.
-    await expect(page.getByText("$2.31", { exact: false })).toBeVisible();
+    // Both the per-MONTH headline and the real billed price. A monthly figure
+    // is the one a subscriber can check against their own bank statement;
+    // per-week reads smaller and is the standard trick.
+    await expect(page.getByText("$10.00", { exact: false })).toBeVisible();
     await expect(page.getByText("$119.99", { exact: false }).first()).toBeVisible();
+    await expect(page.getByText("billed yearly", { exact: false })).toBeVisible();
 
     // Every card carries a real radio, not just a border weight.
     expect(await page.getByRole("radio").count()).toBe(2);
@@ -116,11 +119,79 @@ test.describe("paywall", () => {
     }
   });
 
-  test("names no fabricated testimonial", async ({ page }) => {
+  test("attributes nothing to a person who is not in the data file", async ({ page }) => {
+    // The rendered half of the guarantee in tests/unit/testimonials.test.ts.
+    // The proof band slides quotes when TESTIMONIALS has any and product facts
+    // when it does not — so with the list empty, an attributed quote appearing
+    // on the payment screen means somebody hand-wrote one into the markup.
     const { email } = await makeUser("testimonial");
     await login(page, email);
-    const text = await page.locator("body").innerText();
-    expect(text).toContain("Testimonial slot");
+
+    const mode = await page.locator("[data-proof]").first().getAttribute("data-proof");
+    expect(mode, "no proof band rendered").not.toBeNull();
+
+    if (mode === "points") {
+      const text = await page.locator("body").innerText();
+      // A dash-attribution or a quoted sentence is what a testimonial looks
+      // like. Neither can be on the page while the data file is empty.
+      expect(text, "an attributed quote with no source behind it").not.toMatch(
+        /[“"][^”"]{20,}[”"]\s*[—–-]\s*[A-Z]/,
+      );
+    }
+  });
+
+  test("the proof band is stoppable and slides", async ({ page }) => {
+    const { email } = await makeUser("marquee");
+    await login(page, email);
+
+    const track = page.locator("[data-proof] .marquee-track").first();
+    await expect(track).toBeVisible();
+
+    // Moving: the animation is named and running, and the track is wider than
+    // its mask so there is something to move.
+    const state = await track.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return {
+        name: style.animationName,
+        playState: style.animationPlayState,
+        seconds: parseFloat(style.animationDuration),
+        overflows: el.scrollWidth > (el.parentElement?.clientWidth ?? 0),
+      };
+    });
+    expect(state.name).toBe("marquee");
+    expect(state.playState).toBe("running");
+    expect(state.overflows, "the track is not wide enough to loop").toBe(true);
+    // Slow on purpose. A payment screen is the wrong place to make someone
+    // chase a line of text.
+    expect(state.seconds).toBeGreaterThanOrEqual(30);
+
+    // Stoppable: anything moving that carries words has to be.
+    await page.locator("[data-proof]").first().hover();
+    await expect
+      .poll(() => track.evaluate((el) => getComputedStyle(el).animationPlayState))
+      .toBe("paused");
+  });
+
+  test("the proof band does not animate under reduced motion", async ({ browser }) => {
+    const context = await browser.newContext({ reducedMotion: "reduce" });
+    const page = await context.newPage();
+    const { email } = await makeUser("marqreduce");
+    await login(page, email);
+
+    const track = page.locator("[data-proof] .marquee-track").first();
+    await expect(track).toBeVisible();
+
+    // No animation at all rather than a fast one — and the band must scroll by
+    // hand instead, or its tail is unreachable behind `overflow: hidden`.
+    expect(await track.evaluate((el) => getComputedStyle(el).animationName)).toBe("none");
+    expect(
+      await page
+        .locator("[data-proof]")
+        .first()
+        .evaluate((el) => getComputedStyle(el).overflowX),
+    ).toBe("auto");
+
+    await context.close();
   });
 
   test("cancelling returns to the paywall with no charge and a calm message", async ({ page }) => {

@@ -36,7 +36,15 @@ const DEVICES = [
 ] as const;
 
 /** Public routes, and the paid ones that need a session. */
-const PUBLIC_ROUTES = ["/", "/methodology", "/legal/terms", "/legal/privacy", "/login", "/signup"];
+const PUBLIC_ROUTES = [
+  "/",
+  "/pricing",
+  "/methodology",
+  "/legal/terms",
+  "/legal/privacy",
+  "/login",
+  "/signup",
+];
 const APP_ROUTES = ["/dashboard", "/arena", "/ranges", "/learn", "/daily", "/account", "/table"];
 
 let admin: SupabaseClient;
@@ -232,7 +240,7 @@ test.describe("the sweep", () => {
 
     console.log(
       found.length === 0
-        ? "\n  axe: no serious or critical violations across 13 routes\n"
+        ? `\n  axe: no serious or critical violations across ${PUBLIC_ROUTES.length + APP_ROUTES.length} routes\n`
         : `\n  axe violations:\n${found.join("\n")}\n`,
     );
 

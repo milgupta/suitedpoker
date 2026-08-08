@@ -112,7 +112,7 @@ function buildPairings(): Pairing[] {
     min: AA_TEXT,
   });
 
-  // Four-colour deck. These live on a white card face, never on the canvas.
+  // The deck. These live on a white card face, never on the canvas.
   for (const suit of ["hearts", "diamonds", "clubs", "spades"]) {
     pairings.push({
       fg: `--color-suit-${suit}`,

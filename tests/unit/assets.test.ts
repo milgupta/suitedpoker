@@ -12,9 +12,28 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const PUBLIC = join(process.cwd(), "public");
-const LANDING = readFileSync(join(process.cwd(), "src/app/page.tsx"), "utf8");
 
-/** Every `/…` path the landing page points at, from src and srcSet. */
+/**
+ * The whole public marketing surface, not just `page.tsx`.
+ *
+ * The landing page used to hold every image itself. It now renders live
+ * product components instead, and its remaining assets arrive through shared
+ * chrome — so scanning one file would have quietly stopped checking anything.
+ */
+const MARKETING_SOURCES = [
+  "src/app/page.tsx",
+  "src/app/pricing/page.tsx",
+  "src/components/Wordmark.tsx",
+  "src/components/marketing/SiteHeader.tsx",
+  "src/components/marketing/SiteFooter.tsx",
+  "src/components/marketing/AppFrame.tsx",
+];
+
+const LANDING = MARKETING_SOURCES.map((file) =>
+  readFileSync(join(process.cwd(), file), "utf8"),
+).join("\n");
+
+/** Every `/…` path the marketing surface points at, from src, srcSet and poster. */
 function referencedAssets(): string[] {
   const found = new Set<string>();
   for (const match of LANDING.matchAll(/(?:src|srcSet|poster)=[{"]?[`"]([^`"]+)[`"]/g)) {
@@ -38,11 +57,41 @@ function expandTemplates(paths: string[]): string[] {
   });
 }
 
+/**
+ * The paywall shows a product screenshot too, and it is the worse place to
+ * break one: a broken image on the landing page costs a click, a broken image
+ * on the payment screen costs the sale that click already paid for.
+ */
+const PAYWALL = readFileSync(
+  join(process.cwd(), "src/app/(app)/paywall/paywall-client.tsx"),
+  "utf8",
+);
+
+function assetsIn(source: string): string[] {
+  const found = new Set<string>();
+  for (const match of source.matchAll(/(?:src|srcSet|poster)=[{"]?[`"]([^`"]+)[`"]/g)) {
+    const raw = match[1];
+    if (raw === undefined) continue;
+    if (!raw.startsWith("/")) continue;
+    found.add(raw);
+  }
+  return [...found];
+}
+
 describe("landing page assets", () => {
-  const referenced = expandTemplates(referencedAssets());
+  const referenced = [...expandTemplates(referencedAssets()), ...assetsIn(PAYWALL)];
 
   it("references some assets at all", () => {
-    expect(referenced.length, "the landing page points at no local assets").toBeGreaterThan(3);
+    // The floor is 1, not 4. The landing page deliberately no longer embeds the
+    // seven phone-shaped screenshots or the hero loop — it renders the real
+    // components instead — so a count that assumed them would be asserting a
+    // design decision rather than an invariant. What still matters, and is
+    // checked below, is that every path named here exists on disk.
+    expect(referenced.length, "the marketing surface points at no local assets").toBeGreaterThan(0);
+  });
+
+  it("checks the paywall's own screenshot", () => {
+    expect(assetsIn(PAYWALL).length, "the paywall points at no local assets").toBeGreaterThan(0);
   });
 
   it.each(referenced)("%s exists on disk", (path) => {

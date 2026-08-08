@@ -38,7 +38,7 @@ export interface PokerTableProps {
  * The glow brightens on the arc nearest whoever is to act — the table itself
  * indicates action, so no extra chrome is needed for it.
  */
-function TableRing({ activeAngle }: { activeAngle: number | null }) {
+export function TableRing({ activeAngle }: { activeAngle: number | null }) {
   return (
     <svg
       className="pointer-events-none absolute inset-0 h-full w-full"
@@ -102,7 +102,7 @@ function TableRing({ activeAngle }: { activeAngle: number | null }) {
 }
 
 /** Seat positions around the ellipse, as percentages. Hero is always bottom. */
-function seatLayout(count: number, heroIndex: number): { left: number; top: number }[] {
+export function seatLayout(count: number, heroIndex: number): { left: number; top: number }[] {
   const positions: { left: number; top: number }[] = [];
   for (let i = 0; i < count; i++) {
     // Rotate so the hero sits at the bottom (90deg in screen terms).
@@ -195,7 +195,7 @@ export function PokerTable({
         {hero?.holeCards != null && (
           <div className="flex gap-2">
             {hero.holeCards.map((card, i) => (
-              <PlayingCard key={i} card={card} size="lg" index={i} dealCount={2} />
+              <PlayingCard key={i} card={card} size="xl" index={i} dealCount={2} />
             ))}
           </div>
         )}

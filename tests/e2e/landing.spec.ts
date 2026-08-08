@@ -188,6 +188,7 @@ test.describe("the landing page", () => {
     expect(sitemap.status()).toBe(200);
     const xml = await sitemap.text();
     expect(xml).toContain("/methodology");
+    expect(xml, "/pricing is a page people search for by name").toContain("/pricing");
 
     const robots = await page.request.get("/robots.txt");
     expect(robots.status()).toBe(200);
@@ -217,11 +218,42 @@ test.describe("the landing page", () => {
     expect((faq!.mainEntity as unknown[]).length).toBe(8);
   });
 
-  test("prices on the page match the real Stripe plans", async ({ page }) => {
+  test("NO price appears on the landing page", async ({ page }) => {
+    // Pricing moved to its own page. A stray figure creeping back in is not a
+    // cosmetic regression: the whole point of the split is that nobody meets a
+    // number before there is anything to weigh it against.
     await page.goto("/");
     const text = await bodyText(page);
-    // Hardcoded prices on a landing page outlive the price change that made
-    // them wrong, and the first person to notice is a customer at checkout.
+
+    const money = [...text.matchAll(/\$\s?\d[\d,]*(?:\.\d{2})?/g)].map((m) => m[0]);
+    expect(money, `dollar figures on the landing page: ${money.join(", ")}`).toEqual([]);
+  });
+
+  test("the landing page links to /pricing", async ({ page }) => {
+    await page.goto("/");
+    // Header, footer and the final CTA all point at it. `:visible` matters —
+    // the header nav collapses below `md`, so `.first()` alone passes on
+    // desktop and fails on the phone every ad click arrives on.
+    await expect(page.locator("a[href='/pricing']:visible").first()).toBeVisible();
+  });
+
+  test("the range showcase renders real strategy, not a picture of it", async ({ page }) => {
+    await page.goto("/");
+
+    // 169 cells means the actual RangeGrid mounted with real data. A crashed
+    // client component renders nothing, and nothing contains no wrong numbers —
+    // which is exactly how the arena stayed broken for two substages.
+    const cells = page.locator("[role='gridcell']");
+    await expect(cells).toHaveCount(169);
+  });
+});
+
+test.describe("the pricing page", () => {
+  test("prices match the real Stripe plans", async ({ page }) => {
+    await page.goto("/pricing");
+    const text = await bodyText(page);
+    // Hardcoded prices outlive the price change that made them wrong, and the
+    // first person to notice is a customer at checkout.
     //
     // Derived, not typed — the first version of this test hardcoded the three
     // figures and went red the day the annual price moved, which made a real
@@ -230,5 +262,43 @@ test.describe("the landing page", () => {
     expect(text).toContain(formatUsd(PLANS.monthly.amountCents));
     expect(text).toContain(formatUsd(annualisedCents("monthly")));
     expect(text).toContain(formatUsd(Math.round(PLANS.annual.amountCents / 12)));
+  });
+
+  test("FORBIDDEN-TERM SCAN — the pricing page is clean too", async ({ page }) => {
+    // This is the page a payment-risk reviewer reads most closely, so it is
+    // held to the same standard as the landing page.
+    await page.goto("/pricing");
+    const text = await bodyText(page);
+
+    const found: string[] = [];
+    for (const { pattern, why } of FORBIDDEN) {
+      const match = pattern.exec(text);
+      if (match !== null) {
+        const at = Math.max(0, match.index - 60);
+        found.push(`"${match[0]}" (${why}) … ${text.slice(at, match.index + 80)}`);
+      }
+    }
+
+    expect(found, `forbidden terms on /pricing:\n${found.join("\n")}`).toEqual([]);
+  });
+
+  test("states renewal and cancellation without a click", async ({ page }) => {
+    await page.goto("/pricing");
+    const text = (await bodyText(page)).toLowerCase();
+
+    expect(text, "no renewal terms").toContain("renew");
+    expect(text, "no cancellation path").toContain("cancel");
+  });
+
+  test("the CTA is a real touch target and goes to signup", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/pricing");
+
+    const cta = page.locator("[data-cta='plan-annual']");
+    await expect(cta).toBeVisible();
+    expect((await cta.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+
+    await cta.click();
+    await expect(page).toHaveURL(/\/signup/);
   });
 });

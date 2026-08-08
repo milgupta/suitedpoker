@@ -35,7 +35,6 @@ const BASE: Answers = {
   study: "charts",
   leaks: ["facing_aggression"],
   minutes: "10",
-  hand: "Lost a big pot with top pair.",
 };
 
 /** Everything the screen prints, flattened so a change anywhere is visible. */
@@ -107,7 +106,6 @@ describe("computed, not static", () => {
     study: "never",
     leaks: ["bet_sizing"],
     minutes: "2",
-    hand: "",
   };
 
   for (const [question, mutated] of Object.entries(MUTATIONS)) {
@@ -177,13 +175,7 @@ describe("never a winning", () => {
       for (const pain of optionsFor("pain").map((o) => o.value)) {
         for (const goal of [...optionsFor("goal").map((o) => o.value), undefined]) {
           const d = buildDiagnosis({ ...BASE, venue, pain, goal });
-          const text = [
-            d.headline,
-            d.cost.formula,
-            d.goalLine ?? "",
-            d.handLine ?? "",
-            ...d.fixFirst,
-          ].join(" ");
+          const text = [d.headline, d.cost.formula, d.goalLine ?? "", ...d.fixFirst].join(" ");
           expect(text, `${venue}×${pain}×${goal} reads as an earnings claim`).not.toMatch(WINNINGS);
         }
       }
@@ -210,11 +202,5 @@ describe("the path", () => {
     const d = buildDiagnosis(BASE);
     expect(d.standing).toMatch(/^bottom \d+%$/);
     expect(Number(/\d+/.exec(d.standing)![0]) % 5).toBe(0);
-  });
-
-  it("mentions the hand only when one was given", () => {
-    expect(buildDiagnosis({ ...BASE, hand: "" }).handLine).toBeNull();
-    expect(buildDiagnosis({ ...BASE, hand: "   " }).handLine).toBeNull();
-    expect(buildDiagnosis(BASE).handLine).not.toBeNull();
   });
 });

@@ -3,6 +3,7 @@ export { BoardRunout, type BoardRunoutProps } from "./BoardRunout";
 export { HandContextChip, type HandContext } from "./HandContextChip";
 export { PlayingCard, type PlayingCardProps, type CardSize } from "./PlayingCard";
 export { PokerTable, type PokerTableProps } from "./Table";
+export { SpotTable, type SpotTableProps } from "./SpotTable";
 export { PotDisplay, type PotDisplayProps } from "./PotDisplay";
 export { Seat, type SeatProps } from "./Seat";
 export { Feedback, type FeedbackProps } from "./Feedback";

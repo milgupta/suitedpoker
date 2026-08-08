@@ -20,8 +20,7 @@ import type { SkillTier } from "@/lib/explain-policy";
  *   reads as a data-collection ritual rather than a conversation.
  */
 
-export type QuestionId =
-  "venue" | "pain" | "frequency" | "goal" | "study" | "leaks" | "minutes" | "hand";
+export type QuestionId = "venue" | "pain" | "frequency" | "goal" | "study" | "leaks" | "minutes";
 
 export const QUESTION_IDS: readonly QuestionId[] = [
   "venue",
@@ -31,10 +30,23 @@ export const QUESTION_IDS: readonly QuestionId[] = [
   "study",
   "leaks",
   "minutes",
-  "hand",
 ];
 
-export const TOTAL_STEPS = QUESTION_IDS.length;
+/**
+ * The one step that asks nothing.
+ *
+ * A value interstitial sits after the leaks question, which is where the quiz
+ * stops being novel and starts being a form. It has to come after the user has
+ * given enough for the screen to feel earned, and before the diagnosis, which
+ * is the actual payoff and must not be pre-empted.
+ *
+ * It is a STEP, not an overlay, so the progress bar keeps advancing and the
+ * back button keeps working. Questions after it carry the shifted index.
+ */
+export const CHART_STEP = 7;
+
+/** Questions plus the interstitial. Progress is index / this and nothing else. */
+export const TOTAL_STEPS = QUESTION_IDS.length + 1;
 
 export interface QuizOption {
   readonly value: string;
@@ -63,7 +75,6 @@ export interface Answers {
   study?: string;
   leaks?: string[];
   minutes?: string;
-  hand?: string;
 }
 
 /* ── Options ─────────────────────────────────────────────────────────────── */
@@ -162,7 +173,6 @@ export const ECHO_POINTS: readonly { question: QuestionId; source: QuestionId }[
   { question: "frequency", source: "venue" },
   { question: "goal", source: "pain" },
   { question: "leaks", source: "venue" },
-  { question: "hand", source: "pain" },
 ];
 
 /* ── The questions ───────────────────────────────────────────────────────── */
@@ -184,8 +194,8 @@ export const QUESTIONS: readonly Question[] = [
     prompt: (a) => {
       const where = venueEcho(a);
       return where === null
-        ? "Be honest — what happens most?"
-        : `Be honest — what happens most ${where}?`;
+        ? "Be honest. What happens most?"
+        : `Be honest. What happens most ${where}?`;
     },
     options: PAINS,
   },
@@ -233,23 +243,11 @@ export const QUESTIONS: readonly Question[] = [
   },
   {
     id: "minutes",
-    index: 7,
+    // 7 is the chart interstitial, so the last question is 8.
+    index: 8,
     kind: "single",
     prompt: () => "How much time do you want to train each day?",
     options: MINUTES,
-  },
-  {
-    id: "hand",
-    index: 8,
-    kind: "text",
-    prompt: (a) => {
-      const pain = painEcho(a);
-      return pain === null
-        ? "Tell me about a hand that still bugs you."
-        : `You ${pain}. Tell me about a hand that still bugs you.`;
-    },
-    placeholder: "You don't need to remember it perfectly.",
-    optional: true,
   },
 ];
 
@@ -282,6 +280,11 @@ export function resumeIndex(answers: Answers): number {
     if (!isAnswered(question, answers)) return question.index;
   }
   return TOTAL_STEPS;
+}
+
+/** True for a step that shows the comparison chart rather than a question. */
+export function isChartStep(step: number): boolean {
+  return step === CHART_STEP;
 }
 
 export function isAnswered(question: Question, answers: Answers): boolean {

@@ -130,22 +130,32 @@
   --color-danger-border: color-mix(in srgb, var(--color-danger) 30%, transparent);
 
   /*
-   * ── Card suits — a four-colour deck ──────────────────────────────────────
-   * Four colours rather than two because it materially reduces beginner
-   * misreads, which is the entire audience.
+   * ── Card suits — a CLASSIC TWO-COLOUR DECK ───────────────────────────────
+   *
+   * This was a four-colour deck (blue diamonds, green clubs), which is what
+   * every poker room gives its regulars and what a solver prints. It was the
+   * wrong call HERE: the audience is people who have only ever seen a physical
+   * deck, and to them a blue diamond does not read as a convention, it reads as
+   * the app being broken. A beginner who has to learn the app's colour code
+   * before they can read their own hand has been given a second problem.
+   *
+   * Hearts and diamonds share one red exactly as a real deck does — the pip
+   * shape is what tells them apart, and that is the discrimination the audience
+   * already has. Switching back is two values in this block and nothing else.
    *
    * These are NOT the grade ramp and must never be mixed with it: a card is
    * red because it is a heart, never because the play was bad. They live on a
-   * white card face, so every one is measured against white — 4.98 to 5.75 —
-   * not against the canvas.
+   * white card face, so both are measured against white, not against canvas.
    */
   --color-suit-hearts: #d32f2f;
-  --color-suit-diamonds: #1565c0;
-  --color-suit-clubs: #2e7d32;
+  --color-suit-diamonds: #d32f2f;
+  --color-suit-clubs: #14131c;
   --color-suit-spades: #14131c;
 
   /* The card face itself. The brightest object on the table by design. */
   --color-card-face: #ffffff;
+  /* The bottom of the face gradient — a flat white rectangle reads as a div. */
+  --color-card-face-edge: #e4e8f2;
   /* Face-down backs: dark, patterned, never a solid block. */
   --color-card-back: #131a2e;
   --color-card-back-pattern: rgba(91, 140, 255, 0.22);
@@ -251,6 +261,19 @@
       transform: translateX(100%);
     }
   }
+
+  /*
+   * The proof band. -50% rather than -100% because the track carries the list
+   * twice: half a track is exactly one full list, so the wrap is invisible.
+   */
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
 }
 
 /*
@@ -275,10 +298,26 @@
   --gutter: 16px;
   --tap-min: 44px; /* 9. Minimum touch target. No exceptions. */
 
+  /*
+   * ── Playing cards ────────────────────────────────────────────────────────
+   * A card has to read as a physical object sitting ON the table rather than a
+   * white rectangle drawn into it. That is one cast shadow and one contact
+   * shadow: the tight one puts the edge on the surface, the wide one lifts it.
+   */
+  --shadow-card: 0 1px 2px rgba(3, 2, 8, 0.6), 0 6px 14px -6px rgba(3, 2, 8, 0.8);
+  --shadow-card-hero: 0 2px 4px rgba(3, 2, 8, 0.65), 0 16px 32px -12px rgba(3, 2, 8, 0.9);
+
   /* ── 5.3 Ambient glow recipe ────────────────────────────────────────────── */
   --ambient-blob-blur: 120px;
   --ambient-blob-width: 750px;
   --ambient-blob-height: 500px;
+
+  /*
+   * One full pass of the proof band. Far outside the 400ms motion budget on
+   * purpose: that budget governs a response to an action, and this is ambient.
+   * Fast enough to notice, slow enough that nobody feels made to read it.
+   */
+  --marquee-duration: 72s;
 }
 
 @layer base {
@@ -540,6 +579,83 @@
     );
     box-shadow: 0 8px 16px -8px var(--color-accent-glow); /* ~16px inner bloom below */
     pointer-events: none;
+  }
+
+  /*
+   * The accent variant of the ambient blob, for the paywall.
+   *
+   * The system's blob is violet and belongs behind narrative — a hero, a
+   * diagnosis. The payment screen is a decision about a number, and the eye
+   * should settle on the number rather than drift to a coloured corner, so
+   * this one sits behind the price in the brand's own blue.
+   */
+  .ambient-blob--accent {
+    background: radial-gradient(ellipse at center, var(--color-accent-glow) 0%, transparent 70%);
+  }
+
+  /*
+   * The paywall's page wash.
+   *
+   * A cool bloom at the top and a settle into --canvas-deep at the bottom, so
+   * the panel reads as lit from above rather than as a card on a flat field.
+   * Fixed to the viewport rather than sized to the content: it is atmosphere,
+   * and atmosphere that scrolls away halfway down looks like a bug.
+   */
+  .paywall-wash {
+    background:
+      radial-gradient(
+        95% 48% at 72% -6%,
+        color-mix(in srgb, var(--color-accent) 20%, transparent) 0%,
+        transparent 62%
+      ),
+      radial-gradient(
+        80% 45% at 8% 104%,
+        color-mix(in srgb, var(--color-ambient-violet) 55%, transparent) 0%,
+        transparent 60%
+      ),
+      linear-gradient(180deg, var(--color-canvas) 0%, var(--color-canvas-deep) 100%);
+  }
+
+  /*
+   * ── The proof band ────────────────────────────────────────────────────────
+   * Masked at both edges so entries arrive and leave rather than being cut off
+   * by a hard boundary, which is what makes a marquee read as cheap.
+   */
+  .marquee {
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+  }
+
+  .marquee-track {
+    display: flex;
+    width: max-content;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .marquee-track {
+      animation: marquee var(--marquee-duration) linear infinite;
+    }
+
+    /*
+     * Anything moving that carries words has to be stoppable. Focus-within as
+     * well as hover, or a keyboard user can never hold it still.
+     */
+    .marquee:hover .marquee-track,
+    .marquee:focus-within .marquee-track {
+      animation-play-state: paused;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    /*
+     * No animation is applied at all under reduce — not a shortened one — so
+     * without this the tail of the list would be permanently unreachable
+     * behind `overflow: hidden`.
+     */
+    .marquee {
+      overflow-x: auto;
+    }
   }
 
   /* One highlighted element per screen, max. */

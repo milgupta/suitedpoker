@@ -259,10 +259,23 @@ describe("the disclaimer", () => {
       expect(readFileSync(join(ROOT, file), "utf8"), file).toContain("ComplianceFooter");
     }
 
-    // The landing page and the blocked page print it directly.
-    for (const file of ["src/app/page.tsx", "src/app/unavailable/page.tsx"]) {
-      expect(readFileSync(join(ROOT, file), "utf8"), file).toContain("DISCLAIMER");
+    // The landing and pricing pages carry it through the shared marketing
+    // footer. Both links in the chain are checked: a page that stopped
+    // rendering SiteFooter, or a SiteFooter that stopped printing the line,
+    // each drop the disclaimer silently.
+    for (const file of ["src/app/page.tsx", "src/app/pricing/page.tsx"]) {
+      expect(readFileSync(join(ROOT, file), "utf8"), file).toContain("SiteFooter");
     }
+    expect(
+      readFileSync(join(SRC, "components", "marketing", "SiteFooter.tsx"), "utf8"),
+      "SiteFooter no longer prints the disclaimer",
+    ).toContain("DISCLAIMER");
+
+    // The blocked page prints it directly.
+    expect(
+      readFileSync(join(ROOT, "src/app/unavailable/page.tsx"), "utf8"),
+      "src/app/unavailable/page.tsx",
+    ).toContain("DISCLAIMER");
 
     // And NOT in the root layout, which is what broke the quiz.
     expect(readFileSync(join(SRC, "app", "layout.tsx"), "utf8")).not.toContain("DISCLAIMER");

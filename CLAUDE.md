@@ -158,6 +158,103 @@ sessions.
 **Every substage in `SUITEDPOKER_BUILD_PLAN.md` is now done.** Update this table
 if you add one.
 
+**What the table and card pass left you.**
+
+- 🔴 **A DRILL IS DRAWN AS A TABLE NOW.** For eleven substages the arena, the
+  daily and the demo hand each rendered a spot as a box of text — a stat row, an
+  action history as one prose line, and two 52px cards. No poker product
+  anywhere presents a hand that way, because it makes the reader rebuild six
+  seats in their head before they can start on the question, and that
+  reconstruction is the exact thing a beginner is worst at. `SpotTable` uses the
+  same ring, seats and cards as the sim: a drill and a hand at the table are the
+  same game and must not look like two products.
+- **`PokerTable` could not be reused directly and should not have been.** A
+  drill has no `GameState` — the client is deliberately handed a spot with no
+  deck, no villain cards and no nodeRef, and that boundary is not worth widening
+  for a layout. `SpotTable` shares `TableRing` and `seatLayout` instead.
+- **Who folded is INFERRED, in `src/lib/spot-seats.ts`, and it is a claim.**
+  Nothing tells us; the seats in front of the hero that said nothing are out,
+  the seats behind have not spoken. Pure and unit-tested, because a table that
+  dims the wrong chair tells the player somebody is out of the hand when they
+  are not.
+- 🔴 **THE DECK IS TWO-COLOUR NOW, NOT FOUR.** Blue diamonds and green clubs are
+  what a poker room gives its regulars; to somebody whose only reference is a
+  physical deck a blue diamond reads as the app being broken. Reversing it is
+  two values in `globals.css` if that judgement ever changes.
+- **Cards roughly doubled and gained a corner index.** The old `lg` was 52px on
+  the one object the player is asked to read and decide about.
+- **The mirrored bottom-right index was built and then removed.** A rotated 9
+  reads as a 6. On a physical card that never bites because you hold it and see
+  one corner; on screen both are visible at once. **Found by looking at the
+  screenshot, not by a failing test.**
+- **`actionLabel()` exists because the buttons said `raise_small` and `allin`.**
+  Snake_case identifiers were printed straight onto the one control the whole
+  product runs through, on a product that claims to explain poker in plain
+  English. The identifier still goes on `data-action` and to the server — only
+  what is printed changed.
+- **The board drops to `md` and the ring goes square below 640px.** At 390px a
+  72px flop is 231px across a 390px ring and lands on top of the side seats.
+
+**What the paywall redesign left you.**
+
+- 🔴 **`src/content/testimonials.ts` starts EMPTY and that is the feature.**
+  The FTC's rule on consumer reviews and testimonials (16 CFR Part 465) makes
+  an invented testimonial a per-instance civil penalty, and a checkout page is
+  where it is least defensible. Every entry needs a `source` — where the quote
+  came from, specifically enough to find the person again — which is a field
+  only a real quote can fill. `tests/unit/testimonials.test.ts` refuses one
+  without it and `tests/e2e/paywall.spec.ts` checks the rendered page.
+- **`ProofMarquee` switches on its own.** Real quotes when `TESTIMONIALS` has
+  any, `PROOF_POINTS` until then — product facts that are true today. There is
+  no path through the component that renders a person who does not exist. The
+  fallback is guarded too: a proof point may not carry a percentage, a "7M+",
+  or the shape "players say".
+- **The band is slow (`--marquee-duration: 72s`) and stops on hover AND on
+  focus-within.** Anything moving that carries words has to be stoppable or the
+  words are decoration, and a payment screen is the wrong place to make someone
+  chase a line of text.
+- **The marquee animation is inside `@media (prefers-reduced-motion:
+  no-preference)`, not shortened by the global backstop.** The backstop sets
+  `animation-duration: 0.01ms` — a marquee under that snaps to `translateX(-50%)`
+  and sits there. Under reduce the band gets `overflow-x: auto` instead, or its
+  tail is unreachable behind `overflow: hidden`.
+- **Each half of the track carries its own trailing gap (`gap-4 pe-4`).** The
+  loop is `translateX(-50%)`; if the gap lived on the track rather than inside
+  each half, -50% would land half a gap out and the wrap would visibly jump.
+- **The PURCHASE column is first in the DOM, placed right by grid on `lg`.**
+  There is an e2e asserting the CTA sits above 844px at 390px wide, and DOM
+  order is what decides that. Grid placement moves the showcase left on a wide
+  screen without moving it up on a narrow one.
+- **`CARD_ORDER` is derived from `PLAN_IDS`, not typed out** — annual first so
+  the ribbon has a card to sit on, but a third plan cannot fall off the page.
+- **The ribbon states the saving as a NUMBER.** "Best value" alone is a
+  superlative every discount banner on the internet has already spent; the 75%
+  is arithmetic against the two prices directly under it. It replaced the
+  struck-through annualised price that used to sit inside the card.
+- **The headline price is PER MONTH (`perMonthCents`), not per week.** A
+  monthly figure is the one a subscriber can check against their own bank
+  statement; per-week reads smaller and is the standard trick. The honest half
+  of the old hairline design survives as the `billedLabel` line — "$119.99
+  billed yearly" sits directly under the plan name.
+- **The check circle IS an `input[type=radio]`.** Styled with
+  `appearance-none` and a sibling tick revealed by `peer-checked`, never a div
+  with an onClick — an e2e counts `getByRole("radio")`, and a painted div is
+  not something a keyboard can reach or a screen reader can describe.
+- **Six benefit sentences became three two-word ticks in one row.** The three
+  that went — daily challenge, table simulator, leak report — all appear in the
+  proof band below, so nothing was lost. The ticks are `--accent-bright`, NOT
+  the grade green: blue is interface, green-to-red is grading, and the two
+  never borrow each other's range.
+- **The paywall glow is fixed to the VIEWPORT, not sized to the content.**
+  Atmosphere that scrolls away a third of the way down looks like a bug, and a
+  fixed layer costs no CLS on the one page where a shifted CTA costs money.
+- **`.ambient-blob` carries `z-index: -1`, so inside a `-z-10` container it
+  hides behind that container's own background.** Both blobs need `z-0` — a
+  utility, which wins over the components layer.
+- **`tests/unit/assets.test.ts` now scans the paywall too.** A broken image on
+  the landing page costs a click; a broken image on the payment screen costs
+  the sale that click already paid for.
+
 **What the icon and title pass left you.**
 
 - 🔴 **`src/app/favicon.ico` was the stock create-next-app file for forty
@@ -578,7 +675,7 @@ if you add one.
 - **The table is a glowing elliptical RING, never a filled surface.** A felt
   oval fights every piece of data placed on it; a stroke on near-black keeps
   the board cards the brightest objects on screen.
-- **Four-colour deck has its own tokens** (`--color-suit-*`). They are NOT the
+- **The deck has its own tokens** (`--color-suit-*`). They are NOT the
   grade ramp and must never be mixed with it — a card is red because it is a
   heart, never because the play was bad.
 - **Suit pips are SVG paths, not unicode.** ♠♥♦♣ get emoji-fied on Android and

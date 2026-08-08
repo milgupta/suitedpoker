@@ -9,6 +9,7 @@
 
 import { describe, expect, it } from "vitest";
 import {
+  CHART_STEP,
   derive,
   deriveCurriculumEntry,
   deriveDailyMinutes,
@@ -44,13 +45,17 @@ describe("progress", () => {
   });
 
   it("never skips a step", () => {
-    const indices = QUESTIONS.map((q) => q.index);
-    expect(indices).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    // CHART_STEP asks nothing, so it is absent from QUESTIONS by design. The
+    // union of questions and the interstitial must still cover 1..TOTAL_STEPS
+    // with no hole — a gap here is a step the client renders as a blank screen.
+    const covered = [...QUESTIONS.map((q) => q.index), CHART_STEP].sort((a, b) => a - b);
+    expect(covered).toEqual(Array.from({ length: TOTAL_STEPS }, (_, i) => i + 1));
   });
 
   it("gives every question a unique index and id", () => {
-    expect(new Set(QUESTIONS.map((q) => q.index)).size).toBe(TOTAL_STEPS);
-    expect(new Set(QUESTIONS.map((q) => q.id)).size).toBe(TOTAL_STEPS);
+    expect(new Set(QUESTIONS.map((q) => q.index)).size).toBe(QUESTIONS.length);
+    expect(new Set(QUESTIONS.map((q) => q.id)).size).toBe(QUESTIONS.length);
+    expect(QUESTIONS.some((q) => q.index === CHART_STEP)).toBe(false);
   });
 
   it("reaches exactly 100% on the last step and never exceeds it", () => {
@@ -73,9 +78,11 @@ describe("progress", () => {
 /* ── Control shape ───────────────────────────────────────────────────────── */
 
 describe("the control shape tells you the rule", () => {
-  it("has exactly one multi-select and one free-text question", () => {
+  it("has exactly one multi-select and no free-text question", () => {
     expect(QUESTIONS.filter((q) => q.kind === "multi").map((q) => q.id)).toEqual(["leaks"]);
-    expect(QUESTIONS.filter((q) => q.kind === "text").map((q) => q.id)).toEqual(["hand"]);
+    // The free-text question is gone. It was optional, nothing consumed it,
+    // and a keyboard on a phone is the most expensive step in a funnel.
+    expect(QUESTIONS.filter((q) => q.kind === "text")).toEqual([]);
   });
 
   it("makes every single-select answerable in one tap", () => {
@@ -84,8 +91,10 @@ describe("the control shape tells you the rule", () => {
     }
   });
 
-  it("marks only the free-text question optional", () => {
-    expect(QUESTIONS.filter((q) => q.optional === true).map((q) => q.id)).toEqual(["hand"]);
+  it("makes every remaining question required", () => {
+    // Each one now feeds the derivation, so an optional answer would be a
+    // silent hole in the diagnosis rather than a kindness.
+    expect(QUESTIONS.filter((q) => q.optional === true)).toEqual([]);
   });
 
   it("describes options by content, never by label", () => {

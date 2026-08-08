@@ -30,7 +30,6 @@ const FULL_ANSWERS = {
   study: "charts",
   leaks: ["blind_defense", "bet_sizing"],
   minutes: "10",
-  hand: "Called three streets with second pair.",
 };
 
 async function makeUserWithAnswers(
@@ -100,10 +99,7 @@ test.describe("diagnosis", () => {
     // Their Q6 picks, reflected back.
     await expect(page.getByText(/defending your blinds/)).toBeVisible();
 
-    // Their Q8 hand, acknowledged.
-    await expect(page.getByText(/That hand you told us about/)).toBeVisible();
-
-    // Their path, from their Q7 minutes.
+    // Their path, from their minutes answer.
     await expect(page.locator("[data-path]")).toContainText("10 min/day");
   });
 

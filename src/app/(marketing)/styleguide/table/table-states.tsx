@@ -218,8 +218,8 @@ export function TableStates() {
       </Frame>
 
       <Frame
-        title="Four-colour deck"
-        note="Red hearts, blue diamonds, green clubs, near-black spades — it measurably reduces beginner misreads."
+        title="The deck"
+        note="Classic two colours: red hearts and diamonds, near-black clubs and spades. Corner index and one large pip, the way a real card is laid out."
       >
         <div className="flex flex-wrap items-end gap-3">
           {cardsFromString("Ah Kd Qc Js Th 9d 8c 7s").map((card, i) => (

@@ -110,7 +110,15 @@ export interface GradeInput {
   evs: Record<string, number>;
 }
 
-function bandFor(evLoss: number): GradeName {
+/**
+ * The band an EV loss falls in.
+ *
+ * Exported so the landing page can label the cost of a real alternative line
+ * with the same thresholds the product grades against. A second table on the
+ * marketing page would eventually promise a "solid" the app calls an
+ * inaccuracy, which is a trust problem rather than a copy one.
+ */
+export function bandFor(evLoss: number): GradeName {
   if (evLoss < SOLID_FROM) return "best";
   if (evLoss < INACCURACY_FROM) return "solid";
   if (evLoss < MISTAKE_FROM) return "inaccuracy";
