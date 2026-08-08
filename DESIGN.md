@@ -134,10 +134,25 @@ decorative may borrow these.
 
 Each needs a solid, a 12%-alpha fill, and a border variant.
 
-**`evColor(bbLoss)`** interpolates this ramp: `best` at 0bb → `solid` at 0.5 →
-`inaccuracy` at 2 → `mistake` at 5 → `blunder` beyond. The frequency bar colors
+**`evColor(bbLoss)`** interpolates this ramp: `best` at 0bb → `solid` at 0.02 →
+`inaccuracy` at 0.05 → `mistake` at 2 → `blunder` at 5. The frequency bar colors
 every segment through this one function. The colour saturates at **10bb** — a
 pot-sized error at 100bb depth, past which redder conveys nothing extra.
+
+> **Green is the best action and nothing else.** The first anchors were `solid`
+> at 0.5, `inaccuracy` at 2 and `mistake` at 5, which put the colour a whole
+> band behind the grade — a 0.14bb alternative graded `solid` rendered 72% of
+> the way to `best`, so a two-segment bar came out as one green blob and the
+> reader could not see which line was better at a glance. That is the one thing
+> the bar exists to say. Amber now begins at **0.05bb**, which is `SOLID_FROM`
+> in the grader — below it the grader itself calls an action `best`. The two
+> upper anchors are the grader's own band boundaries exactly.
+>
+> A consequence, stated rather than hidden: a segment's colour and its
+> `GradeBadge` no longer always share a hue — a `solid` badge is green while its
+> segment is amber. They answer different questions. The badge grades the
+> decision you made; the bar shows what each line costs against the best one.
+> Colour is still never the only signal.
 
 It ships as a pair. `evColor()` returns a `color-mix(in oklab, …)` string for the
 DOM, so the six stop colours stay in `globals.css` and nowhere else.
@@ -257,19 +272,30 @@ Tracking follows size: Soar runs `-0.8px` at 40px (−0.02em), Flighty `-1px` at
 
 | Token | Size | Line-height | Weight | Tracking |
 |---|---|---|---|---|
-| `display-xl` | 56 | 56 (1.00) | 700 | −0.03em |
-| `display-lg` | 40 | 43 (1.08) | 600 | −0.02em |
-| `display-md` | 30 | 33 (1.10) | 600 | −0.02em |
-| `heading-lg` | 22 | 26 (1.18) | 600 | −0.01em |
-| `heading-md` | 18 | 24 (1.33) | 600 | 0 |
-| `body-lg` | 16 | 24 (1.50) | 400 | 0 |
-| `body-md` | 14 | 20 (1.43) | 400 | 0 |
-| `body-sm` | 13 | 19 (1.46) | 400 | 0 |
-| `caption` | 12 | 16 (1.33) | 500 | 0.01em |
+| `display-xl` | 60 | 60 (1.00) | 700 | −0.03em |
+| `display-lg` | 44 | 47 (1.07) | 600 | −0.02em |
+| `display-md` | 34 | 37 (1.09) | 600 | −0.02em |
+| `heading-lg` | 24 | 28 (1.17) | 600 | −0.01em |
+| `heading-md` | 20 | 27 (1.35) | 600 | 0 |
+| `body-lg` | 18 | 27 (1.50) | 400 | 0 |
+| `body-md` | 16 | 23 (1.44) | 400 | 0 |
+| `body-sm` | 14 | 20 (1.43) | 400 | 0 |
+| `caption` | 13 | 17 (1.31) | 500 | 0.01em |
 | `overline` | 11 | 14 | 700 | 0.12em, uppercase |
 
-Working sizes in the product are **13–16**. Display sizes appear on marketing,
+Working sizes in the product are **14–18**. Display sizes appear on marketing,
 onboarding, the diagnosis, and large stat numerals only.
+
+> **The scale was raised one step from its first version** (body 14 → 16,
+> display-lg 40 → 44, and so on down the table). It had been drawn at a
+> dashboard density, and the product's real reading surfaces are a lesson, an
+> explanation and a diagnosis — long-form prose a beginner reads on a phone.
+> 14px prose is also the most reliable tell of a generated page. `overline` is
+> the one step that did not move: it is a tracked-out uppercase marker, not
+> text, and at 13 it competes with the heading beneath it.
+>
+> The RATIOS were preserved. Enlarging only the small end would have flattened
+> the hierarchy, which is the other half of why a page reads as templated.
 
 > The set-solid trick **fails below ~20px**. Tight leading has to relax as size
 > drops — that's why the ratios climb down the table.

@@ -6,6 +6,7 @@ export { PokerTable, type PokerTableProps } from "./Table";
 export { SpotTable, type SpotTableProps } from "./SpotTable";
 export { PotDisplay, type PotDisplayProps } from "./PotDisplay";
 export { Seat, type SeatProps } from "./Seat";
+export { SeatAvatar, type SeatAvatarProps } from "./SeatAvatar";
 export { Feedback, type FeedbackProps } from "./Feedback";
 export { Explanation, type ExplanationProps } from "./Explanation";
 export {

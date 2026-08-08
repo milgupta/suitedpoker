@@ -27,17 +27,39 @@ export interface EvStop {
 }
 
 /**
- * best (0bb) -> solid (0.5) -> inaccuracy (2) -> mistake (5) -> blunder.
+ * GREEN IS THE BEST ACTION AND NOTHING ELSE.
  *
- * DESIGN.md ends the ramp at "blunder beyond 5" without fixing where the colour
- * saturates. 10bb is the chosen saturation point: a pot-sized error at 100bb
- * depth, past which redder conveys nothing extra.
+ * The original anchors — best 0, solid 0.5, inaccuracy 2, mistake 5 — put the
+ * colour a whole band behind the grade: a 0.14bb alternative graded `solid`
+ * rendered 72% of the way to `best`, so a two-segment bar came out as one
+ * green blob and the reader could not see which line was the better one at a
+ * glance. That is the single most important thing the bar has to say.
+ *
+ * So the ramp now leaves green almost immediately. `SOLID_FROM` in the grader
+ * is 0.05bb — below that the grader itself calls an action `best` — and that is
+ * where amber begins. The two upper anchors are the grader's own band
+ * boundaries exactly: `mistake` colour at 2bb is where the mistake band starts,
+ * `blunder` at 5bb likewise.
+ *
+ * The short best -> solid step at 0.02 exists so a rounding-level difference
+ * eases out of green rather than slamming into amber.
+ *
+ * A consequence worth stating: an action's bar colour and its GradeBadge no
+ * longer always match hue — a `solid` badge is green while its segment is
+ * amber. They answer different questions. The badge grades the decision you
+ * made; the bar shows what each line costs against the best one. Every grade
+ * still ships with an icon and a word, so nothing here is carried by colour
+ * alone (DESIGN.md rule 4).
+ *
+ * 10bb stays the saturation point: a pot-sized error at 100bb depth, past
+ * which redder conveys nothing extra.
  */
 export const EV_STOPS: readonly EvStop[] = [
   { bb: 0, token: "--color-grade-best" },
-  { bb: 0.5, token: "--color-grade-solid" },
-  { bb: 2, token: "--color-grade-inaccuracy" },
-  { bb: 5, token: "--color-grade-mistake" },
+  { bb: 0.02, token: "--color-grade-solid" },
+  { bb: 0.05, token: "--color-grade-inaccuracy" },
+  { bb: 2, token: "--color-grade-mistake" },
+  { bb: 5, token: "--color-grade-blunder" },
   { bb: 10, token: "--color-grade-blunder" },
 ] as const;
 

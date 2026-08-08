@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import type { Card } from "@/poker/cards";
 import type { Street } from "@/poker/gamestate";
 import { PlayingCard } from "./PlayingCard";
@@ -25,13 +26,31 @@ export function BoardRunout({ board, street, className }: BoardRunoutProps) {
   const flop = [0, 1, 2];
   const late = [3, 4];
 
+  /*
+   * `md` below 640px, not `lg`.
+   *
+   * Cards roughly doubled in the card pass and this did not shrink with them:
+   * three 72px cards over two is 216x200 in the middle of a 390px ring, which
+   * buried the side seats behind the undealt backs. The board is context on a
+   * phone — the hero's own two cards are the subject, and they stay `xl`.
+   */
+  const [narrow, setNarrow] = useState(false);
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 640px)");
+    const update = (): void => setNarrow(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+
   const renderSlot = (i: number) => {
     const card = board[i];
     return (
       <PlayingCard
         key={i}
         card={card}
-        size="lg"
+        size={narrow ? "md" : "lg"}
         index={i < 3 ? i : 0}
         dealCount={i < 3 ? 3 : 1}
         placeholder={card === undefined}

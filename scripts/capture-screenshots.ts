@@ -131,6 +131,18 @@ const SHOTS: Shot[] = [
         .waitFor({ state: "detached", timeout: 20_000 })
         .catch(() => undefined);
       await page.waitForTimeout(1_200);
+      /*
+       * Scroll the GRADE into frame. The table redesign pushed the feedback
+       * panel below 844px, so this shot — the one the landing page and the
+       * paywall both use to show what grading looks like — came back showing
+       * an unanswered table with the capsules revealed. The panel is the
+       * subject; the hand above it is context.
+       */
+      await page
+        .getByRole("button", { name: "Next hand" })
+        .scrollIntoViewIfNeeded()
+        .catch(() => undefined);
+      await page.waitForTimeout(500);
     },
   },
   {
@@ -254,6 +266,15 @@ async function main(): Promise<void> {
     process.stdout.write(`  ${shot.name.padEnd(26)}`);
     try {
       await page.goto(`${BASE}${shot.path}`, { waitUntil: "domcontentloaded" });
+      /*
+       * The Next dev overlay is a web component that floats a badge over the
+       * bottom-left corner. Against a dev server it was BAKED INTO the shipped
+       * asset — a red "1 Issue" pill sitting on the landing page and the
+       * payment screen. The script's own docs say to point it at a running
+       * server and do not say which kind, so it hides the overlay rather than
+       * relying on remembering to build first.
+       */
+      await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
       await shot.ready(page);
 
       const file = join(OUT, `${shot.name}.png`);

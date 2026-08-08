@@ -158,6 +158,51 @@ sessions.
 **Every substage in `SUITEDPOKER_BUILD_PLAN.md` is now done.** Update this table
 if you add one.
 
+**What the avatar and white-panel pass left you.**
+
+- **Every seat has a face** (`SeatAvatar`), on the drill table AND the sim. It is
+  deliberately anonymous and blue-family only: the villains are a solved
+  strategy, not characters, and an avatar that borrowed the grade ramp would say
+  a player was wrong. It sits ABOVE the pill, never inside it — at 390px the
+  side seats are already at the edge of the ring, and 30px more pill width puts
+  them off screen.
+- 🔴 **NOTHING ON A TABLE IS SIZED FROM `matchMedia` STATE ANY MORE.** The first
+  version took the ring's aspect, the avatar size and the board's card size from
+  a `narrow` state set in an effect, so all three changed one frame after first
+  paint — **CLS on /arena went 0.0000 → 0.0736**, on the screen this product is
+  most used on. Aspect and avatar are Tailwind breakpoints now; the board, whose
+  size is a NUMBER inside `PlayingCard`, is rendered twice with `sm:hidden` /
+  `hidden sm:flex`. Five extra spans beat a layout shift.
+- ⚠️ **/arena CLS is 0.0212, not 0.0000.** Inside the 0.1 gate and inside "good",
+  but it is a regression against 9.1's clean sweep. What is left is the spot
+  arriving: a hand has one to three history lines and two to four buttons, and a
+  skeleton cannot match a length it does not know yet.
+- 🔴 **`.panel-light` IS A TOKEN SCOPE, NOT A COMPONENT.** It re-points
+  `--text-*`, `--surface-*`, `--border-*`, `--accent-bright` and `--danger-*` for
+  its subtree, so every component inside the paywall renders on white without
+  knowing it. The alternative is a `light` prop threaded through six components
+  and forgotten on the seventh.
+- 🔴 **A SCOPED OVERRIDE BROKE THE CONTRAST SUITE, SILENTLY-ISH.**
+  `tests/support/tokens.ts` flattened every declaration in globals.css into one
+  map, so `.panel-light`'s near-black `--text-primary` won globally and 35
+  pairings started measuring black on black. `readRawTokens(scope?)` now strips
+  scoped rules from the global palette and can overlay one on request — and the
+  panel's pairings are measured THROUGH the remap, so a forgotten line in that
+  rule fails the build.
+- **`--accent-bright` is 3.1 on white** and is remapped to `--accent-700` inside
+  the panel. The accent FILL is left alone: the CTA gradient and the ribbon carry
+  `--on-accent` and read the same on either ground.
+- 🔴 **`npm run screenshots` WAS BAKING THE NEXT DEV OVERLAY INTO THE ASSETS.**
+  A red "1 Issue" pill sat in the corner of the shipped landing-page and paywall
+  images. The script hides `nextjs-portal` now rather than relying on somebody
+  remembering to point it at a production build.
+- **The feedback shot scrolls to the grade before capturing.** The table
+  redesign pushed the panel below 844px, so the shot that exists to show grading
+  came back showing an unanswered table.
+- **The paywall showcase uses the DRILL shot, not the feedback one.** It
+  explains itself with no caption; the feedback shot needs the grade panel in
+  frame to make sense and that does not survive a crop.
+
 **What the table and card pass left you.**
 
 - 🔴 **A DRILL IS DRAWN AS A TABLE NOW.** For eleven substages the arena, the

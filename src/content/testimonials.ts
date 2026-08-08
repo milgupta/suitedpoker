@@ -53,6 +53,13 @@ export const TESTIMONIALS: readonly Testimonial[] = [];
  * capability statements is honest; a band of invented people is not, and it is
  * the same amount of movement on screen.
  */
+/**
+ * Which of the two the band is showing. Exported so a caller can LABEL it
+ * honestly — "what players say" over a list of product facts is the fabricated
+ * testimonial this module exists to refuse, just written in a heading.
+ */
+export const PROOF_MODE: "quotes" | "points" = TESTIMONIALS.length > 0 ? "quotes" : "points";
+
 export const PROOF_POINTS: readonly string[] = [
   "Graded against a solved solution, not an opinion",
   "Every position, every street, six-handed",

@@ -15,7 +15,9 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { contrastRatio } from "../../src/lib/color";
-import { readColorTokens, readRawTokens, requireColor } from "../support/tokens";
+import { readColorTokens, readRawTokens, requireColor, type TokenScope } from "../support/tokens";
+
+const PANEL: TokenScope = ".panel-light";
 
 const AA_TEXT = 4.5;
 const AA_LARGE = 3.0;
@@ -45,6 +47,11 @@ interface Pairing {
   backdrop?: string;
   use: string;
   min: number;
+  /**
+   * Measure inside a rule that re-points tokens, rather than against the
+   * global palette. `.panel-light` is the light surface on the payment screen.
+   */
+  scope?: TokenScope;
 }
 
 function buildPairings(): Pairing[] {
@@ -112,6 +119,35 @@ function buildPairings(): Pairing[] {
     min: AA_TEXT,
   });
 
+  /*
+   * The light panel on the payment screen, measured INSIDE its own scope.
+   *
+   * `.panel-light` re-points --text-*, --surface-*, --border-* and
+   * --accent-bright for its subtree. Measuring the panel tokens directly would
+   * prove the values are legible; measuring them through the remap proves the
+   * remap is actually there. A forgotten line in that rule leaves near-white
+   * text on white, which is what the scope catches and a token check does not.
+   */
+  for (const bg of ["--color-canvas", "--color-surface-1", "--color-surface-2"]) {
+    for (const fg of ["--color-text-primary", "--color-text-secondary", "--color-text-tertiary"]) {
+      pairings.push({ fg, bg, use: "body text on the light panel", min: AA_TEXT, scope: PANEL });
+    }
+    pairings.push({
+      fg: "--color-accent-bright",
+      bg,
+      use: "accent text on the light panel",
+      min: AA_TEXT,
+      scope: PANEL,
+    });
+    pairings.push({
+      fg: "--color-danger-bright",
+      bg,
+      use: "destructive text on the light panel",
+      min: AA_TEXT,
+      scope: PANEL,
+    });
+  }
+
   // The deck. These live on a white card face, never on the canvas.
   for (const suit of ["hearts", "diamonds", "clubs", "spades"]) {
     pairings.push({
@@ -152,7 +188,9 @@ describe("token extraction", () => {
   // did, silently, by matching a token name written inside a comment.
   it("finds every token that starts a line in globals.css", () => {
     const css = readFileSync(resolve(process.cwd(), "src/app/globals.css"), "utf8");
-    const parsed = readRawTokens();
+    // Read WITH the scope, so the tokens `.panel-light` re-points are in the
+    // map. Without it every override there reads as a token the parser lost.
+    const parsed = readRawTokens(PANEL);
 
     const declared = new Set<string>();
     for (const match of css.matchAll(/^\s*(--[a-z0-9-]+)\s*:/gim)) {
@@ -164,22 +202,39 @@ describe("token extraction", () => {
     expect(missing, `parser lost: ${missing.join(", ")}`).toEqual([]);
     expect(declared.size).toBeGreaterThan(40);
   });
+
+  it("keeps a scoped override OUT of the global palette", () => {
+    // The bug this exists for: flattening every declaration in the file into
+    // one map let `.panel-light`'s near-black --text-primary win globally, and
+    // the whole contrast suite started measuring black on black.
+    const global = readRawTokens().get("--color-text-primary");
+    const scoped = readRawTokens(PANEL).get("--color-text-primary");
+    expect(global).toBeDefined();
+    expect(scoped).toBeDefined();
+    expect(scoped).not.toBe(global);
+  });
 });
 
 describe("design system contrast", () => {
   const colors = readColorTokens();
+  const panelColors = readColorTokens(PANEL);
   const pairings = buildPairings();
+
+  /** Scoped pairings resolve through the rule that re-points their tokens. */
+  const mapFor = (p: Pairing) => (p.scope === undefined ? colors : panelColors);
 
   it("prints the full contrast table", () => {
     const rows = pairings.map((p) => {
+      const map = mapFor(p);
       const ratio = contrastRatio(
-        requireColor(p.fg, colors),
-        requireColor(p.bg, colors),
-        requireColor(p.backdrop ?? p.bg, colors),
+        requireColor(p.fg, map),
+        requireColor(p.bg, map),
+        requireColor(p.backdrop ?? p.bg, map),
       );
       return {
         fg: p.fg.replace("--color-", ""),
         bg: p.bg.replace("--color-", ""),
+        scope: p.scope ?? "",
         use: p.use,
         ratio: Number(ratio.toFixed(2)),
         min: p.min,
@@ -192,10 +247,11 @@ describe("design system contrast", () => {
   });
 
   it.each(pairings)("$fg on $bg meets $min:1 ($use)", (p) => {
+    const map = mapFor(p);
     const ratio = contrastRatio(
-      requireColor(p.fg, colors),
-      requireColor(p.bg, colors),
-      requireColor(p.backdrop ?? p.bg, colors),
+      requireColor(p.fg, map),
+      requireColor(p.bg, map),
+      requireColor(p.backdrop ?? p.bg, map),
     );
     expect(Number(ratio.toFixed(2))).toBeGreaterThanOrEqual(p.min);
   });

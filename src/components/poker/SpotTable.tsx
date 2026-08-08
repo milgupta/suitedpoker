@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import type { Card } from "@/poker/cards";
 import type { SeatView } from "@/poker/generator";
@@ -8,6 +7,7 @@ import type { HeroPosition } from "@/poker/solutions";
 import { seatActivity } from "@/lib/spot-seats";
 import { SPRING } from "@/lib/motion";
 import { PlayingCard } from "./PlayingCard";
+import { SeatAvatar } from "./SeatAvatar";
 import { TableRing, seatLayout } from "./Table";
 import { cn } from "@/lib/utils";
 
@@ -56,23 +56,6 @@ export function SpotTable({
   const reduced = useReducedMotion() ?? false;
   const activity = seatActivity(heroPos, actionHistory);
 
-  /*
-   * At 390px a 72px board is 231px of cards across a 390px ring, and the flop
-   * lands on top of the seat pills at the sides — the first version did exactly
-   * that. A narrow table gets a smaller board and a taller ellipse, which buys
-   * the room back on both axes. The hero's own cards stay `xl` at every width;
-   * they are the thing being decided about.
-   */
-  const [narrow, setNarrow] = useState(false);
-
-  useEffect(() => {
-    const query = window.matchMedia("(max-width: 640px)");
-    const update = (): void => setNarrow(query.matches);
-    update();
-    query.addEventListener("change", update);
-    return () => query.removeEventListener("change", update);
-  }, []);
-
   const heroIndex = Math.max(
     seats.findIndex((seat) => seat.isHero),
     0,
@@ -88,9 +71,16 @@ export function SpotTable({
 
   return (
     <div className={cn("flex w-full flex-col items-center gap-4", className)}>
+      {/*
+       * The aspect ratio is a CSS breakpoint, NOT the `narrow` state.
+       *
+       * Driving it from a matchMedia effect meant the ring was 5/4 on first
+       * paint and 1/1 a frame later, which is a layout shift on the busiest
+       * screen in the product — CLS on /arena went from 0.0000 to 0.0568 doing
+       * it that way. Nothing here is sized from state any more.
+       */}
       <div
-        className="relative w-full"
-        style={{ aspectRatio: narrow ? "1 / 1" : "5 / 4" }}
+        className="relative aspect-square w-full sm:aspect-[5/4]"
         role="img"
         aria-label={`Six-handed table. You are in ${heroPos}. Pot ${potBb.toFixed(1)} big blinds, ${effStackBb.toFixed(0)} big blinds effective.`}
       >
@@ -99,17 +89,28 @@ export function SpotTable({
         {/* The middle of the table: board, then the pot under it. */}
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
           {board.length > 0 && (
-            <div className="flex flex-wrap justify-center gap-1.5">
-              {board.map((card, i) => (
-                <PlayingCard
-                  key={i}
-                  card={card}
-                  size={narrow ? "md" : "lg"}
-                  index={i}
-                  dealCount={board.length}
-                />
-              ))}
-            </div>
+            <>
+              {/*
+               * The board twice, one shown per breakpoint.
+               *
+               * Card size is a NUMBER inside PlayingCard, so it cannot come
+               * from a Tailwind class — and taking it from a matchMedia effect
+               * resizes the board one frame after first paint, which moves
+               * every seat anchor on the ring. That was the last 0.043 of CLS
+               * on /arena. Five extra spans of pure-SVG card, rendered once, is
+               * a cheaper fix than a layout shift on the busiest screen here.
+               */}
+              <div className="flex flex-wrap justify-center gap-1.5 sm:hidden">
+                {board.map((card, i) => (
+                  <PlayingCard key={i} card={card} size="md" index={i} dealCount={board.length} />
+                ))}
+              </div>
+              <div className="hidden flex-wrap justify-center gap-1.5 sm:flex" aria-hidden>
+                {board.map((card, i) => (
+                  <PlayingCard key={i} card={card} size="lg" index={i} dealCount={board.length} />
+                ))}
+              </div>
+            </>
           )}
           <PotChip potBb={potBb} />
         </div>
@@ -194,6 +195,11 @@ function SpotSeat({
       data-hero={isHero ? "true" : "false"}
       data-folded={folded ? "true" : "false"}
     >
+      {/* Above the pill, never inside it. At 390px the side seats sit at the
+          very edge of the ring; another 30px of pill width pushes them off the
+          screen, and vertical space is the one thing the ring has spare. */}
+      <SeatAvatar seed={position} isHero={isHero} folded={folded} />
+
       <motion.div
         className={cn(
           "flex items-center gap-1.5 rounded-full border px-2.5 py-1 whitespace-nowrap",

@@ -14,10 +14,55 @@ import { parseCssColor, type Rgb } from "../../src/lib/color";
 // jsdom environment import.meta.url is an http: URL and cannot be a file path.
 const GLOBALS = resolve(process.cwd(), "src/app/globals.css");
 
-/** Every `--token: value` declaration in globals.css, unresolved. */
-export function readRawTokens(): Map<string, string> {
-  const css = readFileSync(GLOBALS, "utf8");
+/**
+ * Rules that DELIBERATELY re-point global tokens for one subtree.
+ *
+ * `.panel-light` is the light surface on the payment screen: inside it
+ * `--color-text-primary` is near-black on white rather than near-white on
+ * near-black. Flattening every declaration in the file into one map let those
+ * overrides win globally, and the whole contrast suite started measuring black
+ * on black — 35 failures, none of them real. A scoped override has to be read
+ * as a scope, not as a redefinition.
+ */
+const SCOPED_RULES = [".panel-light"] as const;
+
+export type TokenScope = (typeof SCOPED_RULES)[number];
+
+/** The full text of one rule block, braces balanced. */
+function blockFor(css: string, selector: string): string | null {
+  const start = css.indexOf(`${selector} {`);
+  if (start === -1) return null;
+
+  let depth = 0;
+  for (let i = css.indexOf("{", start); i < css.length; i++) {
+    if (css[i] === "{") depth++;
+    else if (css[i] === "}") {
+      depth--;
+      if (depth === 0) return css.slice(start, i + 1);
+    }
+  }
+  return null;
+}
+
+function declarationsIn(text: string): Map<string, string> {
   const tokens = new Map<string, string>();
+  for (const match of text.matchAll(/(--[a-z0-9-]+)\s*:\s*([^;]+);/gi)) {
+    const [, name, value] = match;
+    if (name === undefined || value === undefined) continue;
+    tokens.set(name, value.trim().replace(/\s+/g, " "));
+  }
+  return tokens;
+}
+
+/**
+ * Every `--token: value` declaration in globals.css, unresolved.
+ *
+ * Without a `scope` this is the GLOBAL palette, with every scoped rule's
+ * overrides removed. With one, the global palette overlaid by that rule's
+ * declarations — which is what a component inside that rule actually sees.
+ */
+export function readRawTokens(scope?: TokenScope): Map<string, string> {
+  const css = readFileSync(GLOBALS, "utf8");
 
   // Comments come out FIRST. globals.css documents tokens by name, and a
   // `--some-token:` written inside a comment would otherwise match as a
@@ -28,11 +73,21 @@ export function readRawTokens(): Map<string, string> {
   // wraps, so join continuations before matching.
   const flattened = withoutComments.replace(/\(\s*\n\s*/g, "(").replace(/,\s*\n\s*/g, ", ");
 
-  for (const match of flattened.matchAll(/(--[a-z0-9-]+)\s*:\s*([^;]+);/gi)) {
-    const [, name, value] = match;
-    if (name === undefined || value === undefined) continue;
-    tokens.set(name, value.trim().replace(/\s+/g, " "));
+  let global = flattened;
+  const scoped = new Map<string, string>();
+  for (const selector of SCOPED_RULES) {
+    const block = blockFor(global, selector);
+    if (block === null) continue;
+    scoped.set(selector, block);
+    global = global.replace(block, "");
   }
+
+  const tokens = declarationsIn(global);
+  if (scope === undefined) return tokens;
+
+  const block = scoped.get(scope);
+  if (block === undefined) throw new Error(`No ${scope} rule in globals.css`);
+  for (const [name, value] of declarationsIn(block)) tokens.set(name, value);
 
   return tokens;
 }
@@ -75,8 +130,8 @@ export function resolveToken(name: string, tokens: Map<string, string>, depth = 
 }
 
 /** Every token that resolves to a colour, keyed by token name. */
-export function readColorTokens(): Map<string, Rgb> {
-  const raw = readRawTokens();
+export function readColorTokens(scope?: TokenScope): Map<string, Rgb> {
+  const raw = readRawTokens(scope);
   const colors = new Map<string, Rgb>();
 
   for (const name of raw.keys()) {

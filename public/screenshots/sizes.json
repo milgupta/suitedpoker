@@ -2,50 +2,50 @@
   "rows": [
     {
       "name": "dashboard",
-      "png": 191890,
-      "webp": 53442,
-      "avif": 29246
+      "png": 205828,
+      "webp": 60028,
+      "avif": 31540
     },
     {
       "name": "diagnosis",
-      "png": 74670,
-      "webp": 23180,
-      "avif": 12393
+      "png": 80747,
+      "webp": 26226,
+      "avif": 13355
     },
     {
       "name": "drill",
-      "png": 46324,
-      "webp": 14582,
-      "avif": 10186
+      "png": 207781,
+      "webp": 35320,
+      "avif": 20623
     },
     {
       "name": "feedback-frequency-bar",
-      "png": 113839,
-      "webp": 32818,
-      "avif": 19089
+      "png": 136554,
+      "webp": 34292,
+      "avif": 19259
     },
     {
       "name": "lesson",
-      "png": 767964,
-      "webp": 296818,
-      "avif": 161296
+      "png": 879407,
+      "webp": 334730,
+      "avif": 177136
     },
     {
       "name": "range-grid",
-      "png": 102047,
-      "webp": 37868,
-      "avif": 18602
+      "png": 111063,
+      "webp": 40040,
+      "avif": 19736
     },
     {
       "name": "table-sim",
-      "png": 223800,
-      "webp": 33752,
-      "avif": 20312
+      "png": 251029,
+      "webp": 34912,
+      "avif": 20631
     }
   ],
   "total": {
-    "png": 1520534,
-    "webp": 492460,
-    "avif": 271124
+    "png": 1872409,
+    "webp": 565548,
+    "avif": 302280
   }
 }

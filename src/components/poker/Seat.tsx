@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from "motion/react";
 import type { Player } from "@/poker/gamestate";
 import { DURATION, SPRING } from "@/lib/motion";
 import { PlayingCard } from "./PlayingCard";
+import { SeatAvatar } from "./SeatAvatar";
 import { cn } from "@/lib/utils";
 
 export interface SeatProps {
@@ -45,6 +46,10 @@ export function Seat({
       data-folded={folded ? "true" : "false"}
       data-status={player.status}
     >
+      {/* Same face the drill table uses, so a spot and a played hand are
+          populated by the same six people. */}
+      <SeatAvatar seed={player.position} sizeClass="size-[26px]" isHero={isHero} folded={folded} />
+
       {/* Hole cards sit above the pill, so the pill stays the anchor point. */}
       <div className={cn("flex gap-1", folded && "opacity-0")} aria-hidden={folded}>
         {player.holeCards !== null &&

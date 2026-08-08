@@ -277,8 +277,22 @@ export function ArenaClient() {
       )}
 
       {loading || spot === null ? (
-        <div className="flex flex-col gap-3">
-          <Shimmer className="h-64 w-full" />
+        /*
+         * The skeleton mirrors SpotTable's GEOMETRY, not just its existence.
+         *
+         * It was an `h-64` block that became a ~700px table the instant the
+         * spot arrived, which is a 0.07 CLS on the screen this product is most
+         * used on — the one number the 9.1 sweep exists to hold at zero. A
+         * loading state whose size is unrelated to what replaces it is not a
+         * loading state, it is a guaranteed reflow.
+         */
+        <div className="flex flex-col items-center gap-4">
+          <Shimmer className="aspect-square w-full sm:aspect-[5/4]" />
+          {/* Two xl cards: 96px wide, 1:1.4, with the 10px gap between them. */}
+          <Shimmer className="h-[134px] w-[202px]" />
+          {/* Two lines: "100BB effective", then the action history. */}
+          <Shimmer className="h-4 w-32" />
+          <Shimmer className="h-4 w-56" />
           <Shimmer className="h-14 w-full" />
         </div>
       ) : (

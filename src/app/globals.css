@@ -152,6 +152,31 @@
   --color-suit-clubs: #14131c;
   --color-suit-spades: #14131c;
 
+  /*
+   * ── The light panel ──────────────────────────────────────────────────────
+   * One light surface in a dark-only app, for the payment screen.
+   *
+   * A checkout that looks like the rest of the product looks like part of the
+   * product; a checkout on a white card reads as a receipt, and every payment
+   * flow the audience has ever completed — Stripe's own, Apple's, every
+   * shopfront — is dark text on white. This is the one screen where looking
+   * like everybody else is the right call.
+   *
+   * They are declared as their own tokens rather than hardcoded in the
+   * component so `tests/unit/contrast.test.ts` can measure them, which matters
+   * more here than anywhere: every one of them is a colour on WHITE, and the
+   * app's own text tokens are all built for near-black.
+   */
+  --color-panel: #ffffff;
+  --color-panel-text: #0b0a12; /* 19.6 on panel */
+  --color-panel-text-secondary: #454b5e; /* 8.9 */
+  --color-panel-text-tertiary: #656b80; /* 5.3 */
+  --color-panel-surface: #f5f7fc;
+  --color-panel-surface-2: #eaeefa;
+  --color-panel-border: #dde2ee;
+  --color-panel-border-strong: #c3cadd;
+  --color-panel-danger: #a3182f; /* 7.5 — --danger-bright is 3.3 on white */
+
   /* The card face itself. The brightest object on the table by design. */
   --color-card-face: #ffffff;
   /* The bottom of the face gradient — a flat white rectangle reads as a div. */
@@ -177,52 +202,67 @@
    * Bimodal line-height is the whole trick: display type is set SOLID
    * (1.00–1.10), body breathes (1.33–1.50). Nothing sits in between — a 1.2
    * heading is the single biggest tell of a template.
+   *
+   * THE WHOLE SCALE WAS RAISED ONE STEP. It was built at 14px body, which is a
+   * dashboard density on a product whose reading surfaces are a lesson, an
+   * explanation and a diagnosis — long-form prose that a beginner reads on a
+   * phone. 14px prose is also, in 2026, the most reliable tell of a template:
+   * every generated marketing page ships it. Body is 16 now, with 18 for lede
+   * and explanation text, and every other step moved to keep the ratios.
+   *
+   * The ratios are preserved deliberately. Scaling only the small end would
+   * flatten the hierarchy, which is the other half of why a page reads as
+   * generated.
    */
-  --text-display-xl: 3.5rem; /* 56 */
-  --text-display-xl--line-height: 3.5rem; /* 1.00 */
+  --text-display-xl: 3.75rem; /* 60 */
+  --text-display-xl--line-height: 3.75rem; /* 1.00 */
   --text-display-xl--letter-spacing: -0.03em;
   --text-display-xl--font-weight: 700;
 
-  --text-display-lg: 2.5rem; /* 40 */
-  --text-display-lg--line-height: 2.6875rem; /* 43 — 1.08 */
+  --text-display-lg: 2.75rem; /* 44 */
+  --text-display-lg--line-height: 2.9375rem; /* 47 — 1.07 */
   --text-display-lg--letter-spacing: -0.02em;
   --text-display-lg--font-weight: 600;
 
-  --text-display-md: 1.875rem; /* 30 */
-  --text-display-md--line-height: 2.0625rem; /* 33 — 1.10 */
+  --text-display-md: 2.125rem; /* 34 */
+  --text-display-md--line-height: 2.3125rem; /* 37 — 1.09 */
   --text-display-md--letter-spacing: -0.02em;
   --text-display-md--font-weight: 600;
 
-  --text-heading-lg: 1.375rem; /* 22 */
-  --text-heading-lg--line-height: 1.625rem; /* 26 — 1.18 */
+  --text-heading-lg: 1.5rem; /* 24 */
+  --text-heading-lg--line-height: 1.75rem; /* 28 — 1.17 */
   --text-heading-lg--letter-spacing: -0.01em;
   --text-heading-lg--font-weight: 600;
 
-  --text-heading-md: 1.125rem; /* 18 */
-  --text-heading-md--line-height: 1.5rem; /* 24 — 1.33 */
+  --text-heading-md: 1.25rem; /* 20 */
+  --text-heading-md--line-height: 1.6875rem; /* 27 — 1.35 */
   --text-heading-md--letter-spacing: 0em;
   --text-heading-md--font-weight: 600;
 
-  --text-body-lg: 1rem; /* 16 */
-  --text-body-lg--line-height: 1.5rem; /* 24 — 1.50 */
+  --text-body-lg: 1.125rem; /* 18 */
+  --text-body-lg--line-height: 1.6875rem; /* 27 — 1.50 */
   --text-body-lg--letter-spacing: 0em;
   --text-body-lg--font-weight: 400;
 
-  --text-body-md: 0.875rem; /* 14 */
-  --text-body-md--line-height: 1.25rem; /* 20 — 1.43 */
+  /* The workhorse. 16, not 14 — this is the size most of the product's prose
+     is set at, and it is read on a phone. */
+  --text-body-md: 1rem; /* 16 */
+  --text-body-md--line-height: 1.4375rem; /* 23 — 1.44 */
   --text-body-md--letter-spacing: 0em;
   --text-body-md--font-weight: 400;
 
-  --text-body-sm: 0.8125rem; /* 13 */
-  --text-body-sm--line-height: 1.1875rem; /* 19 — 1.46 */
+  --text-body-sm: 0.875rem; /* 14 */
+  --text-body-sm--line-height: 1.25rem; /* 20 — 1.43 */
   --text-body-sm--letter-spacing: 0em;
   --text-body-sm--font-weight: 400;
 
-  --text-caption: 0.75rem; /* 12 */
-  --text-caption--line-height: 1rem; /* 16 — 1.33 */
+  --text-caption: 0.8125rem; /* 13 */
+  --text-caption--line-height: 1.0625rem; /* 17 — 1.31 */
   --text-caption--letter-spacing: 0.01em;
   --text-caption--font-weight: 500;
 
+  /* Overline stays 11. It is a tracked-out uppercase label read as a marker,
+     not as text, and enlarging it makes it compete with the heading under it. */
   --text-overline: 0.6875rem; /* 11 */
   --text-overline--line-height: 0.875rem; /* 14 */
   --text-overline--letter-spacing: 0.12em;
@@ -306,6 +346,9 @@
    */
   --shadow-card: 0 1px 2px rgba(3, 2, 8, 0.6), 0 6px 14px -6px rgba(3, 2, 8, 0.8);
   --shadow-card-hero: 0 2px 4px rgba(3, 2, 8, 0.65), 0 16px 32px -12px rgba(3, 2, 8, 0.9);
+
+  /* The light panel, lifted off the wash behind it. */
+  --shadow-panel: 0 24px 60px -24px rgba(2, 2, 6, 0.85), 0 2px 8px rgba(2, 2, 6, 0.5);
 
   /* ── 5.3 Ambient glow recipe ────────────────────────────────────────────── */
   --ambient-blob-blur: 120px;
@@ -614,6 +657,38 @@
         transparent 60%
       ),
       linear-gradient(180deg, var(--color-canvas) 0%, var(--color-canvas-deep) 100%);
+  }
+
+  /*
+   * ── The light panel ───────────────────────────────────────────────────────
+   *
+   * Re-points the app's generic tokens at their light equivalents for one
+   * subtree, so every component inside — the plan cards, the radios, the tick
+   * row, the Terms links — renders correctly WITHOUT knowing it is on white.
+   * The alternative is a `light` prop threaded through six components and
+   * forgotten on the seventh.
+   *
+   * `--accent-bright` is remapped because it is 3.1 on white and fails AA. The
+   * accent FILL is left alone: the CTA gradient and the ribbon are the brand,
+   * they carry `--on-accent` text, and they read the same on either ground.
+   */
+  .panel-light {
+    background: var(--color-panel);
+    color: var(--color-panel-text);
+    box-shadow: var(--shadow-panel);
+
+    --color-canvas: var(--color-panel);
+    --color-surface-1: var(--color-panel-surface);
+    --color-surface-2: var(--color-panel-surface-2);
+    --color-border: var(--color-panel-border);
+    --color-border-strong: var(--color-panel-border-strong);
+    --color-text-primary: var(--color-panel-text);
+    --color-text-secondary: var(--color-panel-text-secondary);
+    --color-text-tertiary: var(--color-panel-text-tertiary);
+    --color-accent-bright: var(--color-accent-700);
+    --color-danger-bright: var(--color-panel-danger);
+    --color-danger-fill: color-mix(in srgb, var(--color-panel-danger) 8%, transparent);
+    --color-danger-border: color-mix(in srgb, var(--color-panel-danger) 25%, transparent);
   }
 
   /*

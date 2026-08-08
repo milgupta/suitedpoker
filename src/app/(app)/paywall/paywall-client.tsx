@@ -6,6 +6,7 @@ import Link from "next/link";
 import posthog from "posthog-js";
 import { Button } from "@/components/ui/button";
 import { ProofMarquee } from "@/components/ProofMarquee";
+import { PROOF_MODE } from "@/content/testimonials";
 import { capture, isAnalyticsConfigured } from "@/lib/analytics-client";
 import {
   formatUsd,
@@ -138,126 +139,158 @@ export function PaywallClient({ diagnosis, leakBb100, leakLabel }: PaywallClient
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-[60rem] flex-col gap-12">
-      <div className="flex flex-col gap-12 lg:grid lg:grid-cols-2 lg:items-start lg:gap-14">
-        {/* ── The purchase column ────────────────────────────────────────── */}
-        <section className="flex flex-col gap-6 lg:col-start-2 lg:row-start-1">
-          <header className="flex flex-col gap-3">
-            <h1 className="text-display-lg">Your plan is ready.</h1>
+    <div className="mx-auto flex w-full max-w-[60rem] flex-col gap-10">
+      {/*
+       * THE WHITE PANEL.
+       *
+       * The one light surface in a dark-only app. Every payment flow this
+       * audience has ever completed is dark text on white — Stripe's own,
+       * Apple's, every shopfront — and a checkout that looks like the rest of
+       * the product looks like part of the product rather than like a receipt.
+       *
+       * `.panel-light` re-points the generic colour tokens for this subtree, so
+       * the plan cards, the radios and the links below render correctly without
+       * any of them knowing they are on white. See globals.css.
+       */}
+      <div className="panel-light rounded-xl p-6 sm:p-10">
+        <div className="flex flex-col gap-12 lg:grid lg:grid-cols-2 lg:items-start lg:gap-14">
+          {/* ── The purchase column ────────────────────────────────────────── */}
+          <section className="flex flex-col gap-6 lg:col-start-2 lg:row-start-1">
+            <header className="flex flex-col gap-3">
+              <h1 className="text-display-lg">Your plan is ready.</h1>
 
-            {/* The leak IS the subhead when there is one. Nothing generic beats
+              {/* The leak IS the subhead when there is one. Nothing generic beats
               a true, specific number about the person reading it. bb/100 only
               — a dollar figure on a poker result is a compliance boundary. */}
-            {leakBb100 == null ? (
-              <p className="text-text-secondary text-body-lg max-w-[42ch]">
-                Everything below is built and waiting. Pick how you want to pay.
-              </p>
-            ) : (
-              <p className="text-text-secondary text-body-lg max-w-[42ch]">
-                {leakLabel == null ? "Your biggest leak" : `Your biggest leak, ${leakLabel},`} is
-                costing you{" "}
-                <span className="text-text-primary font-mono font-semibold tabular-nums">
-                  {leakBb100.toFixed(1)} bb/100
-                </span>
-                . Fixing it is what this is for.
-              </p>
-            )}
+              {leakBb100 == null ? (
+                <p className="text-text-secondary text-body-lg max-w-[42ch]">
+                  Everything below is built and waiting. Pick how you want to pay.
+                </p>
+              ) : (
+                <p className="text-text-secondary text-body-lg max-w-[42ch]">
+                  {leakLabel == null ? "Your biggest leak" : `Your biggest leak, ${leakLabel},`} is
+                  costing you{" "}
+                  <span className="text-text-primary font-mono font-semibold tabular-nums">
+                    {leakBb100.toFixed(1)} bb/100
+                  </span>
+                  . Fixing it is what this is for.
+                </p>
+              )}
 
-            {cancelled && (
-              <p role="status" className="text-text-tertiary text-body-sm">
-                No charge was made. Your place is still here when you want it.
-              </p>
-            )}
-          </header>
+              {cancelled && (
+                <p role="status" className="text-text-tertiary text-body-sm">
+                  No charge was made. Your place is still here when you want it.
+                </p>
+              )}
+            </header>
 
-          <fieldset className="flex flex-col gap-3">
-            <legend className="sr-only">Choose a plan</legend>
-            {CARD_ORDER.map((id) => (
-              <PlanCard
-                key={id}
-                plan={id}
-                selected={selected === id}
-                onSelect={() => setSelected(id)}
-              />
-            ))}
-          </fieldset>
+            <fieldset className="flex flex-col gap-3">
+              <legend className="sr-only">Choose a plan</legend>
+              {CARD_ORDER.map((id) => (
+                <PlanCard
+                  key={id}
+                  plan={id}
+                  selected={selected === id}
+                  onSelect={() => setSelected(id)}
+                />
+              ))}
+            </fieldset>
 
-          {/* Between the plans and the button, where the reference puts them:
+            {/* Between the plans and the button, where the reference puts them:
               the last thing read before the price is what the price is for.
               Accent, never the grade green — blue is interface, green-to-red is
               grading, and the two never borrow each other's range. */}
-          <ul className="text-text-secondary text-body-sm flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
-            {HIGHLIGHTS.map((highlight) => (
-              <li key={highlight} className="flex items-center gap-1.5">
-                <span aria-hidden className="text-accent-bright">
-                  ✓
-                </span>
-                {highlight}
-              </li>
-            ))}
-          </ul>
+            <ul className="text-text-secondary text-body-sm flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+              {HIGHLIGHTS.map((highlight) => (
+                <li key={highlight} className="flex items-center gap-1.5">
+                  <span aria-hidden className="text-accent-bright">
+                    ✓
+                  </span>
+                  {highlight}
+                </li>
+              ))}
+            </ul>
 
-          {error !== "" && (
-            <p
-              role="alert"
-              className="border-danger-border bg-danger-fill text-danger-bright text-body-md rounded-md border px-3 py-2"
-            >
-              {error}
-            </p>
-          )}
+            {error !== "" && (
+              <p
+                role="alert"
+                className="border-danger-border bg-danger-fill text-danger-bright text-body-md rounded-md border px-3 py-2"
+              >
+                {error}
+              </p>
+            )}
 
-          <div className="flex flex-col gap-3">
-            <Button
-              variant="accent"
-              size="lg"
-              className="w-full"
-              loading={busy}
-              onClick={() => void startCheckout()}
-            >
-              Start training
-            </Button>
-            <p className="text-text-tertiary text-caption text-center">
-              Cancel any time. {PLANS[selected].label.toLowerCase()} billing,{" "}
-              {formatUsd(PLANS[selected].amountCents)} {PLANS[selected].intervalLabel}.
-            </p>
-          </div>
+            <div className="flex flex-col gap-3">
+              <Button
+                variant="accent"
+                size="lg"
+                className="w-full"
+                loading={busy}
+                onClick={() => void startCheckout()}
+              >
+                Start training
+              </Button>
+              <p className="text-text-tertiary text-caption text-center">
+                Cancel any time. {PLANS[selected].label.toLowerCase()} billing,{" "}
+                {formatUsd(PLANS[selected].amountCents)} {PLANS[selected].intervalLabel}.
+              </p>
+            </div>
 
-          <footer className="text-text-tertiary text-caption flex flex-wrap justify-center gap-x-4 gap-y-2">
-            <Link href="/terms" className="hover:text-text-secondary underline underline-offset-4">
-              Terms
-            </Link>
-            <Link
-              href="/privacy"
-              className="hover:text-text-secondary underline underline-offset-4"
-            >
-              Privacy
-            </Link>
-          </footer>
-        </section>
+            <footer className="text-text-tertiary text-caption flex flex-wrap justify-center gap-x-4 gap-y-2">
+              <Link
+                href="/terms"
+                className="hover:text-text-secondary underline underline-offset-4"
+              >
+                Terms
+              </Link>
+              <Link
+                href="/privacy"
+                className="hover:text-text-secondary underline underline-offset-4"
+              >
+                Privacy
+              </Link>
+            </footer>
+          </section>
 
-        {/* ── The showcase column ────────────────────────────────────────── */}
-        {/* Centred against the taller purchase column rather than top-aligned:
+          {/* ── The showcase column ────────────────────────────────────────── */}
+          {/* Centred against the taller purchase column rather than top-aligned:
             aligned to the top it leaves a column of empty page under it, which
             reads as something having failed to load. */}
-        <aside className="lg:col-start-1 lg:row-start-1 lg:self-center">
-          {diagnosis === undefined ? (
-            <ProductShot />
-          ) : (
-            /* The diagnosis behind a scrim: they are buying access to something
+          <aside className="lg:col-start-1 lg:row-start-1 lg:self-center">
+            {diagnosis === undefined ? (
+              <ProductShot />
+            ) : (
+              /* The diagnosis behind a scrim: they are buying access to something
                that has already been built for them, not to a promise. */
-            <div className="relative overflow-hidden rounded-lg">
-              <div aria-hidden className="pointer-events-none blur-[6px] select-none">
-                {diagnosis}
+              <div className="relative overflow-hidden rounded-lg">
+                <div aria-hidden className="pointer-events-none blur-[6px] select-none">
+                  {diagnosis}
+                </div>
+                <div className="from-canvas absolute inset-0 bg-gradient-to-t via-transparent to-transparent" />
               </div>
-              <div className="from-canvas absolute inset-0 bg-gradient-to-t via-transparent to-transparent" />
-            </div>
-          )}
-        </aside>
+            )}
+          </aside>
+        </div>
       </div>
 
-      {/* Under BOTH columns, not inside one. The band is the page's own width —
-          a marquee penned into a half-width box reads as a broken carousel. */}
-      <ProofMarquee />
+      {/*
+       * The band, OUTSIDE the white panel and the full width of the page.
+       *
+       * Outside because a marquee inside the panel would run under the CTA and
+       * pull the eye off it at the exact moment the decision is being made;
+       * below it, on the dark ground, it reads as the room the product sits in
+       * rather than as part of the form. Full width because a marquee penned
+       * into a half-width box reads as a broken carousel.
+       */}
+      <section className="flex flex-col gap-3">
+        <h2 className="text-text-tertiary text-overline text-center uppercase">
+          {/* The label follows the DATA. With no collected quotes the band
+              carries product facts, and calling those "what players say" would
+              be the fabricated testimonial the whole module exists to refuse. */}
+          {PROOF_MODE === "quotes" ? "What players say" : "What you get"}
+        </h2>
+        <ProofMarquee />
+      </section>
     </div>
   );
 }
@@ -272,22 +305,27 @@ export function PaywallClient({ diagnosis, leakBb100, leakLabel }: PaywallClient
 const CARD_ORDER: readonly PlanId[] = [...PLAN_IDS].sort((a) => (a === "annual" ? -1 : 1));
 
 /**
- * One real screen from the product, cropped to its top.
+ * One real screen from the product.
  *
- * A fixed aspect box with `object-top` rather than the whole 780x1688 capture:
- * the graded feedback and the frequency bar are the part worth showing, and a
- * full-length phone screenshot in a column reduces both to nothing.
+ * The DRILL shot, not the feedback one. Both are real; this is the one that
+ * explains itself with no caption — six seats, who raised, your two cards — and
+ * the feedback shot needs the grade panel in frame to make sense, which does
+ * not survive a crop. It is also the screen somebody is actually buying.
+ *
+ * A 3/5 frame with `object-top` rather than the whole 780x1688 capture: it ends
+ * just under the hero's hand, which is where the interesting part of the
+ * screenshot stops.
  */
 function ProductShot() {
   return (
     <figure className="mx-auto flex w-full max-w-[22rem] flex-col gap-3">
-      <div className="border-border bg-surface-1 relative aspect-4/5 overflow-hidden rounded-lg border">
+      <div className="border-border bg-canvas relative aspect-3/5 overflow-hidden rounded-lg border">
         <picture>
-          <source srcSet="/screenshots/feedback-frequency-bar.avif" type="image/avif" />
-          <source srcSet="/screenshots/feedback-frequency-bar.webp" type="image/webp" />
+          <source srcSet="/screenshots/drill.avif" type="image/avif" />
+          <source srcSet="/screenshots/drill.webp" type="image/webp" />
           <img
-            src="/screenshots/feedback-frequency-bar.png"
-            alt="A graded decision in the drill: the solver's frequencies, the grade, and the explanation underneath."
+            src="/screenshots/drill.png"
+            alt="A hand in the drill: six seats round the table, who raised and for how much, and your two cards."
             width={780}
             height={1688}
             loading="lazy"
@@ -295,13 +333,14 @@ function ProductShot() {
             className="h-full w-full object-cover object-top"
           />
         </picture>
-        {/* Fades the crop into the page instead of ending on a cut line. */}
+        {/* Fades the crop into the panel instead of ending on a cut line. The
+            gradient reads --canvas, which `.panel-light` re-points to white. */}
         <div
           aria-hidden
-          className="from-canvas pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t to-transparent"
+          className="from-canvas pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t to-transparent"
         />
       </div>
-      <figcaption className="text-text-tertiary text-caption">
+      <figcaption className="text-text-tertiary text-caption text-center">
         Every hand is graded against the solution, then explained.
       </figcaption>
     </figure>
