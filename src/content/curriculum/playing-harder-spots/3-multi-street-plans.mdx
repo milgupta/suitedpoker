@@ -1,0 +1,64 @@
+---
+title: Multi-street plans
+slug: multi-street-plans
+module: "playing-harder-spots"
+order: 3
+estMinutes: 7
+concepts: ["barreling", "give-ups", "turn after c-bet"]
+drillFilter: { "type": "postflop", "tags": ["wet", "connected"], "difficulty": 6 }
+prerequisites: ["the-continuation-bet", "when-to-give-up"]
+---
+
+A flop bet is not a plan by itself. A plan is what you intend to do on the turn when they call — barrel again for value, barrel as a bluff with a coherent story, or give up and check back. Most beginners fire the flop because the continuation-bet lesson told them to, then freeze on the turn because they never decided what the second barrel was supposed to accomplish.
+
+Wet, connected boards are where that missing plan shows up immediately. Their calling range is full of draws, pairs, and made hands that continue happily. Your air that “had to c-bet” on the flop often becomes a turn give-up, and that is not a failure of nerve — it is the correct update after new information.
+
+<HandExample
+  hole="8h 7h"
+  board="Jh Th 9c"
+  label="Combo draws love wet boards. Pure air does not."
+/>
+
+## After they call the flop
+
+Ask three questions before the turn card even lands, while you still remember why you bet:
+
+1. What range did I represent on the flop with this size?
+2. Which hands that call a second barrel am I actually ahead of?
+3. If I check, which of their bluffs and thin value hands do I still beat at showdown?
+
+Value hands that want stacks in the middle keep betting. Draws that pick up meaningful equity keep betting some of the time. Air that only worked as a one-and-done bluff mostly checks. The order of those sentences is deliberate: value first, equity second, air last.
+
+## Wet boards punish autopilot
+
+On a dry ace-high flop you can c-bet a wide range because their continuing range is capped and draw-light. On nine-eight-seven two-tone you cannot fire the same frequency without bleeding. The continuation-bet lesson taught the first texture. This lesson drills the second — and the turn decision that follows when they stick around after your flop bet.
+
+Notice how often strong draws become the core of a wet-board betting range. Combo draws in particular want to deny equity and build the pot when they improve. Pure air that copied their sizing on the flop does not inherit their turn plan.
+
+<TableExample
+  hero="BTN"
+  pot={11}
+  lines={[
+    "You c-bet a wet flop.",
+    "They call.",
+    "Turn is a blank. Most of your air is now a check; your strong draws and made hands keep the pressure on.",
+  ]}
+/>
+
+When you do barrel the turn, know which story you are telling. A second barrel with a missed gutshot needs them to fold hands that beat you often enough to pay for the times they call or raise. If you cannot name those hands, you do not have a bluff — you have a hopeful click.
+
+<Checkpoint
+  question="You c-bet pure air on a wet connected flop and get called. Turn is a blank. Default line?"
+  options={[
+    "Barrel again — stay aggressive",
+    "Check and often give up — your story is thin and their range connected",
+    "Jam — deny equity",
+  ]}
+  answer={1}
+  explain="Double-barreling air on a wet board after a call needs a real reason. Most of the time the honest line is to check and move on."
+/>
+
+<KeyIdea>
+  Multi-street play means deciding the turn before you fire the flop: value and strong draws can
+  barrel wet boards; most air that got called gives up.
+</KeyIdea>

@@ -16,6 +16,7 @@ export const spotConfigSchema = z.object({
   heroPos: z.enum(["UTG", "MP", "CO", "BTN", "SB", "BB"]).optional(),
   actionSeq: z.string().optional(),
   templateId: z.string().optional(),
+  street: z.enum(["flop", "turn", "river"]).optional(),
   excludeNodeRefs: z.array(z.string()).optional(),
 });
 

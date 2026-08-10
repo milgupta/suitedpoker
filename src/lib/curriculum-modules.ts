@@ -13,6 +13,7 @@ export const MODULES = [
   { slug: "reading-the-board", title: "Reading the Board", order: 2 },
   { slug: "betting-with-a-plan", title: "Betting With a Plan", order: 3 },
   { slug: "not-losing-money", title: "Not Losing Money", order: 4 },
+  { slug: "playing-harder-spots", title: "Playing Harder Spots", order: 5 },
 ] as const;
 
 export type ModuleSlug = (typeof MODULES)[number]["slug"];

@@ -50,6 +50,9 @@ coverage/
 playwright-report/
 test-results/
 
+# local UI review captures (regenerable via npm run screenshots:review)
+/tmp/
+
 # solver pipeline output (large, regenerable)
 tools/solver/out/
 

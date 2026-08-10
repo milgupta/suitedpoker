@@ -110,6 +110,11 @@ interface NodeSpec {
   readonly reason: string;
   readonly raise: readonly Weighted[];
   readonly call: readonly Weighted[];
+  /**
+   * What the aggressive action is called in the file. vs_4bet nodes shove
+   * rather than size-raise; the range notation is the same either way.
+   */
+  readonly aggressiveAction?: "raise" | "allin";
 }
 
 /**
@@ -574,6 +579,181 @@ const UTG_VS_3BET_MP: NodeSpec = {
   ],
 };
 
+/**
+ * Button opened ~48% and faces a blind 3bet. In position with the widest
+ * opening range, it continues wider than the cutoff — more speculative
+ * suited connectors and a thicker 4bet-bluff band.
+ */
+const BTN_VS_3BET_BB: NodeSpec = {
+  ref: "BTN:vs_3bet_BB",
+  reason:
+    "button opens nearly half the deck, so its continue vs a blind 3bet is wider than the cutoff's",
+  raise: [
+    { range: "AA, KK", freq: 1 },
+    { range: "QQ, AKs", freq: 0.55 },
+    { range: "AKo", freq: 0.5 },
+    { range: "A5s-A3s", freq: 0.45 },
+    { range: "76s, 65s", freq: 0.25 },
+  ],
+  call: [
+    { range: "QQ, AKs", freq: 0.45 },
+    { range: "AKo", freq: 0.5 },
+    { range: "JJ-77", freq: 1 },
+    { range: "AQs-A9s", freq: 1 },
+    { range: "KQs-KTs, QJs-QTs, JTs, T9s, 98s", freq: 1 },
+    { range: "AQo-AJo", freq: 0.55 },
+    { range: "66-55", freq: 0.55 },
+    { range: "KQo", freq: 0.35 },
+  ],
+};
+
+/** Button vs a small-blind 3bet — tighter than vs BB, still in position. */
+const BTN_VS_3BET_SB: NodeSpec = {
+  ref: "BTN:vs_3bet_SB",
+  reason:
+    "a small-blind 3bet is stronger than a big-blind's, so the button continues tighter than vs BB",
+  raise: [
+    { range: "AA, KK", freq: 1 },
+    { range: "QQ, AKs", freq: 0.6 },
+    { range: "AKo", freq: 0.55 },
+    { range: "A5s-A4s", freq: 0.4 },
+  ],
+  call: [
+    { range: "QQ, AKs", freq: 0.4 },
+    { range: "AKo", freq: 0.45 },
+    { range: "JJ-88", freq: 1 },
+    { range: "AQs-ATs", freq: 1 },
+    { range: "KQs-KJs, QJs, JTs, T9s", freq: 1 },
+    { range: "AQo", freq: 0.5 },
+    { range: "77-66", freq: 0.5 },
+  ],
+};
+
+/**
+ * MP opened ~20%. Absolute continue is narrower than CO, but as a share of its
+ * own open it is denser — fewer junk hands were in the opening range to begin
+ * with.
+ */
+const MP_VS_3BET_BB: NodeSpec = {
+  ref: "MP:vs_3bet_BB",
+  reason:
+    "MP's open is tighter than CO's, so the continue drops the speculative end that only the cutoff had",
+  raise: [
+    { range: "AA, KK", freq: 1 },
+    { range: "QQ, AKs", freq: 0.65 },
+    { range: "AKo", freq: 0.55 },
+    { range: "A5s", freq: 0.35 },
+  ],
+  call: [
+    { range: "QQ, AKs", freq: 0.35 },
+    { range: "AKo", freq: 0.45 },
+    { range: "JJ-99", freq: 1 },
+    { range: "AQs-AJs", freq: 1 },
+    { range: "KQs, QJs, JTs", freq: 1 },
+    { range: "88-77", freq: 0.55 },
+    { range: "AQo", freq: 0.4 },
+  ],
+};
+
+/** Cutoff vs SB 3bet — between CO-vs-BB (wider blind) and CO-vs-BTN (IP cold). */
+const CO_VS_3BET_SB: NodeSpec = {
+  ref: "CO:vs_3bet_SB",
+  reason:
+    "SB 3bets tighter than BB and the cutoff is still in position, so the continue sits between the two existing CO templates",
+  raise: [
+    { range: "AA, KK", freq: 1 },
+    { range: "QQ, AKs", freq: 0.55 },
+    { range: "AKo", freq: 0.5 },
+    { range: "A5s-A4s", freq: 0.35 },
+  ],
+  call: [
+    { range: "QQ, AKs", freq: 0.45 },
+    { range: "AKo", freq: 0.5 },
+    { range: "JJ-99", freq: 1 },
+    { range: "AQs-ATs", freq: 1 },
+    { range: "KQs-KJs, QJs, JTs", freq: 1 },
+    { range: "88-77", freq: 0.45 },
+    { range: "AQo", freq: 0.4 },
+  ],
+};
+
+/**
+ * Facing a 4bet. Aggressive action is `allin` (shove), not a sized raise.
+ * Continuations are tiny — only the top of the prior 3bet range belongs.
+ */
+const BB_VS_4BET_BTN: NodeSpec = {
+  ref: "BB:vs_4bet_BTN",
+  reason:
+    "button 4bets widest of any seat, so the big blind continues a touch wider than vs a tighter 4bet",
+  aggressiveAction: "allin",
+  raise: [
+    { range: "AA, KK", freq: 1 },
+    { range: "QQ", freq: 0.7 },
+    { range: "AKs", freq: 0.65 },
+    { range: "AKo", freq: 0.4 },
+  ],
+  call: [
+    { range: "QQ", freq: 0.3 },
+    { range: "AKs", freq: 0.35 },
+    { range: "AKo", freq: 0.6 },
+    { range: "JJ", freq: 0.55 },
+    { range: "AQs", freq: 0.4 },
+  ],
+};
+
+const BB_VS_4BET_CO: NodeSpec = {
+  ref: "BB:vs_4bet_CO",
+  reason: "a cutoff 4bet is tighter than a button's, so BB folds more of QQ/AK mixes",
+  aggressiveAction: "allin",
+  raise: [
+    { range: "AA, KK", freq: 1 },
+    { range: "QQ", freq: 0.8 },
+    { range: "AKs", freq: 0.7 },
+    { range: "AKo", freq: 0.35 },
+  ],
+  call: [
+    { range: "QQ", freq: 0.2 },
+    { range: "AKs", freq: 0.3 },
+    { range: "AKo", freq: 0.65 },
+    { range: "JJ", freq: 0.4 },
+    { range: "AQs", freq: 0.25 },
+  ],
+};
+
+const SB_VS_4BET_BTN: NodeSpec = {
+  ref: "SB:vs_4bet_BTN",
+  reason:
+    "SB is out of position for the rest of the hand after calling a 4bet, so it shoves more and flats less than BB",
+  aggressiveAction: "allin",
+  raise: [
+    { range: "AA, KK", freq: 1 },
+    { range: "QQ, AKs", freq: 0.85 },
+    { range: "AKo", freq: 0.55 },
+  ],
+  call: [
+    { range: "QQ, AKs", freq: 0.15 },
+    { range: "AKo", freq: 0.45 },
+    { range: "JJ", freq: 0.35 },
+  ],
+};
+
+const BTN_VS_4BET_UTG: NodeSpec = {
+  ref: "BTN:vs_4bet_UTG",
+  reason: "UTG 4bets the tightest range in the tree; the button continues only with premiums",
+  aggressiveAction: "allin",
+  raise: [
+    { range: "AA, KK", freq: 1 },
+    { range: "QQ", freq: 0.9 },
+    { range: "AKs", freq: 0.75 },
+    { range: "AKo", freq: 0.3 },
+  ],
+  call: [
+    { range: "QQ", freq: 0.1 },
+    { range: "AKs", freq: 0.25 },
+    { range: "AKo", freq: 0.7 },
+  ],
+};
+
 const SPECS: readonly NodeSpec[] = [
   BB_VS_BTN,
   BB_VS_CO,
@@ -594,6 +774,14 @@ const SPECS: readonly NodeSpec[] = [
   CO_VS_3BET_BTN,
   SB_VS_3BET_BB,
   UTG_VS_3BET_MP,
+  BTN_VS_3BET_BB,
+  BTN_VS_3BET_SB,
+  MP_VS_3BET_BB,
+  CO_VS_3BET_SB,
+  BB_VS_4BET_BTN,
+  BB_VS_4BET_CO,
+  SB_VS_4BET_BTN,
+  BTN_VS_4BET_UTG,
 ];
 
 // ── Building a strategy ───────────────────────────────────────────────────────
@@ -647,6 +835,8 @@ function buildStrategy(spec: NodeSpec, allHands: readonly string[]): Strategy {
   accumulate(spec.call, call);
   softenBoundary(call, raise);
 
+  const aggressive = spec.aggressiveAction ?? "raise";
+
   const out: Strategy = {};
   for (const hand of allHands) {
     const r = Math.min(1, raise.get(hand) ?? 0);
@@ -660,7 +850,7 @@ function buildStrategy(spec: NodeSpec, allHands: readonly string[]): Strategy {
     const round = (n: number): number => Math.round(n * 100) / 100;
     if (round(f) > 0) entry.fold = round(f);
     if (round(c) > 0) entry.call = round(c);
-    if (round(r) > 0) entry.raise = round(r);
+    if (round(r) > 0) entry[aggressive] = round(r);
 
     // Rounding can leave the three a hundredth short or long.
     const total = Object.values(entry).reduce((a, b) => a + b, 0);
@@ -866,7 +1056,7 @@ function pathFor(ref: string): string {
 function widthOf(strategy: Strategy, key: "continue" | "raise"): number {
   let combos = 0;
   for (const [hand, mix] of Object.entries(strategy)) {
-    const weight = key === "raise" ? (mix.raise ?? 0) : 1 - (mix.fold ?? 0);
+    const weight = key === "raise" ? (mix.raise ?? 0) + (mix.allin ?? 0) : 1 - (mix.fold ?? 0);
     combos += combosOf(hand) * weight;
   }
   return (100 * combos) / 1326;
@@ -905,8 +1095,9 @@ function main(): void {
     const after = widthOf(strategy, "continue");
 
     // What the very best hand in the node is worth. Facing a 3bet the pot is
-    // already three times bigger, so the top of the range is worth more.
-    const maxValue = spec.ref.includes("vs_3bet") ? 11 : 7;
+    // already three times bigger, so the top of the range is worth more; a
+    // 4bet pot is larger still.
+    const maxValue = spec.ref.includes("vs_4bet") ? 18 : spec.ref.includes("vs_3bet") ? 11 : 7;
 
     file.strategy = strategy;
     file.ev = deriveEv(strategy, file.actions, maxValue);

@@ -1,0 +1,117 @@
+{
+  "id": "srp-co-probe-high-paired",
+  "solutionSet": "suitedpoker-6max-100bb-v1",
+  "provenance": "authored-approximation",
+  "label": "BTN opens, CO calls; flop checks to CO on a high paired board",
+  "street": "flop",
+  "heroPos": "CO",
+  "villainPos": "BTN",
+  "potBb": 6,
+  "effStackBb": 97.5,
+  "heroRange": "55-TT,A9s,ATs:0.7,AJs:0.6,AQs:0.6,KTs,KJs:0.8,QTs,QJs,J9s,JTs,T9s,98s:0.6,87s:0.5,AQo:0.75,AJo:0.5,KQo:0.45",
+  "villainRange": "22+,A2s+,K8s+,Q8s+,J8s+,T8s+,96s+,86s+,75s+,65s,A9o+,KTo+,QTo+,JTo",
+  "boardTags": ["paired", "broadway", "dry"],
+  "exampleBoards": ["Kh Kd Tc", "Qs Qh Jd", "Jc Jd Th", "Ah Ad Ks"],
+  "actionHistory": ["BTN opens 2.5bb", "CO calls", "BTN checks"],
+  "actions": ["check", "bet_33", "bet_66"],
+  "confidence": {
+    "rangeShape": "medium",
+    "frequencies": "low",
+    "ev": "low",
+    "note": "High paired boards flip the low-paired script. The probe frequency is the fragile number."
+  },
+  "strategies": [
+    {
+      "handClass": "full_house",
+      "strategy": {
+        "bet_66": 0.6,
+        "bet_33": 0.25,
+        "check": 0.15
+      },
+      "ev": {
+        "check": 4.2,
+        "bet_33": 4.5,
+        "bet_66": 4.8
+      },
+      "rationale": "A full house can bet bigger for value — few worse hands call tiny."
+    },
+    {
+      "handClass": "set",
+      "strategy": {
+        "bet_33": 0.55,
+        "check": 0.45
+      },
+      "ev": {
+        "check": 3.1,
+        "bet_33": 3.2,
+        "bet_66": 2.7
+      },
+      "rationale": "Trips still slow-play some; the opener checked and may be trapping."
+    },
+    {
+      "handClass": "overpair",
+      "strategy": {
+        "bet_33": 0.7,
+        "check": 0.3
+      },
+      "ev": {
+        "check": 2.2,
+        "bet_33": 2.5,
+        "bet_66": 1.9
+      },
+      "rationale": "Overpair is a clear probe for value when the aggressor checks."
+    },
+    {
+      "handClass": "pocket_pair_below_top",
+      "strategy": {
+        "check": 0.6,
+        "bet_33": 0.4
+      },
+      "ev": {
+        "check": 1.3,
+        "bet_33": 1.25,
+        "bet_66": 0.7
+      },
+      "rationale": "Underpairs are bluff-catchers more than probes on a high pair board."
+    },
+    {
+      "handClass": "ace_high",
+      "strategy": {
+        "bet_33": 0.55,
+        "check": 0.45
+      },
+      "ev": {
+        "check": 0.85,
+        "bet_33": 0.95,
+        "bet_66": 0.35
+      },
+      "rationale": "Ace high takes the lead when they check — folds out weak overcards."
+    },
+    {
+      "handClass": "overcards",
+      "strategy": {
+        "bet_33": 0.5,
+        "check": 0.5
+      },
+      "ev": {
+        "check": 0.55,
+        "bet_33": 0.6,
+        "bet_66": 0.1
+      },
+      "rationale": "Two overcards can probe; the board pair blocked a lot of their value."
+    },
+    {
+      "handClass": "air",
+      "strategy": {
+        "check": 0.55,
+        "bet_33": 0.45
+      },
+      "ev": {
+        "check": 0.4,
+        "bet_33": 0.45,
+        "bet_66": -0.15
+      },
+      "rationale": "Some air bluffs when checked to — their range is capped by the check."
+    }
+  ]
+}

@@ -1,0 +1,126 @@
+{
+  "id": "srp-bb-checkraise-dry-ace",
+  "solutionSet": "suitedpoker-6max-100bb-v1",
+  "provenance": "authored-approximation",
+  "label": "BB faces a small c-bet on a dry ace-high flop and can check-raise",
+  "street": "flop",
+  "heroPos": "BB",
+  "villainPos": "BTN",
+  "potBb": 5.5,
+  "effStackBb": 97.5,
+  "heroRange": "22-88,A2s-A9s:0.7,ATs,AJs:0.55,AQs:0.6,K6s+,KJs:0.7,KQs:0.6,Q7s+,QJs:0.75,J8s+,JTs:0.75,T8s+,97s+,87s,76s,65s,54s,AQo,AJo:0.8,ATo:0.65,A9o:0.5,KQo:0.75,KJo:0.6,KTo:0.45,QJo:0.6,QTo:0.45,JTo:0.5",
+  "villainRange": "22+,A2s+,K2s+,Q4s+,J6s+,T6s+,95s+,85s+,74s+,64s+,53s+,A5o+,K7o+,Q8o+,J8o+,T8o+,97o+",
+  "boardTags": ["dry", "ace-high", "rainbow"],
+  "exampleBoards": ["Ah 7d 2c", "As 8h 3d", "Ad 6c 2h", "Ac 9d 4s"],
+  "actionHistory": ["BTN opens 2.5bb", "BB calls", "BB checks", "BTN bets 33%"],
+  "actions": ["fold", "call", "raise_small", "raise_pot"],
+  "confidence": {
+    "rangeShape": "medium",
+    "frequencies": "low",
+    "ev": "low",
+    "note": "Check-raise frequencies OOP are soft. Defend raising strong aces; medium-strength thresholds are the review target."
+  },
+  "strategies": [
+    {
+      "handClass": "set",
+      "strategy": {
+        "raise_small": 0.55,
+        "raise_pot": 0.25,
+        "call": 0.2
+      },
+      "ev": {
+        "fold": 0,
+        "call": 3.5,
+        "raise_small": 4.2,
+        "raise_pot": 4.1
+      },
+      "rationale": "A set check-raises for value against a small c-bet."
+    },
+    {
+      "handClass": "two_pair",
+      "strategy": {
+        "raise_small": 0.5,
+        "call": 0.5
+      },
+      "ev": {
+        "fold": 0,
+        "call": 3,
+        "raise_small": 3.2,
+        "raise_pot": 2.9
+      },
+      "rationale": "Two pair mixes raises and flats — keep strong hands in the calling range."
+    },
+    {
+      "handClass": "top_pair_good_kicker",
+      "strategy": {
+        "call": 0.7,
+        "raise_small": 0.3
+      },
+      "ev": {
+        "fold": 0,
+        "call": 2.2,
+        "raise_small": 2.15,
+        "raise_pot": 1.8
+      },
+      "rationale": "Strong aces mostly call; some raises balance the check-raise range."
+    },
+    {
+      "handClass": "top_pair_weak_kicker",
+      "strategy": {
+        "call": 0.85,
+        "fold": 0.15
+      },
+      "ev": {
+        "fold": 0,
+        "call": 1.4,
+        "raise_small": 0.9,
+        "raise_pot": 0.6
+      },
+      "rationale": "Weak kickers call and almost never raise — dominated too often."
+    },
+    {
+      "handClass": "pocket_pair_below_top",
+      "strategy": {
+        "call": 0.55,
+        "fold": 0.45
+      },
+      "ev": {
+        "fold": 0,
+        "call": 0.35,
+        "raise_small": -0.2,
+        "raise_pot": -0.4
+      },
+      "rationale": "Underpairs are bluff-catchers against a small bet on an ace-high board."
+    },
+    {
+      "handClass": "gutshot",
+      "strategy": {
+        "raise_small": 0.35,
+        "call": 0.35,
+        "fold": 0.3
+      },
+      "ev": {
+        "fold": 0,
+        "call": 0.55,
+        "raise_small": 0.6,
+        "raise_pot": 0.3
+      },
+      "rationale": "Some gutshots check-raise as bluffs that pick up equity when called."
+    },
+    {
+      "handClass": "air",
+      "strategy": {
+        "fold": 0.7,
+        "raise_small": 0.2,
+        "call": 0.1
+      },
+      "ev": {
+        "fold": 0,
+        "call": -0.4,
+        "raise_small": -0.1,
+        "raise_pot": -0.5
+      },
+      "rationale": "Most air folds; a small raise frequency represents the strong aces."
+    }
+  ]
+}

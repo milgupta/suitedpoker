@@ -1,0 +1,139 @@
+{
+  "id": "srp-btn-cbet-monotone",
+  "solutionSet": "suitedpoker-6max-100bb-v1",
+  "provenance": "authored-approximation",
+  "label": "BTN opens, BB calls; BB checks a monotone flop",
+  "street": "flop",
+  "heroPos": "BTN",
+  "villainPos": "BB",
+  "potBb": 5.5,
+  "effStackBb": 97.5,
+  "heroRange": "22+,A2s+,K2s+,Q4s+,J6s+,T6s+,95s+,85s+,74s+,64s+,53s+,A5o+,K7o+,Q8o+,J8o+,T8o+,97o+",
+  "villainRange": "22-88,A2s-A9s:0.7,ATs,AJs:0.55,AQs:0.6,K6s+,KJs:0.7,KQs:0.6,Q7s+,QJs:0.75,J8s+,JTs:0.75,T8s+,97s+,87s,76s,65s,54s,AQo,AJo:0.8,ATo:0.65,A9o:0.5,KQo:0.75,KJo:0.6,KTo:0.45,QJo:0.6,QTo:0.45,JTo:0.5",
+  "boardTags": ["monotone", "wet"],
+  "exampleBoards": ["Ah Kh 2h", "Qs 9s 4s", "Jd 8d 3d", "Tc 7c 2c"],
+  "actionHistory": ["BTN opens 2.5bb", "BB calls", "BB checks"],
+  "actions": ["check", "bet_33", "bet_66", "bet_100"],
+  "confidence": {
+    "rangeShape": "medium",
+    "frequencies": "low",
+    "ev": "low",
+    "note": "Monotone flops are high-variance for authored data — flush equities dominate. Defend the shape more than the exact mixes."
+  },
+  "strategies": [
+    {
+      "handClass": "flush",
+      "strategy": {
+        "bet_66": 0.55,
+        "bet_100": 0.25,
+        "check": 0.2
+      },
+      "ev": {
+        "check": 3.2,
+        "bet_33": 3.5,
+        "bet_66": 4.1,
+        "bet_100": 4
+      },
+      "rationale": "A flopped flush wants a bigger size; some checks keep flushes in the checking range."
+    },
+    {
+      "handClass": "flush_draw",
+      "strategy": {
+        "bet_33": 0.55,
+        "check": 0.45
+      },
+      "ev": {
+        "check": 1.4,
+        "bet_33": 1.55,
+        "bet_66": 0.9,
+        "bet_100": 0.7
+      },
+      "rationale": "Nut flush draws bet small for protection and fold equity; non-nuts check more."
+    },
+    {
+      "handClass": "set",
+      "strategy": {
+        "bet_33": 0.5,
+        "check": 0.5
+      },
+      "ev": {
+        "check": 2.8,
+        "bet_33": 2.85,
+        "bet_66": 2.4,
+        "bet_100": 2.1
+      },
+      "rationale": "Sets slow down on monotone boards — flush redraws are scary."
+    },
+    {
+      "handClass": "two_pair",
+      "strategy": {
+        "bet_33": 0.45,
+        "check": 0.55
+      },
+      "ev": {
+        "check": 2.1,
+        "bet_33": 2.05,
+        "bet_66": 1.6,
+        "bet_100": 1.3
+      },
+      "rationale": "Two pair is vulnerable to flushes; check often and let them bluff."
+    },
+    {
+      "handClass": "top_pair_good_kicker",
+      "strategy": {
+        "check": 0.65,
+        "bet_33": 0.35
+      },
+      "ev": {
+        "check": 1.6,
+        "bet_33": 1.45,
+        "bet_66": 0.9,
+        "bet_100": 0.7
+      },
+      "rationale": "Top pair loses value when any flush completes. Mostly check."
+    },
+    {
+      "handClass": "combo_draw",
+      "strategy": {
+        "bet_33": 0.7,
+        "bet_66": 0.15,
+        "check": 0.15
+      },
+      "ev": {
+        "check": 1.8,
+        "bet_33": 2.1,
+        "bet_66": 1.9,
+        "bet_100": 1.5
+      },
+      "rationale": "Flush draw plus straight equity is a clear betting hand here."
+    },
+    {
+      "handClass": "open_ended",
+      "strategy": {
+        "bet_33": 0.4,
+        "check": 0.6
+      },
+      "ev": {
+        "check": 1.1,
+        "bet_33": 1.05,
+        "bet_66": 0.6,
+        "bet_100": 0.4
+      },
+      "rationale": "Straight draws without flush equity check more on monotone boards."
+    },
+    {
+      "handClass": "air",
+      "strategy": {
+        "check": 0.75,
+        "bet_33": 0.25
+      },
+      "ev": {
+        "check": 0.35,
+        "bet_33": 0.25,
+        "bet_66": -0.2,
+        "bet_100": -0.4
+      },
+      "rationale": "Pure air bluffs less on monotone boards; flushes call you down."
+    }
+  ]
+}

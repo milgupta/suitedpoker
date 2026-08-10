@@ -29,6 +29,8 @@
     "test:chat": "vitest run --config vitest.live.config.mts tests/unit/chat-live.test.ts",
     "screenshots": "tsx scripts/capture-screenshots.ts",
     "screenshots:web": "tsx scripts/capture-web-screenshots.ts",
+    "screenshots:review": "tsx scripts/capture-ui-review.ts",
+    "screenshots:review:web": "UI_REVIEW_DEVICE=web tsx scripts/capture-ui-review.ts",
     "optimize:assets": "tsx scripts/optimize-assets.ts",
     "icons": "tsx scripts/gen-icons.ts",
     "emails:supabase": "tsx scripts/gen-supabase-emails.ts",

@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { HubCard, HubCardGrid, HubCardMotion, HubFade } from "@/components/app/HubCard";
+import { buildArenaLink } from "@/lib/arena-preset";
 
 /**
- * Practice hub — one large card per game type.
+ * Practice hub — one large card per game type, plus opt-in deeper presets.
  */
 
 const HUB = {
@@ -11,6 +13,18 @@ const HUB = {
   arena: "/brand/hub/hub-arena.png",
   table: "/brand/hub/hub-table.png",
 } as const;
+
+const POSTFLOP_FOCUS = buildArenaLink({
+  config: { type: "postflop", tags: ["dry", "ace-high", "wet", "connected"] },
+  length: 20,
+  label: "Postflop focus",
+});
+
+const THREEBET_FOCUS = buildArenaLink({
+  config: { type: "preflop", tags: ["3bet"] },
+  length: 20,
+  label: "3-bet pots",
+});
 
 export function PracticeView() {
   return (
@@ -57,6 +71,50 @@ export function PracticeView() {
           />
         </HubCardMotion>
       </HubCardGrid>
+
+      <HubFade>
+        <section className="flex flex-col gap-3" data-section="go-deeper">
+          <h2 className="text-heading-md">Go deeper</h2>
+          <p className="text-text-secondary text-body-sm">
+            Optional focus sessions and the advanced module — after the basics, not instead of them.
+          </p>
+          <ul className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <li>
+              <Link
+                href={POSTFLOP_FOCUS}
+                className="text-accent-bright text-body-md underline-offset-4 hover:underline"
+                data-cta="postflop-focus"
+              >
+                Postflop focus (20)
+              </Link>
+            </li>
+            <li className="text-text-tertiary hidden sm:inline" aria-hidden>
+              ·
+            </li>
+            <li>
+              <Link
+                href={THREEBET_FOCUS}
+                className="text-accent-bright text-body-md underline-offset-4 hover:underline"
+                data-cta="threebet-focus"
+              >
+                3-bet pots (20)
+              </Link>
+            </li>
+            <li className="text-text-tertiary hidden sm:inline" aria-hidden>
+              ·
+            </li>
+            <li>
+              <Link
+                href="/learn/playing-harder-spots/three-bet-pots"
+                className="text-accent-bright text-body-md underline-offset-4 hover:underline"
+                data-cta="advanced-module"
+              >
+                Playing harder spots
+              </Link>
+            </li>
+          </ul>
+        </section>
+      </HubFade>
     </div>
   );
 }

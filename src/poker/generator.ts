@@ -38,6 +38,11 @@ export interface SpotConfig {
   heroPos?: HeroPosition;
   actionSeq?: string;
   templateId?: string;
+  /**
+   * Postflop only. ANDed with other filters so a "flop + dry" mix cannot
+   * accidentally pull a dry river via OR-matched board tags.
+   */
+  street?: "flop" | "turn" | "river";
   /** Node refs already shown this session, so a user never repeats a spot. */
   excludeNodeRefs?: string[];
   /**
@@ -402,6 +407,7 @@ function generatePostflop(config: SpotConfig, data: SolutionData, rng: Rng, seed
   const candidates = data.postflop.filter((template) => {
     if (config.templateId !== undefined && template.id !== config.templateId) return false;
     if (config.heroPos !== undefined && template.heroPos !== config.heroPos) return false;
+    if (config.street !== undefined && template.street !== config.street) return false;
     if (config.excludeNodeRefs?.includes(template.id) === true) return false;
     if (config.tags !== undefined && config.tags.length > 0) {
       const tags = [...template.boardTags, template.street, "postflop"];

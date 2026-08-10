@@ -388,10 +388,11 @@ describe("the dunning schedule", () => {
 
   it("states the SAME end date the entitlement rule enforces", () => {
     // Telling someone access ends on the 9th and cutting them off on the 8th
-    // is how a dunning email becomes a chargeback.
+    // is how a dunning email becomes a chargeback. Compare against the same
+    // instant in the same formatter — a hard-coded calendar day flips with TZ.
     const ends = accessEndsAt(failedAt);
     expect(ends.getTime() - failedAt.getTime()).toBe(PAST_DUE_GRACE_DAYS * 86_400_000);
-    expect(formatDate(ends)).toBe("August 9, 2026");
+    expect(formatDate(ends)).toBe(formatDate(new Date("2026-08-09T09:00:00Z")));
   });
 
   it("derives an idempotency key that is stable across runs", () => {

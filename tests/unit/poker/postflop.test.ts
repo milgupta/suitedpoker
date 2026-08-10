@@ -38,8 +38,8 @@ const templates: PostflopTemplate[] = raw.map(({ name, json }) =>
 );
 
 describe("the seed postflop templates", () => {
-  it("has the eight the plan asks for", () => {
-    expect(templates.length).toBe(8);
+  it("has the fourteen authored templates (8 seed + 6 retention)", () => {
+    expect(templates.length).toBe(14);
     record("template count", `${templates.length} templates`);
   });
 
@@ -60,7 +60,7 @@ describe("the seed postflop templates", () => {
     }
     expect(violations).toEqual([]);
     const total = templates.reduce((n, t) => n + t.strategies.length, 0);
-    record("frequency sums", `${total} hand-class entries across 8 templates all sum to 1.0`);
+    record("frequency sums", `${total} hand-class entries across 14 templates all sum to 1.0`);
   });
 
   it("uses only real hand classes and real actions", () => {
@@ -75,7 +75,7 @@ describe("the seed postflop templates", () => {
 
   it("declares provenance on every template", () => {
     for (const template of templates) expect(template.provenance).toBe("authored-approximation");
-    record("provenance", "all 8 templates declare authored-approximation");
+    record("provenance", "all 14 templates declare authored-approximation");
   });
 
   it("gives every entry a real rationale, not a placeholder", () => {
@@ -114,7 +114,7 @@ describe("the seed postflop templates", () => {
       expect(Range.parse(template.heroRange).totalCombos()).toBeGreaterThan(0);
       expect(Range.parse(template.villainRange).totalCombos()).toBeGreaterThan(0);
     }
-    record("ranges parse", "all 16 hero and villain ranges are real notation, no exemptions");
+    record("ranges parse", "all 28 hero and villain ranges are real notation, no exemptions");
   });
 });
 

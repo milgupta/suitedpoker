@@ -1,0 +1,59 @@
+---
+title: Four-bet or fold
+slug: four-bet-or-fold
+module: "playing-harder-spots"
+order: 2
+estMinutes: 7
+concepts: ["4-bet pots", "stack-off thresholds", "capped ranges"]
+drillFilter: { "type": "preflop", "tags": ["4bet"], "difficulty": 7 }
+prerequisites: ["three-bet-pots"]
+---
+
+A 4-bet makes the pot enormous and the decision short. At a hundred big blinds, facing a 4-bet is often close to a shove-or-fold question. Calling leaves you playing a huge pot with a capped range, and the hands that genuinely want to call are mostly the hands that also wanted to put the rest in. If you feel yourself searching for a “safe” flat with a medium hand, you are usually manufacturing a reason to lose a bigger pot later.
+
+<HandExample
+  hole="Qh Qd"
+  label="Queens facing a 4-bet: usually a continue — but how you continue depends on who 4-bet."
+/>
+
+## Who 4-bet matters more than almost anywhere else
+
+An under-the-gun 4-bet is one of the strongest ranges in six-max cash. A button 4-bet is still strong, but it is wider — more bluffs, more speculative value, more hands that chose aggression over a flat. Against under the gun you continue with a tiny premium band. Against the button you can keep a little more queens and ace-king in mixed frequencies without inventing a fantasy.
+
+If two charts give the same answer for those two seats, one of them is lying about position. The product used to ship that lie across every 4-bet node. The pairings you drill here were rewritten so the 4-bettor’s seat actually changes the answer.
+
+## Calling a 4-bet is rare on purpose
+
+Flatting a 4-bet out of position with a hand that is not happy stacking off is how beginners light big blinds on fire without noticing the leak in their session graph. Prefer shoving the hands that want stacks in the middle, and folding the rest. The small calling band that remains — usually some ace-king and the occasional queen — exists to keep your range from being pure shove-or-fold against observant opponents, not because flatting is the safer emotional choice.
+
+Stack depth matters here more than in any earlier lesson. At a hundred big blinds the math is already compressed. Shallower, and the continue band shrinks further. Deeper, and more flatting can appear — but this product trains the hundred-big-blind tree, so learn that tree first.
+
+<TableExample
+  hero="BB"
+  pot={33}
+  lines={[
+    "You 3-bet from the big blind.",
+    "The button 4-bets to about 22bb.",
+    "Aces and kings shove. Most everything else folds. Queens and ace-king mix.",
+  ]}
+/>
+
+## Practice the biggest pot
+
+These drills are sparse by design — 4-bet pots are rare at the table and rare in the training set. When one shows up, treat it as high-stakes homework. One soft call here costs more expected value than twenty routine opens, which is exactly why the earlier modules spent so long teaching you to fold the dominated stuff before the pot got this large.
+
+<Checkpoint
+  question="You 3-bet ace-queen suited from the big blind and face a 4-bet from under the gun. Best default?"
+  options={[
+    "Call and see a flop — you have an ace",
+    "Fold — UTG 4-bets are extremely strong and you are out of position",
+    "Shove — deny their equity",
+  ]}
+  answer={1}
+  explain="Ace-queen suited is a fine 3-bet. It is not a fine continue against the tightest 4-bet in the tree while out of position."
+/>
+
+<KeyIdea>
+  Facing a 4-bet, seat matters more than almost anywhere else: continue only with premiums, shove
+  more than you flat, and fold when the 4-bettor’s range is the tightest one.
+</KeyIdea>

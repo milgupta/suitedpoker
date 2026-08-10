@@ -115,8 +115,8 @@ const GOAL_LINE: Record<string, string> = {
 
 /* ── The path ────────────────────────────────────────────────────────────── */
 
-/** 5.1 ships a 14-lesson curriculum; each is ~35 minutes with its drills. */
-export const CURRICULUM_LESSONS = 14;
+/** 5.1 + advanced retention module: 18 lessons. Each is ~35 minutes with drills. */
+export const CURRICULUM_LESSONS = 18;
 const CURRICULUM_TOTAL_MINUTES = CURRICULUM_LESSONS * 36;
 
 /**
@@ -127,12 +127,12 @@ const SCALE_MIN = 600;
 const SCALE_MAX = 1800;
 
 /**
- * Where the curriculum's final drills sit on the rating scale (difficulty 5 of
- * 10 → 600 + 4/9 × 1200). The projection is "where the material you'll have
- * mastered sits", not a promised future rating — that is what makes it
- * defensible when a sharp user asks.
+ * Where the curriculum's final drills sit on the rating scale (difficulty 6 of
+ * 10 → 600 + 5/9 × 1200 ≈ 1267). Advanced-module practice reaches 6–8; the
+ * projection is "where the material you'll have mastered sits", not a promised
+ * future rating — that is what makes it defensible when a sharp user asks.
  */
-export const CURRICULUM_CEILING_RATING = 1133;
+export const CURRICULUM_CEILING_RATING = 1267;
 
 /* ── Output ──────────────────────────────────────────────────────────────── */
 

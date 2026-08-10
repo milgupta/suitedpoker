@@ -45,11 +45,11 @@ const DATA = loadData();
 /* ── Structure ───────────────────────────────────────────────────────────── */
 
 describe("the curriculum graph", () => {
-  it("has exactly 14 lessons across 4 modules", () => {
-    expect(LESSONS).toHaveLength(14);
-    expect(MODULES).toHaveLength(4);
+  it("has exactly 18 lessons across 5 modules", () => {
+    expect(LESSONS).toHaveLength(18);
+    expect(MODULES).toHaveLength(5);
     const byModule = MODULES.map((m) => LESSONS.filter((l) => l.module === m.slug).length);
-    expect(byModule).toEqual([5, 3, 4, 2]);
+    expect(byModule).toEqual([5, 3, 4, 2, 4]);
     // The diagnosis screen promises this count. Two numbers is a lie waiting.
     expect(CURRICULUM_LESSONS).toBe(LESSONS.length);
   });
@@ -214,7 +214,7 @@ describe("the writing", () => {
     console.log(
       `\n${"=".repeat(72)}\nCURRICULUM MEASUREMENTS\n${"=".repeat(72)}\n${rows.join("\n")}\n`,
     );
-    expect(rows).toHaveLength(14);
+    expect(rows).toHaveLength(18);
   });
 
   it("keeps every lesson between 350 and 800 words", () => {

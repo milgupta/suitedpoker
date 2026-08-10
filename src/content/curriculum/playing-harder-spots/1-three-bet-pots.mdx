@@ -1,0 +1,56 @@
+---
+title: Three-bet pots
+slug: three-bet-pots
+module: "playing-harder-spots"
+order: 1
+estMinutes: 7
+concepts: ["3-bet defense by position", "4-bet bluffs", "IP vs OOP continues"]
+drillFilter: { "type": "preflop", "tags": ["3bet"], "difficulty": 6 }
+prerequisites: ["facing-a-3bet", "mixed-strategies"]
+---
+
+You already know the shape from the earlier lesson: fold the dominated hands, call the ones that keep their value, and 4-bet monsters plus a few carefully chosen bluffs. This module assumes that shape is settled. What changes now is how the shape stretches and shrinks when the seats change — because a button open facing a big-blind 3-bet is not the same decision as an under-the-gun open facing a middle-position 3-bet, even when both screens print the same three action buttons.
+
+<HandExample hole="As Kd" label="Ace-king: almost never a fold to one 3-bet at 100bb." />
+
+## Wider opens continue wider
+
+The button opens nearly half the deck. When the big blind 3-bets, a large slice of that opening range still continues — more suited connectors, more broadway calls, and a thicker band of 4-bet bluffs built from suited wheel aces. The cutoff opened tighter than the button, so its continue drops the speculative end first. Middle position opened tighter still, which means the absolute continue is narrower even though, as a fraction of its own open, it looks denser.
+
+That is why drilling “facing a 3-bet” without naming the seats teaches the wrong lesson. Position is not a footnote you add after you pick fold, call, or raise. Position is the range you are holding, and the range is the entire question.
+
+## Blind 3-bets versus cold 3-bets
+
+A big-blind 3-bet comes from a range that can be somewhat wide: they close the action and they get a discount relative to everyone else. A cold 3-bet from the button against your cutoff open is stronger on average. They had the option to flat your raise and chose instead to put in a re-raise with players still left to act behind them. Against that cold 3-bet you continue tighter, and you 4-bet-bluff less often, because their value-heavy core is denser.
+
+Out of position the tax is larger still. Hands that are comfortable calls when you will act last on every street become folds when you will be guessing first in a pot three times the usual size. Let that tax break close decisions rather than ego.
+
+<TableExample
+  hero="BTN"
+  pot={13}
+  lines={[
+    "You open the button.",
+    "The big blind 3-bets.",
+    "You are in position for the rest of the hand — that alone lets more of your open continue.",
+  ]}
+/>
+
+## Practice what the seats actually say
+
+The drills attached to this lesson pull from the servable 3-bet nodes, including the position-specific ones that were rewritten so they no longer share a single copied chart. Treat each deal as a different question. If two hands feel identical because the buttons look identical, slow down and re-read the action history before you click.
+
+<Checkpoint
+  question="You open the button and the big blind 3-bets. Relative to opening the cutoff and facing the same 3-bet, you should:"
+  options={[
+    "Continue wider — you opened wider and you have position",
+    "Continue tighter — blinds only 3-bet monsters",
+    "Always 4-bet or fold — calling is never right in position",
+  ]}
+  answer={0}
+  explain="Button opens widest and plays the rest of the hand last. Both facts push the continue wider than the same line from the cutoff."
+/>
+
+<KeyIdea>
+  Facing a 3-bet is a family of spots, not one chart: opener width and whether the 3-bet is from a
+  blind or a cold raiser both change how much of your range continues.
+</KeyIdea>

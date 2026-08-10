@@ -3,8 +3,10 @@ import { randomUUID } from "node:crypto";
 import { withEntitlement } from "@/lib/api-guard";
 import { putSession } from "@/lib/sessionstore";
 import { loadSolutionData } from "@/lib/solution-data";
-import { generateSpot, toClientSpot } from "@/poker/generator";
+import { generateSpot, toClientSpot, type SpotConfig } from "@/poker/generator";
 import { spotConfigSchema } from "@/lib/arena-preset";
+import { applyArenaMix, isOpenArenaConfig } from "@/lib/arena-mix";
+import { leakToSpotConfig } from "@/lib/leak-targeting";
 import { limit, RULES } from "@/lib/ratelimit";
 import { desc, eq } from "drizzle-orm";
 import { getDb } from "@/db";
@@ -50,8 +52,10 @@ export const POST = withEntitlement(async (request, auth) => {
 
   // Adaptive difficulty. Best-effort: a user with no rating yet, or a database
   // hiccup, gets the config's difficulty rather than no spot at all.
-  let config = parsed.data;
+  const requested = parsed.data as SpotConfig;
+  let config: SpotConfig = requested;
   let leakTag: string | null = null;
+  let rating: number | null = null;
 
   try {
     const db = getDb();
@@ -62,6 +66,7 @@ export const POST = withEntitlement(async (request, auth) => {
       .limit(1);
 
     if (profile?.rating != null) {
+      rating = profile.rating;
       const recent = await db
         .select({ grade: drillAttempts.grade })
         .from(drillAttempts)
@@ -89,8 +94,38 @@ export const POST = withEntitlement(async (request, auth) => {
     // Fall through with the requested config.
   }
 
+  // Leak filter wins over the rating mix: when the chip fires it must name a
+  // family we actually dealt. Open Arena gets the postflop lottery only when
+  // no lesson/hub pin and no leak slot claimed the hand.
+  if (leakTag !== null) {
+    const leakConfig = leakToSpotConfig(leakTag);
+    if (leakConfig !== null) {
+      config = {
+        ...config,
+        ...leakConfig,
+        difficulty: config.difficulty,
+      };
+    }
+  } else if (isOpenArenaConfig(requested) && rating !== null) {
+    config = applyArenaMix(config, {
+      rating,
+      mixRoll: Math.random(),
+      familyRoll: Math.random(),
+    });
+  }
+
   const seed = randomUUID();
-  const spot = generateSpot(config, loadSolutionData(), seed);
+  let spot;
+  try {
+    spot = generateSpot(config, loadSolutionData(), seed);
+  } catch {
+    // A leak/mix filter can miss if the served set has no matching template
+    // yet — fall back to the difficulty-adjusted request rather than 500.
+    config = { ...requested, difficulty: config.difficulty };
+    spot = generateSpot(config, loadSolutionData(), seed);
+    leakTag = null;
+  }
+
   const spotId = randomUUID();
 
   const stored = await putSession(
@@ -113,7 +148,7 @@ export const POST = withEntitlement(async (request, auth) => {
     return NextResponse.json({ error: "session_unavailable" }, { status: 503 });
   }
 
-  // leakTag is a UI hint, not solution data — it names a category the user is
-  // weak in, never anything about this spot's answer.
+  // leakTag names the category we filtered toward — never anything about the
+  // spot's answer. Cleared above when the filter had to be abandoned.
   return NextResponse.json({ spotId, spot: toClientSpot(spot), leakTag });
 });

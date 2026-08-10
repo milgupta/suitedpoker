@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 import type { SpotConfig } from "@/poker/generator";
-import { MODULES, moduleOrder, type ModuleSlug } from "@/lib/curriculum-modules";
+import { MODULES, moduleOrder } from "@/lib/curriculum-modules";
 
 /**
  * The curriculum's index: parses lesson frontmatter, orders modules and
@@ -26,6 +26,7 @@ const spotConfigLoose = z.object({
   heroPos: z.enum(["UTG", "MP", "CO", "BTN", "SB", "BB"]).optional(),
   actionSeq: z.string().optional(),
   templateId: z.string().optional(),
+  street: z.enum(["flop", "turn", "river"]).optional(),
 });
 
 export const frontmatterSchema = z.object({
@@ -36,6 +37,7 @@ export const frontmatterSchema = z.object({
     "reading-the-board",
     "betting-with-a-plan",
     "not-losing-money",
+    "playing-harder-spots",
   ]),
   order: z.number().int().min(1),
   estMinutes: z.number().int().min(2).max(20),

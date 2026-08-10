@@ -1,0 +1,141 @@
+{
+  "id": "srp-btn-cbet-wet-connected",
+  "solutionSet": "suitedpoker-6max-100bb-v1",
+  "provenance": "authored-approximation",
+  "label": "BTN opens, BB calls; BB checks a wet connected flop",
+  "street": "flop",
+  "heroPos": "BTN",
+  "villainPos": "BB",
+  "potBb": 5.5,
+  "effStackBb": 97.5,
+  "heroRange": "22+,A2s+,K2s+,Q4s+,J6s+,T6s+,95s+,85s+,74s+,64s+,53s+,A5o+,K7o+,Q8o+,J8o+,T8o+,97o+",
+  "villainRange": "22-88,A2s-A9s:0.7,ATs,AJs:0.55,AQs:0.6,K6s+,KJs:0.7,KQs:0.6,Q7s+,QJs:0.75,J8s+,JTs:0.75,T8s+,97s+,87s,76s,65s,54s,AQo,AJo:0.8,ATo:0.65,A9o:0.5,KQo:0.75,KJo:0.6,KTo:0.45,QJo:0.6,QTo:0.45,JTo:0.5",
+  "boardTags": ["wet", "connected", "two-tone"],
+  "exampleBoards": ["Jh Th 9c", "9h 8h 7d", "Qs Js 8c", "Td 9d 7h"],
+  "actionHistory": ["BTN opens 2.5bb", "BB calls", "BB checks"],
+  "actions": ["check", "bet_33", "bet_66", "bet_100"],
+  "confidence": {
+    "rangeShape": "medium",
+    "frequencies": "low",
+    "ev": "low",
+    "note": "Wet connected boards drop c-bet frequency hard. Defend the draw-heavy betting range."
+  },
+  "strategies": [
+    {
+      "handClass": "straight",
+      "strategy": {
+        "bet_66": 0.5,
+        "bet_100": 0.3,
+        "check": 0.2
+      },
+      "ev": {
+        "check": 3.5,
+        "bet_33": 3.8,
+        "bet_66": 4.2,
+        "bet_100": 4.1
+      },
+      "rationale": "A flopped straight builds the pot against a drawing-heavy defender."
+    },
+    {
+      "handClass": "set",
+      "strategy": {
+        "bet_66": 0.45,
+        "bet_33": 0.35,
+        "check": 0.2
+      },
+      "ev": {
+        "check": 3,
+        "bet_33": 3.3,
+        "bet_66": 3.5,
+        "bet_100": 3.2
+      },
+      "rationale": "Sets bet for protection on wet boards more than on dry ones."
+    },
+    {
+      "handClass": "two_pair",
+      "strategy": {
+        "bet_33": 0.55,
+        "bet_66": 0.25,
+        "check": 0.2
+      },
+      "ev": {
+        "check": 2.4,
+        "bet_33": 2.7,
+        "bet_66": 2.6,
+        "bet_100": 2.2
+      },
+      "rationale": "Two pair needs protection from straight and flush draws."
+    },
+    {
+      "handClass": "combo_draw",
+      "strategy": {
+        "bet_66": 0.5,
+        "bet_33": 0.35,
+        "check": 0.15
+      },
+      "ev": {
+        "check": 2,
+        "bet_33": 2.3,
+        "bet_66": 2.45,
+        "bet_100": 2.1
+      },
+      "rationale": "Combo draws are the core of a wet-board betting range."
+    },
+    {
+      "handClass": "flush_draw",
+      "strategy": {
+        "bet_33": 0.5,
+        "check": 0.5
+      },
+      "ev": {
+        "check": 1.5,
+        "bet_33": 1.55,
+        "bet_66": 1.1,
+        "bet_100": 0.9
+      },
+      "rationale": "Naked flush draws mix; checking protects the check range."
+    },
+    {
+      "handClass": "open_ended",
+      "strategy": {
+        "bet_33": 0.45,
+        "check": 0.55
+      },
+      "ev": {
+        "check": 1.35,
+        "bet_33": 1.4,
+        "bet_66": 0.95,
+        "bet_100": 0.7
+      },
+      "rationale": "Open-enders have equity but lose to better draws when bloating."
+    },
+    {
+      "handClass": "top_pair_good_kicker",
+      "strategy": {
+        "check": 0.55,
+        "bet_33": 0.45
+      },
+      "ev": {
+        "check": 1.7,
+        "bet_33": 1.65,
+        "bet_66": 1.1,
+        "bet_100": 0.85
+      },
+      "rationale": "Top pair is thinner on wet boards — check more than on dry ace-high."
+    },
+    {
+      "handClass": "air",
+      "strategy": {
+        "check": 0.7,
+        "bet_33": 0.3
+      },
+      "ev": {
+        "check": 0.4,
+        "bet_33": 0.3,
+        "bet_66": -0.3,
+        "bet_100": -0.5
+      },
+      "rationale": "Pure air c-bets less when the board connects with the big blind."
+    }
+  ]
+}

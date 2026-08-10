@@ -1,0 +1,60 @@
+---
+title: Tough rivers
+slug: tough-rivers
+module: "playing-harder-spots"
+order: 4
+estMinutes: 6
+concepts: ["bluff-catching", "thin value", "capped ranges"]
+drillFilter: { "type": "postflop", "street": "river", "difficulty": 8 }
+prerequisites: ["multi-street-plans"]
+---
+
+River decisions are where beginners bleed expected value without noticing, because the session still “felt fine” until the graph is redrawn. The pot is already large, the final card is out, and there is no future street where you can “figure it out later.” You either put money in correctly against their range or you transfer big blinds to someone who did.
+
+Two jobs dominate the river at this stakes and depth: thin value when they have checked and look weak, and bluff-catching when they have bet and your hand sits in the middle of your range.
+
+<HandExample
+  hole="As Td"
+  board="Ah 7d 2c 3s 9c"
+  label="Top pair weak kicker on a dry river: sometimes thin value, often a check."
+/>
+
+## Thin value after they go quiet
+
+When the turn checks through and they check the river, their range is capped relative to a betting line — many strong hands would have taken a stab somewhere. Top pair with a good kicker can bet a modest size for value. Middle pair mostly checks and takes the free showdown. Ace-high sometimes blocks their aces and bluffs, but not as a default every hand.
+
+The common mistake is betting every showdownable hand “for thin value.” Thin means thin: only the hands that beat a meaningful slice of their checking range and can still fold out some better ones. If your bet only gets called by better and folds out worse, you have invented a bluff and mislabeled it.
+
+## Bluff-catching when they fire
+
+Facing a large river bet after you called the flop and the turn, you are capped too. Straights and flushes can raise for value against a polarised betting range. Two pair mostly calls. Top pair mixes calls and folds depending on blockers and the exact line. Weaker pairs fold a large share. The shape matters more than any single frequency printed in a chart — you cannot call everything “because pot odds look nice,” and you cannot fold everything “because they always have it.”
+
+Blockers help at the margin. Holding an ace on an ace-high river makes some of their value less likely and some of their bluffs more likely, which nudges borderline bluff-catchers toward a call. Holding the bottom of a straight that blocks their bluffs nudges the other way. Use blockers to break ties, not to invent hero calls with trash.
+
+<TableExample
+  hero="BB"
+  pot={32}
+  lines={[
+    "You called the flop and the turn.",
+    "They bet large on the river.",
+    "Your job is to bluff-catch with the right band — not hero-call the bottom or overfold the top.",
+  ]}
+/>
+
+These drills are hard on purpose. Misses will show up as sharp and blunder grades more often than in the earlier modules. That is the point of a retention layer: the product still has something left to teach after the fundamentals feel finished.
+
+<Checkpoint
+  question="They check the turn and the river on a dry ace-high board. You have middle pair. Best default?"
+  options={[
+    "Bet large for value — they always have worse",
+    "Check behind — middle pair is a bluff-catcher, not thin value here",
+    "Bet half pot every time — denial",
+  ]}
+  answer={1}
+  explain="After they check twice, middle pair still loses to too many of the hands that call a value bet. Take the free showdown."
+/>
+
+<KeyIdea>
+  Rivers are about range versus range with no future street: bet thin value only when they look
+  weak, and bluff-catch a disciplined band when they look polarised.
+</KeyIdea>

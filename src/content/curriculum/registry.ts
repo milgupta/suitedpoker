@@ -5,7 +5,7 @@ import type { ComponentType } from "react";
  *
  * Explicit rather than globbed: a dynamic `import(variable)` cannot be
  * statically analysed, so the bundler would either inline the whole directory
- * or nothing. Fourteen lines that fail loudly when a file is renamed beats a
+ * or nothing. Explicit entries that fail loudly when a file is renamed beat a
  * clever glob that fails silently at runtime.
  *
  * The keys are lesson slugs, and tests/unit/curriculum.test.ts asserts this map
@@ -29,6 +29,11 @@ export const LESSON_MODULES: Record<string, () => Promise<{ default: ComponentTy
 
   "the-hands-that-cost-you": () => import("./not-losing-money/1-the-hands-that-cost-you.mdx"),
   "mixed-strategies": () => import("./not-losing-money/2-mixed-strategies.mdx"),
+
+  "three-bet-pots": () => import("./playing-harder-spots/1-three-bet-pots.mdx"),
+  "four-bet-or-fold": () => import("./playing-harder-spots/2-four-bet-or-fold.mdx"),
+  "multi-street-plans": () => import("./playing-harder-spots/3-multi-street-plans.mdx"),
+  "tough-rivers": () => import("./playing-harder-spots/4-tough-rivers.mdx"),
 };
 
 export function hasLessonModule(slug: string): boolean {
