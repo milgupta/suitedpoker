@@ -24,7 +24,14 @@ import {
   legalActions,
   type Position,
 } from "../gamestate";
-import { classifyHand, type HandClass, handClassRank, HAND_CLASSES } from "../handclass";
+import {
+  boardTexture,
+  classifyHand,
+  type BoardTag,
+  type HandClass,
+  handClassRank,
+  HAND_CLASSES,
+} from "../handclass";
 import { handToKey, type HandKey } from "../range";
 import {
   frequencyOf,
@@ -65,14 +72,22 @@ function pickWeighted<T>(options: ReadonlyArray<[T, number]>, rng: Rng): T | und
   return options[options.length - 1]?.[0];
 }
 
-/** The safest legal action: check if free, otherwise fold. */
-function passiveFallback(legal: readonly LegalAction[]): Action {
+/**
+ * The safest legal action: check if free, then call, then fold.
+ *
+ * Call before fold ON PURPOSE. This path is only reached when the bot WANTED
+ * to act — usually an aggressive action the state made illegal — so folding
+ * here throws away a hand the bot had already decided was worth playing.
+ * Checking when free was always right; the old check→fold ordering was how a
+ * bot that meant to raise an all-in folded to it instead.
+ */
+export function passiveFallback(legal: readonly LegalAction[]): Action {
   const check = legal.find((a) => a.type === "check");
   if (check !== undefined) return { type: "check" };
-  const fold = legal.find((a) => a.type === "fold");
-  if (fold !== undefined) return { type: "fold" };
   const call = legal.find((a) => a.type === "call");
   if (call !== undefined) return { type: "call", amount: call.amount };
+  const fold = legal.find((a) => a.type === "fold");
+  if (fold !== undefined) return { type: "fold" };
   const first = legal[0];
   if (first === undefined) throw new RangeError("no legal action available");
   return first.type === "bet" || first.type === "raise"
@@ -128,6 +143,175 @@ export function preflopNodeFor(
   if (raises.length === 1) return findNode(index, position, `vs_rfi_${aggressor}`);
   if (raises.length === 2) return findNode(index, position, `vs_3bet_${aggressor}`);
   return findNode(index, position, `vs_4bet_${aggressor}`);
+}
+
+// ── Price awareness ──────────────────────────────────────────────────────────
+
+/**
+ * The immediate price of continuing: chips to call over the pot after calling.
+ * Unitless, so chips and bb callers agree by construction.
+ */
+export function potOddsOf(toCall: number, pot: number): number {
+  if (toCall <= 0) return 0;
+  return toCall / (pot + toCall);
+}
+
+/**
+ * The odds at which the strategy's frequencies are taken at face value.
+ * Cheaper than this and the bot continues more; a raise past pot and it
+ * continues less. 0.5 is a pot-sized raise — deliberately above the
+ * ~0.27–0.38 a standard 2.5bb open offers, which is a LOOSENESS BIAS, not a
+ * measurement: ordinary opens read as a good price, so the table plays back
+ * instead of folding around. A training table where half the hands end the
+ * moment anyone opens teaches nothing, and that is what chart-faithful
+ * frequencies produce six-handed. The differentiation between a min-raise
+ * and an overbet comes from the curve, not from this anchor.
+ */
+const REFERENCE_ODDS = 0.5;
+
+/**
+ * How much to bend the fold frequency for the price on offer, as an exponent
+ * applied to the fold mass: `fold^scale`. Above 1 means a good price (fold
+ * less); below 1 a bad one. The exponent form is the whole trick — it keeps
+ * both fixed points, so a pure fold stays a fold and a hand that never folds
+ * still never folds, whatever the price. A multiplicative scale on the
+ * continue mass would make AA fold to an overbet.
+ */
+export function priceScaleFor(potOdds: number, profile: BotProfile): number {
+  if (potOdds <= 0) return 1;
+  const raw = (REFERENCE_ODDS / Math.max(potOdds, 0.05)) ** profile.priceSensitivity;
+  return Math.max(0.45, Math.min(1.7, raw));
+}
+
+/** Applies the price exponent to the fold mass and renormalises the rest. */
+export function applyPriceScale(
+  frequencies: Record<string, number>,
+  scale: number,
+): Record<string, number> {
+  const fold = frequencies.fold ?? 0;
+  if (fold <= 0 || fold >= 1 || scale === 1) return frequencies;
+
+  const foldAfter = fold ** scale;
+  const continueBefore = 1 - fold;
+  const continueAfter = 1 - foldAfter;
+  const ratio = continueAfter / continueBefore;
+
+  const out: Record<string, number> = {};
+  for (const [action, frequency] of Object.entries(frequencies)) {
+    out[action] = action === "fold" ? foldAfter : frequency * ratio;
+  }
+  return out;
+}
+
+/**
+ * `fold^scale` cannot move a PURE fold, by design — and 94.3% of the strategy
+ * mass is pure, so on its own the price curve barely changes what a table
+ * does. This is the other half: at a good price, hands sitting JUST BELOW the
+ * range boundary defend some of the time, with the chance decaying fast as
+ * the hand gets further from the range. A hand one tier under the boundary is
+ * exactly the hand a human widens with when the price is right; 72o stays
+ * folded at any price, because the decay has already zeroed it.
+ *
+ * `rangeThreshold` is the strength percentile where this spot's continues
+ * start; `strength` is the hand's own percentile. Freed mass goes to CALL —
+ * marginal defends are calls, not new bluffs (the mix noise adds those).
+ */
+export function applyDefendBand(
+  frequencies: Record<string, number>,
+  scale: number,
+  strength: number,
+  rangeThreshold: number,
+): Record<string, number> {
+  if (scale <= 1) return frequencies;
+  const fold = frequencies.fold ?? 0;
+  if (fold < 0.98) return frequencies;
+
+  const gap = Math.max(0, rangeThreshold - strength);
+  const defend = (scale - 1) * 0.95 * Math.exp(-gap * 10);
+  if (defend < 0.01) return frequencies;
+
+  return {
+    ...frequencies,
+    fold: fold - fold * defend,
+    call: (frequencies.call ?? 0) + fold * defend,
+  };
+}
+
+/**
+ * The strength percentile where a node's continuing range begins, cached per
+ * node — combo-weighted, so it lines up with `strengthPercentile`'s scale.
+ */
+const NODE_THRESHOLD = new WeakMap<PreflopNode, number>();
+
+export function nodeContinueThreshold(node: PreflopNode): number {
+  const cached = NODE_THRESHOLD.get(node);
+  if (cached !== undefined) return cached;
+
+  let continueCombos = 0;
+  let totalCombos = 0;
+  for (const [hand, mix] of Object.entries(node.strategy)) {
+    const combos = hand.length === 2 ? 6 : hand.endsWith("s") ? 4 : 12;
+    totalCombos += combos;
+    continueCombos += combos * (1 - (mix.fold ?? 0));
+  }
+  const threshold = totalCombos === 0 ? 1 : 1 - continueCombos / totalCombos;
+  NODE_THRESHOLD.set(node, threshold);
+  return threshold;
+}
+
+// ── Mixing ───────────────────────────────────────────────────────────────────
+
+/**
+ * Per-decision noise: a slice of the continue mix is spread evenly over the
+ * non-fold actions, so a hand the strategy plays one way 100% of the time
+ * still varies by profile. 94.3% of the strategy mass is pure 0/1; without
+ * this, every bot plays every hand identically every time, which is the
+ * precise thing a human opponent never does.
+ *
+ * Hands the strategy folds outright (under 2% continue) are left alone —
+ * trash staying folded is correct play, not scriptedness, and randomly
+ * open-calling 72o would read as a bug.
+ */
+export function applyMixNoise(
+  frequencies: Record<string, number>,
+  temperature: number,
+): Record<string, number> {
+  if (temperature <= 0) return frequencies;
+  const continueMass = 1 - (frequencies.fold ?? 0);
+  if (continueMass <= 0.02) return frequencies;
+
+  const continueActions = Object.keys(frequencies).filter((action) => action !== "fold");
+  if (continueActions.length < 2) return frequencies;
+
+  const uniformShare = continueMass / continueActions.length;
+  const out: Record<string, number> = { ...frequencies };
+  for (const action of continueActions) {
+    out[action] = (1 - temperature) * (frequencies[action] ?? 0) + temperature * uniformShare;
+  }
+  return out;
+}
+
+// ── Sizing ───────────────────────────────────────────────────────────────────
+
+function jittered(range: readonly [number, number], rng: Rng): number {
+  const [min, max] = range;
+  return min + rng() * (max - min);
+}
+
+/**
+ * What a preflop raise should be, in chips, before legality clamping.
+ *
+ * An open is sized in big blinds, a re-raise as a multiple of the bet faced —
+ * the two conventions every real player uses. Both jitter inside the
+ * profile's band, because "always exactly pot × 1.1" was one of the tells
+ * that made the bots feel scripted. Legality is someone else's job:
+ * `toLegalAction` clamps this into the legal band.
+ */
+export function preflopRaiseTarget(state: GameState, profile: BotProfile, rng: Rng): number {
+  const bigBlind = state.config.bigBlind;
+  const opening = state.currentBet <= bigBlind;
+  if (opening) return Math.round(bigBlind * jittered(profile.openRaiseBb, rng));
+  return Math.round(state.currentBet * jittered(profile.reraiseX, rng));
 }
 
 // ── Preflop ───────────────────────────────────────────────────────────────────
@@ -221,18 +405,34 @@ function decidePreflop(
   const facingBet = state.currentBet > state.config.bigBlind;
   const handKey = handToKey(hero.holeCards[0], hero.holeCards[1]);
   const canCall = legal.some((a) => a.type === "call") || legal.some((a) => a.type === "check");
-  const frequencies = archetypeFrequencies(node, handKey, profile, facingBet, canCall);
+  let frequencies = archetypeFrequencies(node, handKey, profile, facingBet, canCall);
+
+  if (facingBet) {
+    // The strategy tables know the LINE but not the SIZE. A min-raise and a
+    // 40bb overbet used to get the identical response; the price curve is what
+    // separates them, and it applies to the no-data fallback identically.
+    const toCall = state.currentBet - hero.committedThisStreet;
+    const scale = priceScaleFor(potOddsOf(toCall, state.pot), profile);
+    frequencies = applyPriceScale(frequencies, scale);
+    frequencies = applyDefendBand(
+      frequencies,
+      scale,
+      strengthPercentile(handKey),
+      node === null ? 1 - profile.defendWidth : nodeContinueThreshold(node),
+    );
+  }
+  frequencies = applyMixNoise(frequencies, profile.mixTemperature);
 
   const choice = pickWeighted(Object.entries(frequencies), rng);
   if (choice === undefined) return undefined;
-  return toLegalAction(choice as PreflopActionName, legal, state.pot);
+  return toLegalAction(choice as PreflopActionName, legal, preflopRaiseTarget(state, profile, rng));
 }
 
 /** Maps a solution action name onto something legal in this exact state. */
 function toLegalAction(
   action: PreflopActionName | "check",
   legal: readonly LegalAction[],
-  potBb: number,
+  raiseTargetChips: number,
 ): Action | undefined {
   if (action === "fold") {
     // Never fold when checking is free — that is strictly dominated, and a bot
@@ -251,13 +451,21 @@ function toLegalAction(
     const check = legal.find((a) => a.type === "check");
     return check === undefined ? undefined : { type: "check" };
   }
-  // raise / allin
+  // raise / allin. When no aggressive action is legal — a capped street, an
+  // all-in already covering us — the intent was to put chips in, so degrade to
+  // call, then check. Degrading to undefined sent this through the fallback,
+  // which used to FOLD a hand the bot had just decided to raise.
   const option = legal.find((a) => a.type === "raise") ?? legal.find((a) => a.type === "bet");
-  if (option === undefined) return undefined;
+  if (option === undefined) {
+    const call = legal.find((a) => a.type === "call");
+    if (call !== undefined) return { type: "call", amount: call.amount };
+    const check = legal.find((a) => a.type === "check");
+    return check === undefined ? undefined : { type: "check" };
+  }
   const min = option.min ?? 0;
   const max = option.max ?? 0;
   if (max < min) return undefined;
-  const amount = action === "allin" ? max : Math.max(min, Math.min(max, Math.round(potBb * 1.1)));
+  const amount = action === "allin" ? max : Math.max(min, Math.min(max, raiseTargetChips));
   return { type: option.type, amount };
 }
 
@@ -269,6 +477,59 @@ const WEAKEST = handClassRank("air");
 /** 1 for the nuts, 0 for air. */
 export function classStrength(handClass: HandClass): number {
   return 1 - (handClassRank(handClass) - STRONGEST) / (WEAKEST - STRONGEST);
+}
+
+/**
+ * The best-matching template for the actual spot, scored rather than found.
+ *
+ * The old `pool.find(street && heroPos)` returned the alphabetically-first
+ * file for most seats and boards — a monotone-board strategy answering on a
+ * dry ace-high flop. Street must still match exactly (a river template says
+ * nothing about a flop), but position and board texture are similarity, not
+ * identity: a template for the right texture from the neighbouring seat beats
+ * no template at all. Ties break by id so the choice is deterministic.
+ */
+export function pickPostflopTemplate(
+  templates: readonly PostflopTemplate[] | undefined,
+  street: "flop" | "turn" | "river",
+  heroPos: Position,
+  boardTags: readonly BoardTag[],
+): PostflopTemplate | undefined {
+  if (templates === undefined || templates.length === 0) return undefined;
+
+  let best: PostflopTemplate | undefined;
+  let bestScore = -Infinity;
+  for (const template of templates) {
+    if (template.street !== street) continue;
+    let score = template.heroPos === heroPos ? 4 : 0;
+    for (const tag of template.boardTags) {
+      // A tag the board does not carry is a claim the template makes about a
+      // different board, so it counts against, not merely for nothing.
+      score += boardTags.includes(tag as BoardTag) ? 2 : -1;
+    }
+    if (score > bestScore || (score === bestScore && best !== undefined && template.id < best.id)) {
+      best = template;
+      bestScore = score;
+    }
+  }
+  return best;
+}
+
+/**
+ * Continue probability facing a postflop bet, from hand strength against the
+ * price. Strength stands in for equity — crude, but it moves in the right
+ * direction — and `foldToAggression` sets how much worse than the price the
+ * archetype demands its hand to be. The logistic keeps it smooth: there is no
+ * strength cliff where every bot on the same board does the same thing.
+ */
+export function postflopContinueProbability(
+  strength: number,
+  potOdds: number,
+  profile: BotProfile,
+): number {
+  const margin = strength - potOdds;
+  const base = 1 / (1 + Math.exp(-(margin * 6 + 0.6)));
+  return Math.max(0, Math.min(1, base ** (0.55 + profile.foldToAggression)));
 }
 
 function decidePostflop(
@@ -284,10 +545,14 @@ function decidePostflop(
 
   const handClass = classifyHand(hero.holeCards, state.board as readonly Card[]);
   const strength = classStrength(handClass);
+  const boardTags = boardTexture(state.board as readonly Card[]);
 
   // A matching template is ground truth; the archetype only bends it.
-  const template = data.templates?.find(
-    (t) => t.street === streetName(state.board.length) && t.heroPos === hero.position,
+  const template = pickPostflopTemplate(
+    data.templates,
+    streetName(state.board.length),
+    hero.position,
+    boardTags,
   );
   const entry = template === undefined ? undefined : getPostflopStrategy(template, handClass);
   const templateBet = entry
@@ -297,23 +562,32 @@ function decidePostflop(
     : null;
 
   const facingBet = legal.some((a) => a.type === "call");
+  const opponents = state.players.filter((p) => p.seat !== seat && p.status !== "folded").length;
 
   if (!facingBet) {
     const base = templateBet ?? strength;
-    const betProbability = profile.valueAggression * base + profile.bluffFrequency * (1 - base);
+    // Bluffs shrink with the field: firing air into three callers is not a
+    // style, it is a leak no archetype is meant to model.
+    const bluffTerm =
+      (profile.bluffFrequency * (1 - base)) / (1 + 0.5 * Math.max(0, opponents - 1));
+    const betProbability = profile.valueAggression * base + bluffTerm;
     if (rng() < betProbability) {
-      const fraction = strength > 0.6 ? 0.66 : 0.4;
-      const bet = aggressiveAction(legal, state.pot, fraction);
+      const fraction = (strength > 0.6 ? 0.66 : 0.4) * profile.betSizeMult + (rng() - 0.5) * 0.16;
+      const bet = aggressiveAction(legal, state.pot, Math.max(0.25, fraction));
       if (bet !== undefined) return bet;
     }
     return passiveFallback(legal);
   }
 
-  // Facing a bet: continue in proportion to strength, fold in proportion to the
-  // archetype's fear of aggression.
-  const continueProbability = Math.max(
-    0,
-    Math.min(1, strength * (1 - profile.foldToAggression) + (1 - profile.foldToAggression) * 0.35),
+  // Facing a bet: the price decides, through the archetype's tolerance for
+  // aggression. A third-pot stab and a pot-sized barrel are different
+  // questions and must get different answers.
+  const call = legal.find((a) => a.type === "call");
+  const toCall = call?.amount !== undefined ? call.amount - hero.committedThisStreet : 0;
+  const continueProbability = postflopContinueProbability(
+    strength,
+    potOddsOf(toCall, state.pot),
+    profile,
   );
   if (rng() >= continueProbability) {
     return legal.some((a) => a.type === "fold") ? { type: "fold" } : passiveFallback(legal);
@@ -324,10 +598,10 @@ function decidePostflop(
   const raiseProbability =
     profile.valueAggression * strength * 0.45 + profile.bluffFrequency * 0.26;
   if (rng() < raiseProbability) {
-    const raise = aggressiveAction(legal, state.pot, 0.8);
+    const fraction = 0.8 * profile.betSizeMult + (rng() - 0.5) * 0.16;
+    const raise = aggressiveAction(legal, state.pot, Math.max(0.4, fraction));
     if (raise !== undefined) return raise;
   }
-  const call = legal.find((a) => a.type === "call");
   return call === undefined ? passiveFallback(legal) : { type: "call", amount: call.amount };
 }
 

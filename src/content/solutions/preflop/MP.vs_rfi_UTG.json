@@ -5,12 +5,16 @@
   "actionSeq": "vs_rfi_UTG",
   "potBb": 4,
   "effStackBb": 100,
-  "actions": ["fold", "call", "raise"],
+  "actions": [
+    "fold",
+    "call",
+    "raise"
+  ],
   "confidence": {
     "rangeShape": "medium",
     "frequencies": "medium",
     "ev": "low",
-    "note": "REPAIRED. AKo folded; the tightest defence in the set still cannot fold ace-king. The range is written in poker notation in scripts/repair-preflop.ts and is reviewable against any published chart. The EV column is DERIVED from the strategy under the indifference rule — actions played at nonzero frequency are worth the same to within a hundredth of a big blind — not measured by a solver. Treat the sign and the ordering as meaningful and the magnitude as approximate."
+    "note": "REPAIRED. AKo folded; the tightest defence in the set still cannot fold ace-king. Widened to ~9% continue in the realism pass — 7.6% made the seat fold to an open three hands in four. The range is written in poker notation in scripts/repair-preflop.ts and is reviewable against any published chart. The EV column is DERIVED from the strategy under the indifference rule — actions played at nonzero frequency are worth the same to within a hundredth of a big blind — not measured by a solver. Treat the sign and the ordering as meaningful and the magnitude as approximate."
   },
   "notes": "MP facing a 2.5bb open from UTG. 3bet to 8bb in position. MP still has players behind, which is what keeps the calling range narrower than the pot odds alone would suggest.",
   "strategy": {
@@ -21,22 +25,23 @@
       "fold": 1
     },
     "44": {
-      "fold": 1
-    },
-    "55": {
-      "fold": 1
-    },
-    "66": {
       "fold": 0.6,
       "call": 0.4
     },
+    "55": {
+      "fold": 0.45,
+      "call": 0.55
+    },
+    "66": {
+      "fold": 0.3,
+      "call": 0.7
+    },
     "77": {
-      "fold": 0.4,
-      "call": 0.6
+      "fold": 0.15,
+      "call": 0.85
     },
     "88": {
-      "fold": 0.25,
-      "call": 0.75
+      "call": 1
     },
     "99": {
       "call": 1
@@ -217,7 +222,7 @@
       "call": 1
     },
     "T9s": {
-      "fold": 1
+      "call": 1
     },
     "T8s": {
       "fold": 1
@@ -542,13 +547,13 @@
     },
     "44": {
       "fold": 0,
-      "call": -0.39,
-      "raise": -0.61
+      "call": 0,
+      "raise": -0.56
     },
     "55": {
       "fold": 0,
-      "call": -0.14,
-      "raise": -0.36
+      "call": 0,
+      "raise": -0.41
     },
     "66": {
       "fold": 0,
@@ -562,38 +567,38 @@
     },
     "88": {
       "fold": 0,
-      "call": 0,
-      "raise": -0.26
+      "call": 0.13,
+      "raise": -0.17
     },
     "99": {
       "fold": 0,
-      "call": 0.14,
-      "raise": -0.17
+      "call": 0.26,
+      "raise": -0.08
     },
     "AA": {
       "fold": 0,
-      "call": 4.62,
+      "call": 4.6,
       "raise": 7
     },
     "AKs": {
       "fold": 0,
-      "call": 2.51,
-      "raise": 3.96
+      "call": 2.69,
+      "raise": 4.26
     },
     "AQs": {
       "fold": 0,
-      "call": 1.93,
-      "raise": 1.08
+      "call": 2.32,
+      "raise": 1.36
     },
     "AJs": {
       "fold": 0,
-      "call": 1.45,
-      "raise": 0.74
+      "call": 1.84,
+      "raise": 1.02
     },
     "ATs": {
       "fold": 0,
-      "call": 0.5,
-      "raise": 0.08
+      "call": 0.79,
+      "raise": 0.28
     },
     "A9s": {
       "fold": 0,
@@ -637,23 +642,23 @@
     },
     "AKo": {
       "fold": 0,
-      "call": 2.5,
-      "raise": 2.5
+      "call": 2.89,
+      "raise": 2.89
     },
     "KK": {
       "fold": 0,
-      "call": 3.83,
-      "raise": 5.87
+      "call": 3.9,
+      "raise": 5.99
     },
     "KQs": {
       "fold": 0,
-      "call": 1.05,
-      "raise": 0.47
+      "call": 1.42,
+      "raise": 0.73
     },
     "KJs": {
       "fold": 0,
-      "call": 0.32,
-      "raise": -0.04
+      "call": 0.56,
+      "raise": 0.13
     },
     "KTs": {
       "fold": 0,
@@ -712,13 +717,13 @@
     },
     "QQ": {
       "fold": 0,
-      "call": 3.13,
-      "raise": 4.86
+      "call": 3.26,
+      "raise": 5.08
     },
     "QJs": {
       "fold": 0,
-      "call": 0.21,
-      "raise": -0.12
+      "call": 0.39,
+      "raise": 0.01
     },
     "QTs": {
       "fold": 0,
@@ -782,13 +787,13 @@
     },
     "JJ": {
       "fold": 0,
-      "call": 3.18,
-      "raise": 3.18
+      "call": 3.54,
+      "raise": 3.54
     },
     "JTs": {
       "fold": 0,
-      "call": 0.11,
-      "raise": -0.19
+      "call": 0.18,
+      "raise": -0.14
     },
     "J9s": {
       "fold": 0,
@@ -852,13 +857,13 @@
     },
     "TT": {
       "fold": 0,
-      "call": 0.74,
-      "raise": 0.25
+      "call": 1.07,
+      "raise": 0.48
     },
     "T9s": {
       "fold": 0,
-      "call": -0.12,
-      "raise": -0.34
+      "call": 0.1,
+      "raise": -0.18
     },
     "T8s": {
       "fold": 0,

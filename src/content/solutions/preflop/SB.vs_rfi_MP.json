@@ -5,29 +5,34 @@
   "actionSeq": "vs_rfi_MP",
   "potBb": 4,
   "effStackBb": 100,
-  "actions": ["fold", "call", "raise"],
+  "actions": [
+    "fold",
+    "call",
+    "raise"
+  ],
   "confidence": {
     "rangeShape": "medium",
     "frequencies": "medium",
     "ev": "low",
-    "note": "REPAIRED. no fold on AKo; tighter again against a 20% open. The range is written in poker notation in scripts/repair-preflop.ts and is reviewable against any published chart. The EV column is DERIVED from the strategy under the indifference rule — actions played at nonzero frequency are worth the same to within a hundredth of a big blind — not measured by a solver. Treat the sign and the ordering as meaningful and the magnitude as approximate."
+    "note": "REPAIRED. no fold on AKo; tighter again against a 20% open. Widened to ~12% continue in the realism pass. The range is written in poker notation in scripts/repair-preflop.ts and is reviewable against any published chart. The EV column is DERIVED from the strategy under the indifference rule — actions played at nonzero frequency are worth the same to within a hundredth of a big blind — not measured by a solver. Treat the sign and the ordering as meaningful and the magnitude as approximate."
   },
   "notes": "SB facing a 2.5bb open from MP. 3bet to 11bb out of position. SB still has the big blind behind, which is what keeps the calling range narrower than the pot odds alone would suggest.",
   "strategy": {
     "22": {
-      "fold": 1
-    },
-    "33": {
       "fold": 0.6,
       "call": 0.4
     },
+    "33": {
+      "fold": 0.5,
+      "call": 0.5
+    },
     "44": {
-      "fold": 0.45,
-      "call": 0.55
+      "fold": 0.4,
+      "call": 0.6
     },
     "55": {
-      "fold": 0.2,
-      "call": 0.8
+      "fold": 0.1,
+      "call": 0.9
     },
     "66": {
       "call": 1
@@ -61,11 +66,12 @@
       "call": 1
     },
     "A8s": {
-      "fold": 0.3,
-      "call": 0.7
+      "fold": 0.2,
+      "call": 0.8
     },
     "A7s": {
-      "fold": 1
+      "fold": 0.25,
+      "call": 0.75
     },
     "A6s": {
       "fold": 1
@@ -97,7 +103,7 @@
       "call": 1
     },
     "KTs": {
-      "fold": 1
+      "call": 1
     },
     "K9s": {
       "fold": 1
@@ -138,7 +144,7 @@
       "call": 1
     },
     "QTs": {
-      "fold": 1
+      "call": 1
     },
     "Q9s": {
       "fold": 1
@@ -259,7 +265,7 @@
       "fold": 1
     },
     "98s": {
-      "fold": 1
+      "call": 1
     },
     "97s": {
       "fold": 1
@@ -535,8 +541,8 @@
   "ev": {
     "22": {
       "fold": 0,
-      "call": -0.65,
-      "raise": -0.87
+      "call": 0,
+      "raise": -0.56
     },
     "33": {
       "fold": 0,
@@ -560,48 +566,48 @@
     },
     "77": {
       "fold": 0,
-      "call": 0.1,
+      "call": 0.11,
       "raise": -0.19
     },
     "88": {
       "fold": 0,
-      "call": 0.16,
-      "raise": -0.16
+      "call": 0.18,
+      "raise": -0.14
     },
     "99": {
       "fold": 0,
-      "call": 0.31,
-      "raise": -0.05
+      "call": 0.45,
+      "raise": 0.04
     },
     "AA": {
       "fold": 0,
-      "call": 4.57,
+      "call": 4.56,
       "raise": 7
     },
     "AKs": {
       "fold": 0,
-      "call": 2.84,
-      "raise": 4.51
+      "call": 3.04,
+      "raise": 4.81
     },
     "AQs": {
       "fold": 0,
-      "call": 1.55,
-      "raise": 2.67
+      "call": 1.85,
+      "raise": 3.11
     },
     "AJs": {
       "fold": 0,
-      "call": 2.19,
-      "raise": 2.19
+      "call": 2.65,
+      "raise": 2.65
     },
     "ATs": {
       "fold": 0,
-      "call": 1.09,
-      "raise": 0.49
+      "call": 1.53,
+      "raise": 0.79
     },
     "A9s": {
       "fold": 0,
-      "call": 0.61,
-      "raise": 0.16
+      "call": 0.99,
+      "raise": 0.42
     },
     "A8s": {
       "fold": 0,
@@ -610,8 +616,8 @@
     },
     "A7s": {
       "fold": 0,
-      "call": -0.61,
-      "raise": -0.83
+      "call": 0,
+      "raise": -0.54
     },
     "A6s": {
       "fold": 0,
@@ -620,12 +626,12 @@
     },
     "A5s": {
       "fold": 0,
-      "call": -0.35,
+      "call": -0.33,
       "raise": 0
     },
     "A4s": {
       "fold": 0,
-      "call": -0.35,
+      "call": -0.34,
       "raise": 0
     },
     "A3s": {
@@ -640,28 +646,28 @@
     },
     "AKo": {
       "fold": 0,
-      "call": 1.94,
-      "raise": 3.22
+      "call": 2.21,
+      "raise": 3.63
     },
     "KK": {
       "fold": 0,
-      "call": 3.94,
-      "raise": 6.1
+      "call": 4.01,
+      "raise": 6.21
     },
     "KQs": {
       "fold": 0,
-      "call": 1.77,
-      "raise": 0.96
+      "call": 2.23,
+      "raise": 1.29
     },
     "KJs": {
       "fold": 0,
-      "call": 0.83,
-      "raise": 0.31
+      "call": 1.24,
+      "raise": 0.59
     },
     "KTs": {
       "fold": 0,
-      "call": -0.12,
-      "raise": -0.34
+      "call": 0.78,
+      "raise": 0.27
     },
     "K9s": {
       "fold": 0,
@@ -715,18 +721,18 @@
     },
     "QQ": {
       "fold": 0,
-      "call": 3.37,
-      "raise": 5.27
+      "call": 3.5,
+      "raise": 5.49
     },
     "QJs": {
       "fold": 0,
-      "call": 0.44,
-      "raise": 0.04
+      "call": 0.6,
+      "raise": 0.15
     },
     "QTs": {
       "fold": 0,
-      "call": -0.12,
-      "raise": -0.34
+      "call": 0.34,
+      "raise": -0.04
     },
     "Q9s": {
       "fold": 0,
@@ -785,13 +791,13 @@
     },
     "JJ": {
       "fold": 0,
-      "call": 2.37,
-      "raise": 3.83
+      "call": 2.6,
+      "raise": 4.2
     },
     "JTs": {
       "fold": 0,
-      "call": 0.22,
-      "raise": -0.11
+      "call": 0.25,
+      "raise": -0.1
     },
     "J9s": {
       "fold": 0,
@@ -855,13 +861,13 @@
     },
     "TT": {
       "fold": 0,
-      "call": 1.4,
-      "raise": 1.4
+      "call": 1.86,
+      "raise": 1.86
     },
     "T9s": {
       "fold": 0,
-      "call": 0.12,
-      "raise": -0.18
+      "call": 0.14,
+      "raise": -0.17
     },
     "T8s": {
       "fold": 0,
@@ -925,8 +931,8 @@
     },
     "98s": {
       "fold": 0,
-      "call": -0.12,
-      "raise": -0.34
+      "call": 0.1,
+      "raise": -0.19
     },
     "97s": {
       "fold": 0,

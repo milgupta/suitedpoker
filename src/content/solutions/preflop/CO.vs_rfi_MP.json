@@ -5,7 +5,11 @@
   "actionSeq": "vs_rfi_MP",
   "potBb": 4,
   "effStackBb": 100,
-  "actions": ["fold", "call", "raise"],
+  "actions": [
+    "fold",
+    "call",
+    "raise"
+  ],
   "confidence": {
     "rangeShape": "medium",
     "frequencies": "medium",

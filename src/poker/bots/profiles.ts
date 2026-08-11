@@ -48,6 +48,29 @@ export interface BotProfile {
   bluffFrequency: number;
   /** Postflop: how readily a marginal hand is folded to a bet. */
   foldToAggression: number;
+
+  /**
+   * Per-decision noise: the share of a hand's CONTINUE mix that is
+   * redistributed evenly across its non-fold actions. This is what stops a
+   * near-pure strategy from playing the same hand identically a hundred times
+   * in a row — the tell that made the bots feel scripted. Hands the profile
+   * folds outright stay folded: varying trash into the pot would be noise a
+   * player reads as a bug, not as a style.
+   */
+  mixTemperature: number;
+  /**
+   * Exponent on the pot-odds curve — how sharply this bot's continue
+   * frequency tracks the price it is being offered. A station barely notices
+   * the difference between a min-raise and an overbet; a regular notices
+   * nothing else.
+   */
+  priceSensitivity: number;
+  /** Open-raise size in big blinds, [min, max] — jittered per decision. */
+  openRaiseBb: readonly [number, number];
+  /** Re-raise as a multiple of the bet faced, [min, max] — jittered too. */
+  reraiseX: readonly [number, number];
+  /** Multiplier on the standard postflop bet fractions. */
+  betSizeMult: number;
 }
 
 export const PROFILES: Record<BotId, BotProfile> = {
@@ -65,6 +88,11 @@ export const PROFILES: Record<BotId, BotProfile> = {
     valueAggression: 0.72,
     bluffFrequency: 0.05,
     foldToAggression: 0.78,
+    mixTemperature: 0.08,
+    priceSensitivity: 1.4,
+    openRaiseBb: [2.2, 2.5],
+    reraiseX: [2.8, 3.4],
+    betSizeMult: 0.9,
   },
   station: {
     id: "station",
@@ -80,6 +108,11 @@ export const PROFILES: Record<BotId, BotProfile> = {
     valueAggression: 0.3,
     bluffFrequency: 0.02,
     foldToAggression: 0.12,
+    mixTemperature: 0.12,
+    priceSensitivity: 0.6,
+    openRaiseBb: [2.0, 2.4],
+    reraiseX: [2.5, 3.0],
+    betSizeMult: 0.75,
   },
   maniac: {
     id: "maniac",
@@ -97,6 +130,11 @@ export const PROFILES: Record<BotId, BotProfile> = {
     // maniac that calls everything measures LESS aggressive than the regular,
     // because the aggression factor is bets divided by calls.
     foldToAggression: 0.34,
+    mixTemperature: 0.16,
+    priceSensitivity: 0.7,
+    openRaiseBb: [2.8, 3.6],
+    reraiseX: [3.2, 4.2],
+    betSizeMult: 1.3,
   },
   tag: {
     id: "tag",
@@ -105,13 +143,21 @@ export const PROFILES: Record<BotId, BotProfile> = {
       "Tight-aggressive. Plays close to the solution preflop with a slight value lean postflop, and over-folds rivers.",
     teaches: "Balanced play — you cannot simply run them over.",
     openWidth: 0.235,
-    defendWidth: 0.2,
+    // Wider than the solution's own defends on purpose: the online preset is
+    // FIVE-handed, so with one fewer seat behind every open, chart-faithful
+    // defends fold the table around too often to be worth playing against.
+    defendWidth: 0.26,
     vpipTarget: 0.24,
     raiseShare: 0.83,
-    solutionWeight: 0.75,
+    solutionWeight: 0.7,
     valueAggression: 0.78,
     bluffFrequency: 0.24,
     foldToAggression: 0.55,
+    mixTemperature: 0.08,
+    priceSensitivity: 1.5,
+    openRaiseBb: [2.3, 2.8],
+    reraiseX: [2.8, 3.6],
+    betSizeMult: 1.0,
   },
   gto: {
     id: "gto",
@@ -131,6 +177,11 @@ export const PROFILES: Record<BotId, BotProfile> = {
     valueAggression: 0.72,
     bluffFrequency: 0.3,
     foldToAggression: 0.5,
+    mixTemperature: 0.03,
+    priceSensitivity: 1.3,
+    openRaiseBb: [2.4, 2.7],
+    reraiseX: [3.0, 3.7],
+    betSizeMult: 1.0,
   },
 };
 

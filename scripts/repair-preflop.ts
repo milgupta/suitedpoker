@@ -159,7 +159,9 @@ const BB_VS_BTN: NodeSpec = {
 
 const BB_VS_CO: NodeSpec = {
   ref: "BB:vs_rfi_CO",
-  reason: "defended 20.1%; a cutoff open is tighter than a button one but not by half",
+  reason:
+    "defended 29.7% after the first repair; a 28% cutoff open at this price gets defended " +
+    "around 36% in published solves",
   raise: [
     { range: "JJ+, AKs, AKo", freq: 1 },
     { range: "TT, AQs", freq: 0.5 },
@@ -172,21 +174,23 @@ const BB_VS_CO: NodeSpec = {
     { range: "TT", freq: 0.5 },
     { range: "AQs, AJs-A2s", freq: 1 },
     { range: "AQo, KQs", freq: 0.75 },
-    { range: "KJs-K5s", freq: 1 },
-    { range: "QTs-Q6s", freq: 1 },
-    { range: "JTs-J7s", freq: 1 },
-    { range: "T9s-T7s", freq: 1 },
-    { range: "98s-96s, 87s-85s, 76s-75s, 65s-64s, 54s", freq: 1 },
-    { range: "AJo-A5o", freq: 1 },
-    { range: "KQo-KTo", freq: 1 },
-    { range: "QJo-QTo", freq: 1 },
-    { range: "JTo", freq: 1 },
+    { range: "KJs-K3s", freq: 1 },
+    { range: "QTs-Q4s", freq: 1 },
+    { range: "JTs-J5s", freq: 1 },
+    { range: "T9s-T5s", freq: 1 },
+    { range: "98s-94s, 87s-84s, 76s-74s, 65s-63s, 54s-53s, 43s", freq: 1 },
+    { range: "AJo-A4o", freq: 1 },
+    { range: "KQo-K9o", freq: 1 },
+    { range: "QJo-Q9o", freq: 1 },
+    { range: "JTo-J9o, T9o, 98o", freq: 1 },
   ],
 };
 
 const BB_VS_MP: NodeSpec = {
   ref: "BB:vs_rfi_MP",
-  reason: "defended 17.3% against a 20% opening range",
+  reason:
+    "defended 25.1% after the first repair against a 20% open; published solves sit near 32% " +
+    "at this price, the gap being low suited connectors and gappers",
   raise: [
     { range: "QQ+, AKs, AKo", freq: 1 },
     { range: "JJ, AQs", freq: 0.5 },
@@ -197,22 +201,23 @@ const BB_VS_MP: NodeSpec = {
     { range: "JJ", freq: 0.5 },
     { range: "AQs, AJs-A2s", freq: 1 },
     { range: "AQo, KQs", freq: 1 },
-    { range: "KJs-K7s", freq: 1 },
-    { range: "QTs-Q8s", freq: 1 },
-    { range: "JTs-J8s", freq: 1 },
-    { range: "T9s-T7s", freq: 1 },
-    { range: "98s-96s, 87s-86s, 76s-75s, 65s, 54s", freq: 1 },
+    { range: "KJs-K4s", freq: 1 },
+    { range: "QTs-Q5s", freq: 1 },
+    { range: "JTs-J6s", freq: 1 },
+    { range: "T9s-T6s", freq: 1 },
+    { range: "98s-95s, 87s-84s, 76s-74s, 65s-63s, 54s-53s, 43s", freq: 1 },
     { range: "AJo-A8o", freq: 1 },
     { range: "KQo-KTo", freq: 1 },
     { range: "QJo-QTo", freq: 1 },
-    { range: "JTo", freq: 1 },
+    { range: "JTo, T9o, 98o", freq: 1 },
   ],
 };
 
 const BB_VS_UTG: NodeSpec = {
   ref: "BB:vs_rfi_UTG",
   reason:
-    "defended 15.7%; the tightest open in the game still gets called by a quarter of the deck",
+    "defended 20.3% after the first repair; published BB-vs-UTG defence at this price is ~30%, " +
+    "and the missing third was the suited junk that makes the seat live to play against",
   raise: [
     { range: "QQ+, AKs, AKo", freq: 1 },
     { range: "JJ, AQs", freq: 0.4 },
@@ -221,16 +226,17 @@ const BB_VS_UTG: NodeSpec = {
   call: [
     { range: "TT-22", freq: 1 },
     { range: "JJ", freq: 0.6 },
-    { range: "AQs, AJs-A8s, A5s-A2s", freq: 1 },
+    { range: "AQs, AJs-A2s", freq: 1 },
     { range: "AQo, KQs", freq: 1 },
-    { range: "KJs-K8s", freq: 1 },
-    { range: "QTs-Q8s", freq: 1 },
-    { range: "JTs-J8s", freq: 1 },
-    { range: "T9s-T7s", freq: 1 },
-    { range: "98s-96s, 87s-86s, 76s-75s, 65s, 54s", freq: 1 },
-    { range: "AJo-ATo", freq: 1 },
-    { range: "KQo-KJo", freq: 1 },
-    { range: "QJo", freq: 1 },
+    { range: "KJs-K5s", freq: 1 },
+    { range: "QTs-Q6s", freq: 1 },
+    { range: "JTs-J7s", freq: 1 },
+    { range: "T9s-T6s", freq: 1 },
+    { range: "98s-95s, 87s-85s, 76s-74s, 65s-64s, 54s-53s, 43s", freq: 1 },
+    { range: "AJo-A9o", freq: 1 },
+    { range: "KQo-KTo", freq: 1 },
+    { range: "QJo-QTo", freq: 1 },
+    { range: "JTo, T9o", freq: 1 },
   ],
 };
 
@@ -240,7 +246,9 @@ const BB_VS_UTG: NodeSpec = {
  */
 const BB_VS_SB: NodeSpec = {
   ref: "BB:vs_rfi_SB",
-  reason: "defended 21.3% in position against the widest opening range at the table",
+  reason:
+    "defended 50.1% after the first repair, past the ~45% published figure — the bottom " +
+    "offsuit junk (65o, 32s-class hands) does not defend even at this price",
   raise: [
     { range: "TT+, AQs+, AKo", freq: 1 },
     { range: "99, AJs, AQo, KQs", freq: 0.45 },
@@ -256,12 +264,12 @@ const BB_VS_SB: NodeSpec = {
     { range: "QTs-Q3s", freq: 1 },
     { range: "JTs-J5s", freq: 1 },
     { range: "T9s-T5s", freq: 1 },
-    { range: "98s-94s, 87s-84s, 76s-73s, 65s-63s, 54s-53s, 43s, 42s, 32s", freq: 1 },
-    { range: "AJo-A2o", freq: 1 },
-    { range: "KQo-K7o", freq: 1 },
-    { range: "QJo-Q8o", freq: 1 },
-    { range: "JTo-J8o", freq: 1 },
-    { range: "T9o-T8o, 98o-97o, 87o-86o, 76o, 65o", freq: 1 },
+    { range: "98s-94s, 87s-84s, 76s-74s, 65s-63s, 54s-53s, 43s", freq: 1 },
+    { range: "AJo-A3o", freq: 1 },
+    { range: "KQo-K8o", freq: 1 },
+    { range: "QJo-Q9o", freq: 1 },
+    { range: "JTo-J9o", freq: 1 },
+    { range: "T9o-T8o, 98o-97o, 87o, 76o", freq: 1 },
   ],
 };
 
@@ -276,7 +284,9 @@ const BB_VS_SB: NodeSpec = {
  */
 const BTN_VS_UTG: NodeSpec = {
   ref: "BTN:vs_rfi_UTG",
-  reason: "AKo folded 30%; JJ/TT/AQs never 3bet; every pair below 77 folded in position",
+  reason:
+    "AKo folded 30%; JJ/TT/AQs never 3bet; every pair below 77 folded in position. Widened " +
+    "to ~15% continue in the realism pass with the suited connectors position pays for",
   raise: [
     { range: "QQ+, AKs", freq: 1 },
     { range: "AKo", freq: 0.75 },
@@ -290,18 +300,21 @@ const BTN_VS_UTG: NodeSpec = {
     { range: "TT, AQs", freq: 0.7 },
     { range: "AKo", freq: 0.25 },
     { range: "99-22", freq: 1 },
-    { range: "AJs-A9s, A5s-A3s", freq: 1 },
+    { range: "AJs-A7s, A5s-A2s", freq: 1 },
     { range: "AQo", freq: 0.75 },
-    { range: "KQs-KTs", freq: 1 },
+    { range: "KQs-K9s", freq: 1 },
     { range: "KJs", freq: 0.85 },
-    { range: "QJs-QTs, JTs, T9s, 98s, 87s", freq: 1 },
+    { range: "QJs-Q9s, JTs-J9s, T9s-T8s, 98s, 87s, 76s, 65s", freq: 1 },
     { range: "KQo", freq: 0.4 },
+    { range: "AJo", freq: 0.5 },
   ],
 };
 
 const BTN_VS_MP: NodeSpec = {
   ref: "BTN:vs_rfi_MP",
-  reason: "same shape as the UTG node — no fold on AKo, a real 3bet frequency, pairs call",
+  reason:
+    "same shape as the UTG node — no fold on AKo, a real 3bet frequency, pairs call. " +
+    "Widened to ~17% continue in the realism pass",
   raise: [
     { range: "QQ+, AKs, AKo", freq: 1 },
     { range: "JJ", freq: 0.55 },
@@ -313,12 +326,13 @@ const BTN_VS_MP: NodeSpec = {
     { range: "JJ", freq: 0.45 },
     { range: "TT, AQs", freq: 0.65 },
     { range: "99-22", freq: 1 },
-    { range: "AJs-A8s, A5s-A3s", freq: 1 },
+    { range: "AJs-A6s, A5s-A2s", freq: 1 },
     { range: "AQo, AJo", freq: 1 },
-    { range: "KQs-K9s", freq: 1 },
+    { range: "KQs-K8s", freq: 1 },
     { range: "KJs", freq: 0.85 },
-    { range: "QJs-Q9s, JTs-J9s, T9s-T8s, 98s, 87s, 76s", freq: 1 },
+    { range: "QJs-Q8s, JTs-J8s, T9s-T7s, 98s-97s, 87s-86s, 76s, 65s, 54s", freq: 1 },
     { range: "KQo", freq: 0.6 },
+    { range: "ATo", freq: 0.5 },
   ],
 };
 
@@ -352,7 +366,9 @@ const BTN_VS_CO: NodeSpec = {
  */
 const CO_VS_UTG: NodeSpec = {
   ref: "CO:vs_rfi_UTG",
-  reason: "AKo folded; JJ/TT/AQs pure calls with players still to act behind",
+  reason:
+    "AKo folded; JJ/TT/AQs pure calls with players still to act behind. Widened to ~11% " +
+    "continue in the realism pass, adding the small pairs and suited broadways every chart keeps",
   raise: [
     { range: "QQ+, AKs", freq: 1 },
     { range: "AKo", freq: 0.8 },
@@ -364,10 +380,10 @@ const CO_VS_UTG: NodeSpec = {
     { range: "JJ", freq: 0.55 },
     { range: "AQs", freq: 0.75 },
     { range: "AKo", freq: 0.2 },
-    { range: "TT-55", freq: 1 },
-    { range: "AJs-ATs, A5s-A4s", freq: 1 },
+    { range: "TT-33", freq: 1 },
+    { range: "AJs-A9s, A5s-A4s", freq: 1 },
     { range: "AQo", freq: 0.6 },
-    { range: "KQs-KJs, QJs, JTs, T9s", freq: 1 },
+    { range: "KQs-KTs, QJs-QTs, JTs, T9s, 98s", freq: 1 },
   ],
 };
 
@@ -392,7 +408,9 @@ const CO_VS_MP: NodeSpec = {
 
 const MP_VS_UTG: NodeSpec = {
   ref: "MP:vs_rfi_UTG",
-  reason: "AKo folded; the tightest defence in the set still cannot fold ace-king",
+  reason:
+    "AKo folded; the tightest defence in the set still cannot fold ace-king. Widened to ~9% " +
+    "continue in the realism pass — 7.6% made the seat fold to an open three hands in four",
   raise: [
     { range: "QQ+, AKs", freq: 1 },
     { range: "AKo", freq: 0.8 },
@@ -402,10 +420,10 @@ const MP_VS_UTG: NodeSpec = {
   call: [
     { range: "JJ", freq: 0.6 },
     { range: "AKo", freq: 0.2 },
-    { range: "TT-66", freq: 1 },
+    { range: "TT-44", freq: 1 },
     { range: "AQs-ATs, A5s", freq: 1 },
     { range: "AQo", freq: 0.5 },
-    { range: "KQs-KJs, QJs, JTs", freq: 1 },
+    { range: "KQs-KJs, QJs, JTs, T9s", freq: 1 },
   ],
 };
 
@@ -416,20 +434,22 @@ const MP_VS_UTG: NodeSpec = {
  */
 const SB_VS_BTN: NodeSpec = {
   ref: "SB:vs_rfi_BTN",
-  reason: "no fold on AKo; a 3bet-leaning range out of position with the big blind behind",
+  reason:
+    "no fold on AKo; a 3bet-leaning range out of position with the big blind behind. " +
+    "Widened to ~16% continue in the realism pass",
   raise: [
     { range: "TT+, AQs+, AKo", freq: 1 },
     { range: "99, AJs, AQo, KQs", freq: 0.5 },
     { range: "A5s-A2s", freq: 0.45 },
-    { range: "K9s-K7s, 76s", freq: 0.2 },
+    { range: "K9s-K7s, Q9s, 76s, 65s", freq: 0.25 },
   ],
   call: [
     { range: "88-22", freq: 1 },
     { range: "99, AJs, KQs", freq: 0.5 },
     { range: "ATs-A6s", freq: 1 },
-    { range: "KJs-KTs, QJs-QTs, JTs, T9s, 98s, 87s", freq: 1 },
+    { range: "KJs-KTs, QJs-QTs, JTs-J9s, T9s-T8s, 98s, 87s, 76s, 65s, 54s", freq: 1 },
     { range: "AQo", freq: 0.5 },
-    { range: "AJo, KQo", freq: 0.5 },
+    { range: "AJo, ATo, KQo, KJo", freq: 0.5 },
   ],
 };
 
@@ -440,13 +460,13 @@ const SB_VS_CO: NodeSpec = {
     { range: "JJ+, AQs+, AKo", freq: 1 },
     { range: "TT, AJs, AQo", freq: 0.5 },
     { range: "A5s-A3s", freq: 0.4 },
-    { range: "K9s, 76s", freq: 0.2 },
+    { range: "K9s, 76s, 65s", freq: 0.2 },
   ],
   call: [
     { range: "99-22", freq: 1 },
     { range: "TT, AJs", freq: 0.5 },
     { range: "ATs-A7s", freq: 1 },
-    { range: "KQs-KTs, QJs-QTs, JTs, T9s, 98s", freq: 1 },
+    { range: "KQs-KTs, QJs-QTs, JTs, T9s, 98s, 87s", freq: 1 },
     { range: "AQo", freq: 0.5 },
     { range: "AJo, KQo", freq: 0.4 },
   ],
@@ -454,17 +474,19 @@ const SB_VS_CO: NodeSpec = {
 
 const SB_VS_MP: NodeSpec = {
   ref: "SB:vs_rfi_MP",
-  reason: "no fold on AKo; tighter again against a 20% open",
+  reason:
+    "no fold on AKo; tighter again against a 20% open. Widened to ~12% continue in the " +
+    "realism pass",
   raise: [
     { range: "JJ+, AQs+, AKo", freq: 1 },
     { range: "TT, AJs", freq: 0.4 },
     { range: "A5s-A4s", freq: 0.35 },
   ],
   call: [
-    { range: "99-33", freq: 1 },
+    { range: "99-22", freq: 1 },
     { range: "TT, AJs", freq: 0.6 },
-    { range: "ATs-A8s", freq: 1 },
-    { range: "KQs-KJs, QJs, JTs, T9s", freq: 1 },
+    { range: "ATs-A7s", freq: 1 },
+    { range: "KQs-KTs, QJs-QTs, JTs, T9s, 98s", freq: 1 },
     { range: "AQo", freq: 0.6 },
     { range: "KQo", freq: 0.3 },
   ],
@@ -472,17 +494,19 @@ const SB_VS_MP: NodeSpec = {
 
 const SB_VS_UTG: NodeSpec = {
   ref: "SB:vs_rfi_UTG",
-  reason: "no fold on AKo against the tightest open in the game",
+  reason:
+    "no fold on AKo against the tightest open in the game. Widened to ~11% continue in the " +
+    "realism pass — 7.8% folded the seat out of the game entirely",
   raise: [
     { range: "QQ+, AKs, AKo", freq: 1 },
     { range: "JJ, AQs", freq: 0.45 },
     { range: "A5s", freq: 0.3 },
   ],
   call: [
-    { range: "TT-55", freq: 1 },
+    { range: "TT-33", freq: 1 },
     { range: "JJ, AQs", freq: 0.55 },
-    { range: "AJs-ATs", freq: 1 },
-    { range: "KQs-KJs, QJs, JTs", freq: 1 },
+    { range: "AJs-A9s", freq: 1 },
+    { range: "KQs-KTs, QJs-QTs, JTs, T9s, 98s", freq: 1 },
     { range: "AQo", freq: 0.5 },
   ],
 };
