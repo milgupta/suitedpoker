@@ -46,7 +46,7 @@ export function PracticeView() {
       </HubFade>
 
       <HubCardGrid count={3} className="grid gap-4 md:grid-cols-3">
-        <HubCardMotion>
+        <HubCardMotion index={0}>
           <HubCard
             href="/daily"
             title="Daily challenge"
@@ -57,7 +57,7 @@ export function PracticeView() {
             dataQuick="Daily"
           />
         </HubCardMotion>
-        <HubCardMotion>
+        <HubCardMotion index={1}>
           <HubCard
             href="/arena"
             title="Arena"
@@ -67,7 +67,7 @@ export function PracticeView() {
             dataQuick="Arena"
           />
         </HubCardMotion>
-        <HubCardMotion>
+        <HubCardMotion index={2}>
           <HubCard
             href="/table"
             title="Table sim"

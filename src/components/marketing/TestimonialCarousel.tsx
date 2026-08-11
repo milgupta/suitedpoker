@@ -94,6 +94,9 @@ function StarRow({ size = "md", className }: { size?: "sm" | "md"; className?: s
   return (
     <div
       className={cn("text-star flex items-center gap-1", className)}
+      // A bare div ignores aria-label (axe: aria-prohibited-attr) — role="img"
+      // is what makes the label announced. Same lesson as AnimatedNumber in 9.1.
+      role="img"
       aria-label="5 out of 5 stars"
     >
       {Array.from({ length: 5 }, (_, i) => (

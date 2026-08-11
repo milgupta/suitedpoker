@@ -212,6 +212,7 @@ export function OnboardingClient({ initialAnswers, mode = "api" }: OnboardingCli
         <div
           className="bg-surface-2 h-1 flex-1 overflow-hidden rounded-full"
           role="progressbar"
+          aria-label="Question progress"
           aria-valuemin={1}
           aria-valuemax={TOTAL_STEPS}
           aria-valuenow={step}

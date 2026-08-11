@@ -3,9 +3,7 @@
 import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { motion, useReducedMotion } from "motion/react";
 import { Button } from "@/components/ui/button";
-import { fadeUp, staggerChild, staggerContainer } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 /**
@@ -104,33 +102,21 @@ export function HubCardGrid({
   className?: string;
   count: number;
 }) {
-  const reduced = useReducedMotion() ?? false;
-  return (
-    <motion.div
-      className={className}
-      initial="hidden"
-      animate="visible"
-      variants={staggerContainer(reduced, count)}
-    >
-      {children}
-    </motion.div>
-  );
+  // The stagger lives on the children as CSS delays; the grid is layout only.
+  void count;
+  return <div className={className}>{children}</div>;
 }
 
-export function HubCardMotion({ children }: { children: ReactNode }) {
-  const reduced = useReducedMotion() ?? false;
+export function HubCardMotion({ children, index = 0 }: { children: ReactNode; index?: number }) {
+  // CSS entrance, not framer: a mount animation must know the reduced-motion
+  // verdict at FIRST PAINT, and only a media query does. See .rise-in.
   return (
-    <motion.div variants={staggerChild(reduced)} className="h-full">
+    <div className="rise-in h-full" style={{ animationDelay: `${index * 70}ms` }}>
       {children}
-    </motion.div>
+    </div>
   );
 }
 
 export function HubFade({ children, className }: { children: ReactNode; className?: string }) {
-  const reduced = useReducedMotion() ?? false;
-  return (
-    <motion.div className={className} initial="hidden" animate="visible" variants={fadeUp(reduced)}>
-      {children}
-    </motion.div>
-  );
+  return <div className={`rise-in ${className ?? ""}`}>{children}</div>;
 }
