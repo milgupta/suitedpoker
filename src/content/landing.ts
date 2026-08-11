@@ -90,20 +90,37 @@ export const MIX = {
 export interface Step {
   readonly title: string;
   readonly body: string;
+  /** Basename under `public/screenshots/` (png/webp/avif). */
+  readonly shot: string;
+  readonly alt: string;
+  /**
+   * CSS object-position. Tall phone captures need a different crop per step so
+   * step 2 shows the mix and step 3 the explanation, not the same mid-frame.
+   */
+  readonly objectPosition?: string;
 }
 
 export const STEPS: readonly Step[] = [
   {
     title: "Answer a spot",
     body: "A real hand, with the position, the stacks and the action so far. You pick what you would do — no hints unless you ask.",
+    shot: "drill",
+    alt: "Arena drill: hole cards, action history, and Fold / Call / All in",
+    objectPosition: "center top",
   },
   {
     title: "See the whole strategy",
     body: "Not a tick or a cross. How often each action is taken, and what yours costs in big blinds against the best one.",
+    shot: "feedback-frequency-bar",
+    alt: "Graded hand showing how often each action is taken and the Best badge",
+    objectPosition: "center 28%",
   },
   {
     title: "Understand why",
     body: "A plain-English explanation of the idea behind it, written for someone who does not already speak solver. Ask follow-up questions.",
+    shot: "feedback-frequency-bar",
+    alt: "Post-hand explanation with Why and Ask about this hand",
+    objectPosition: "center 62%",
   },
 ];
 

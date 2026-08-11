@@ -155,7 +155,7 @@ export default function Home() {
         </section>
 
         {/* ── The problem ──────────────────────────────────────────────────── */}
-        <section id="how" className="border-border border-t">
+        <section id="problem" className="border-border border-t">
           <div className="mx-auto max-w-(--container-app) px-6 py-20">
             <h2 className="text-display-md sm:text-display-lg max-w-2xl text-balance">
               You know the rules. You still lose.
@@ -213,18 +213,44 @@ export default function Home() {
         </section>
 
         {/* ── How it works ─────────────────────────────────────────────────── */}
-        <section className="border-border border-t">
+        <section id="how" className="border-border border-t">
           <div className="mx-auto max-w-(--container-app) px-6 py-20">
             <h2 className="text-display-md sm:text-display-lg">How it works</h2>
 
             <ol className="mt-12 grid gap-10 sm:grid-cols-3 sm:gap-8">
               {STEPS.map((step, index) => (
-                <li key={step.title} className="hairline-top pt-6">
-                  <span className="text-text-tertiary text-body-sm font-mono tabular-nums">
-                    Step {String(index + 1).padStart(2, "0")}
-                  </span>
-                  <h3 className="text-heading-lg mt-3">{step.title}</h3>
-                  <p className="text-text-secondary text-body-md mt-3 text-pretty">{step.body}</p>
+                <li key={step.title} className="flex flex-col gap-5">
+                  {/*
+                   * Fixed height, not intrinsic aspect — same reason as the
+                   * features page. Phone captures are tall; sizing from the
+                   * image would make each column a different height and the
+                   * section lurch as they load.
+                   */}
+                  <div className="border-border bg-surface-1 overflow-hidden rounded-lg border">
+                    <picture>
+                      <source srcSet={`/screenshots/${step.shot}.avif`} type="image/avif" />
+                      <source srcSet={`/screenshots/${step.shot}.webp`} type="image/webp" />
+                      <img
+                        src={`/screenshots/${step.shot}.png`}
+                        alt={step.alt}
+                        width={780}
+                        height={1688}
+                        loading="lazy"
+                        decoding="async"
+                        className="h-56 w-full object-cover sm:h-64"
+                        style={
+                          step.objectPosition ? { objectPosition: step.objectPosition } : undefined
+                        }
+                      />
+                    </picture>
+                  </div>
+                  <div className="hairline-top pt-5">
+                    <span className="text-text-tertiary text-body-sm font-mono tabular-nums">
+                      Step {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <h3 className="text-heading-lg mt-3">{step.title}</h3>
+                    <p className="text-text-secondary text-body-md mt-3 text-pretty">{step.body}</p>
+                  </div>
                 </li>
               ))}
             </ol>

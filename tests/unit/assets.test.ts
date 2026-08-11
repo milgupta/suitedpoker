@@ -28,6 +28,7 @@ const MARKETING_SOURCES = [
   "src/components/marketing/SiteHeader.tsx",
   "src/components/marketing/SiteFooter.tsx",
   "src/components/marketing/AppFrame.tsx",
+  "src/content/landing.ts",
 ];
 
 const LANDING = MARKETING_SOURCES.map((file) =>
@@ -48,13 +49,24 @@ function referencedAssets(): string[] {
 
 /** Template literals like `/screenshots/${shot}.avif`, expanded. */
 function expandTemplates(paths: string[]): string[] {
-  const shots = [...LANDING.matchAll(/^\s*"([a-z-]+)",\s*$/gm)]
-    .map((m) => m[1]!)
-    .filter((s) => existsSync(join(PUBLIC, "screenshots", `${s}.png`)));
+  const fromBare = [...LANDING.matchAll(/^\s*"([a-z0-9-]+)",\s*$/gm)].map((m) => m[1]!);
+  const fromShotField = [...LANDING.matchAll(/\bshot:\s*"([a-z0-9-]+)"/g)].map((m) => m[1]!);
+  const shots = [...new Set([...fromBare, ...fromShotField])].filter(
+    (s) =>
+      existsSync(join(PUBLIC, "screenshots", `${s}.png`)) ||
+      existsSync(join(PUBLIC, "screenshots", "web", `${s}.png`)),
+  );
 
   return paths.flatMap((path) => {
     if (!path.includes("${")) return [path];
-    return shots.map((shot) => path.replace(/\$\{[^}]+\}/, shot));
+    return shots.flatMap((shot) => {
+      const resolved = path.replace(/\$\{[^}]+\}/, shot);
+      // Only keep expansions that actually exist — a top-level shot name must
+      // not invent a missing /screenshots/web/<name>.png via the features page
+      // template, and vice versa.
+      const file = join(PUBLIC, resolved.replace(/^\//, ""));
+      return existsSync(file) ? [resolved] : [];
+    });
   });
 }
 
