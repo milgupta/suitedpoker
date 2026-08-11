@@ -6,12 +6,12 @@ import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Shimmer } from "@/components/motion";
 import { GradeBadge } from "@/components/ui/grade-badge";
-import { PlayingCard } from "@/components/poker";
+import { BoardBand, HeroDock, OpponentStrip, type OpponentSeatView } from "@/components/poker";
 import { cardsFromString } from "@/poker/cards";
+import { handStrength } from "@/poker/hand-strength";
 import { actionLabel, actionPhrase } from "@/lib/action-label";
 import { evColor } from "@/lib/ev-color";
 import type { GradedDecision, ReplayStep, SessionStats } from "@/lib/sim-review";
-import { cn } from "@/lib/utils";
 import type { GradeName } from "@/poker/grader";
 
 /**
@@ -33,6 +33,8 @@ interface LeakRow {
 
 interface ReviewPayload {
   stats: SessionStats;
+  /** Seat-indexed bot display names, null at the hero's seat. */
+  botNames?: (string | null)[];
   calibration?: { stackBb: number; graded: boolean; notice: string | null };
   worst: GradedDecision[];
   leaks: LeakRow[];
@@ -250,7 +252,10 @@ export function ReviewClient() {
                 </button>
 
                 {openHand === rowId && (
-                  <Replay steps={review.replays[String(decision.handNumber)] ?? []} />
+                  <Replay
+                    steps={review.replays[String(decision.handNumber)] ?? []}
+                    botNames={review.botNames ?? []}
+                  />
                 )}
               </div>
             );
@@ -280,8 +285,12 @@ function Stat({ label, value, hint }: { label: string; value: string; hint?: str
   );
 }
 
-/** Prev/next through a stored hand. Arrow keys work; the pot is the engine's. */
-function Replay({ steps }: { steps: ReplayStep[] }) {
+/**
+ * Prev/next through a stored hand, drawn with the same surface bands as the
+ * live table — a replayed hand and a live hand are the same game and must not
+ * look like two products. Arrow keys work; the pot is the engine's.
+ */
+function Replay({ steps, botNames }: { steps: ReplayStep[]; botNames: (string | null)[] }) {
   const [index, setIndex] = useState(0);
   const step = steps[index];
 
@@ -296,6 +305,25 @@ function Replay({ steps }: { steps: ReplayStep[] }) {
 
   if (step === undefined) return null;
 
+  const hero = step.seats.find((s) => s.isHero);
+  const heroCards = hero?.cards == null ? [] : cardsFromString(hero.cards);
+  const board = cardsFromString(step.board);
+  const heroStrength =
+    heroCards.length === 2 ? handStrength(heroCards, board) : { label: "", bestFive: [] };
+
+  const opponents: OpponentSeatView[] = step.seats
+    .filter((seat) => !seat.isHero)
+    .map((seat) => ({
+      name: botNames[seat.seat] ?? seat.position,
+      position: seat.position,
+      stackBb: seat.stackChips / 2,
+      isDealer: seat.position === "BTN",
+      folded: seat.folded,
+      betBb: seat.committedChips > 0 ? seat.committedChips / 2 : null,
+      // Mucked cards never appear here because the payload never contains them.
+      revealed: seat.cards === null ? null : cardsFromString(seat.cards),
+    }));
+
   return (
     <div className="border-border flex flex-col gap-3 border-t px-4 py-3" data-replay-step={index}>
       <div className="flex items-center justify-between">
@@ -307,60 +335,24 @@ function Replay({ steps }: { steps: ReplayStep[] }) {
         </p>
       </div>
 
-      {step.board !== "" && (
-        <div className="flex gap-1.5" data-replay-board>
-          {cardsFromString(step.board).map((card, i) => (
-            <PlayingCard key={i} card={card} size="sm" />
-          ))}
+      <OpponentStrip seats={opponents} />
+
+      <div data-replay-board>
+        <BoardBand board={board} potBb={step.potChips / 2} />
+      </div>
+
+      {heroCards.length === 2 && (
+        <div data-replay-hero>
+          <HeroDock
+            cards={heroCards}
+            folded={hero?.folded === true}
+            strengthLabel={heroStrength.label}
+            bestFive={heroStrength.bestFive}
+            stackBb={(hero?.stackChips ?? 0) / 2}
+            betBb={hero !== undefined && hero.committedChips > 0 ? hero.committedChips / 2 : null}
+          />
         </div>
       )}
-
-      {(() => {
-        const hero = step.seats.find((s) => s.isHero);
-        if (hero?.cards == null) return null;
-        return (
-          <div className="flex items-center gap-2" data-replay-hero>
-            <span className="text-text-tertiary text-caption">Your hand</span>
-            <div className="flex gap-1">
-              {cardsFromString(hero.cards).map((card, i) => (
-                <PlayingCard key={i} card={card} size="sm" />
-              ))}
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* Villains whose showdown this replay has reached — mucked cards never
-          appear here because the payload never contains them. */}
-      {step.seats
-        .filter((seat) => !seat.isHero && seat.cards !== null)
-        .map((seat) => (
-          <div key={seat.seat} className="flex items-center gap-2" data-replay-villain={seat.seat}>
-            <span className="text-text-tertiary text-caption">{seat.position} shows</span>
-            <div className="flex gap-1">
-              {cardsFromString(seat.cards as string).map((card, i) => (
-                <PlayingCard key={i} card={card} size="sm" />
-              ))}
-            </div>
-          </div>
-        ))}
-
-      <div className="flex flex-wrap gap-2">
-        {step.seats.map((seat) => (
-          <span
-            key={seat.seat}
-            className={cn(
-              "border-border rounded-full border px-2.5 py-1 font-mono text-xs tabular-nums",
-              seat.folded && "opacity-40",
-            )}
-          >
-            {seat.position} {(seat.stackChips / 2).toFixed(0)}
-            {seat.committedChips > 0 && (
-              <span className="text-accent-bright"> +{(seat.committedChips / 2).toFixed(1)}</span>
-            )}
-          </span>
-        ))}
-      </div>
 
       {step.decision !== null && step.decision.graded && (
         <p className="text-body-sm" data-replay-decision>

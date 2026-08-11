@@ -16,7 +16,14 @@ import {
   type StoredHand,
 } from "@/lib/sim-review";
 import { generateSessionSummary } from "@/lib/sim-review-ai";
-import { GRADED_STACK_BB, isGradedDepth, UNGRADED_DEPTH_NOTICE } from "@/lib/sim";
+import {
+  botDisplayNames,
+  GRADED_STACK_BB,
+  isGradedDepth,
+  isPresetId,
+  PRESETS,
+  UNGRADED_DEPTH_NOTICE,
+} from "@/lib/sim";
 import type { HandHistory } from "@/poker/gamestate";
 import type { HeroPosition } from "@/poker/solutions";
 
@@ -91,8 +98,16 @@ export const GET = withEntitlement(async (request, auth) => {
     }
   }
 
+  // The same seeded names the live table showed, so the review's replays talk
+  // about the same people the session did. Seat-indexed, null at the hero.
+  const presetId = (session.config as { preset?: string } | null)?.preset;
+  const botNames = isPresetId(presetId)
+    ? botDisplayNames(sessionId, [null, ...PRESETS[presetId].villains])
+    : [];
+
   return NextResponse.json({
     stats,
+    botNames,
     calibration: {
       stackBb,
       graded,

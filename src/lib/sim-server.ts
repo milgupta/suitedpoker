@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createRng } from "@/poker/cards";
-import { getBot, preflopNodeFor, type BotData, type BotId } from "@/poker/bots";
+import { getBot, preflopNodeFor, type BotId } from "@/poker/bots";
 import { PROFILES } from "@/poker/bots";
 import {
   advanceUntilAction,
@@ -29,6 +29,7 @@ import {
 import { QUARANTINED_NODES } from "@/poker/node-status";
 import { loadSolutionData } from "@/lib/solution-data";
 import {
+  botDisplayNames,
   describeBotAction,
   isGradedDepth,
   PRESETS,
@@ -39,6 +40,7 @@ import {
   type SimDecision,
   type SimHandRecord,
 } from "@/lib/sim";
+import { handStrength } from "@/poker/hand-strength";
 import type { Card } from "@/poker/cards";
 
 /**
@@ -150,6 +152,10 @@ export function createLiveSession(input: {
   // Hero always at seat 0; villains fill the rest in preset order.
   const botBySeat: (BotId | null)[] = [null, ...preset.villains];
 
+  // Seeded once and stored: the same session id always seats the same names,
+  // so a refresh mid-session does not rename the table.
+  const botNames = botDisplayNames(input.seed, botBySeat);
+
   const base: LiveSimState = {
     presetId: input.presetId,
     totalHands: input.totalHands,
@@ -167,6 +173,7 @@ export function createLiveSession(input: {
     ended: false,
     pendingGrade: null,
     pendingDecisions: [],
+    botNames,
   };
 
   return dealNextHand(base, input.seed);
@@ -268,10 +275,13 @@ export function runBots(
       .reverse()
       .find((e) => e.kind === "action" && e.seat === seat && e.street === before.street);
     if (event !== undefined) {
+      // Sessions stored before names existed have no botNames; the archetype
+      // name is a fallback for their remaining hands, never the normal path.
+      const name = live.botNames?.[seat] ?? PROFILES[botId].name;
       moves.push({
         seat,
-        botName: PROFILES[botId].name,
-        label: describeBotAction(PROFILES[botId].name, event),
+        botName: name,
+        label: describeBotAction(name, event),
       });
     }
   }
@@ -689,10 +699,17 @@ function settleHand(live: LiveSimState, gradeInfo: GradeInfo | null): SimHandRec
   const wonAtShowdown =
     payout > 0 && game.history.some((e) => e.kind === "showdown" && e.seat === live.heroSeat);
 
+  // Showdown storytelling: name the hand the pot was won with. The label comes
+  // from the same evaluator that settled the pot, never a re-derivation.
+  const winningHandLabel =
+    wonAtShowdown && hero?.holeCards != null
+      ? handStrength(hero.holeCards, game.board as readonly Card[]).label
+      : null;
+
   return {
     handNumber: live.handNumber,
     netBb,
-    resultLine: resultLineFor(netBb, wonAtShowdown, foldedPreflop),
+    resultLine: resultLineFor(netBb, wonAtShowdown, foldedPreflop, winningHandLabel),
     heroEvLoss: gradeInfo?.evLoss ?? null,
     grade: gradeInfo?.grade ?? null,
     decisions: live.pendingDecisions ?? [],
