@@ -191,8 +191,17 @@ describe("range widths against published figures", () => {
     "BTN:rfi": [42, 52],
     "SB:rfi": [34, 50],
     "BB:vs_rfi_BTN": [36, 48],
-    "BB:vs_rfi_CO": [27, 38],
-    "BB:vs_rfi_UTG": [17, 28],
+    "BB:vs_rfi_CO": [30, 42],
+    "BB:vs_rfi_MP": [27, 38],
+    "BB:vs_rfi_UTG": [24, 34],
+    "BB:vs_rfi_SB": [40, 50],
+    "BTN:vs_rfi_UTG": [12, 19],
+    "BTN:vs_rfi_MP": [13, 21],
+    "BTN:vs_rfi_CO": [16, 24],
+    "CO:vs_rfi_UTG": [8, 14],
+    "MP:vs_rfi_UTG": [6, 12],
+    "SB:vs_rfi_UTG": [7, 14],
+    "SB:vs_rfi_BTN": [12, 20],
   };
 
   for (const [ref, [low, high]] of Object.entries(BOUNDS)) {
@@ -205,6 +214,43 @@ describe("range widths against published figures", () => {
       expect(width, `${ref} continues ${width.toFixed(1)}%`).toBeLessThanOrEqual(high);
     });
   }
+
+  it("defends wider from every later in-position seat against the same open", () => {
+    // Same construction argument as opening widths: against one open, a later
+    // seat has fewer players left to act behind it, so its continue can only
+    // be wider. The blinds are excluded — they play the rest of the hand out
+    // of position, which is a different trade than seat order captures — but
+    // the big blind must always defend wider than the small blind, because it
+    // closes the action and already has one blind invested.
+    const IN_POSITION_ORDER: Record<string, readonly string[]> = {
+      vs_rfi_UTG: ["MP:vs_rfi_UTG", "CO:vs_rfi_UTG", "BTN:vs_rfi_UTG"],
+      vs_rfi_MP: ["CO:vs_rfi_MP", "BTN:vs_rfi_MP"],
+    };
+
+    const widthOf = (ref: string): number | null => {
+      const node = data.preflop.find((candidate) => candidate.ref === ref);
+      return node === undefined ? null : continueWidth(node);
+    };
+
+    for (const [facing, refs] of Object.entries(IN_POSITION_ORDER)) {
+      for (let i = 1; i < refs.length; i++) {
+        const previous = widthOf(refs[i - 1]!);
+        const current = widthOf(refs[i]!);
+        if (previous === null || current === null) continue;
+        expect(
+          current,
+          `${refs[i]} defends tighter than ${refs[i - 1]} against the same ${facing} open`,
+        ).toBeGreaterThan(previous);
+      }
+    }
+
+    for (const villain of ["UTG", "MP", "CO", "BTN"]) {
+      const sb = widthOf(`SB:vs_rfi_${villain}`);
+      const bb = widthOf(`BB:vs_rfi_${villain}`);
+      if (sb === null || bb === null) continue;
+      expect(bb, `BB defends tighter than SB against a ${villain} open`).toBeGreaterThan(sb);
+    }
+  });
 
   it("opens wider from every later seat", () => {
     // Monotonic by construction of the game: a later seat has fewer players

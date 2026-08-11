@@ -10,21 +10,21 @@
     "rangeShape": "medium",
     "frequencies": "medium",
     "ev": "low",
-    "note": "REPAIRED. no fold on AKo; a 3bet-leaning range out of position with the big blind behind. The range is written in poker notation in scripts/repair-preflop.ts and is reviewable against any published chart. The EV column is DERIVED from the strategy under the indifference rule — actions played at nonzero frequency are worth the same to within a hundredth of a big blind — not measured by a solver. Treat the sign and the ordering as meaningful and the magnitude as approximate."
+    "note": "REPAIRED. no fold on AKo; a 3bet-leaning range out of position with the big blind behind. Widened to ~16% continue in the realism pass. The range is written in poker notation in scripts/repair-preflop.ts and is reviewable against any published chart. The EV column is DERIVED from the strategy under the indifference rule — actions played at nonzero frequency are worth the same to within a hundredth of a big blind — not measured by a solver. Treat the sign and the ordering as meaningful and the magnitude as approximate."
   },
   "notes": "SB facing a 2.5bb open from BTN. 3bet to 11bb out of position. SB still has the big blind behind, which is what keeps the calling range narrower than the pot odds alone would suggest.",
   "strategy": {
     "22": {
-      "fold": 0.5,
-      "call": 0.5
+      "fold": 0.45,
+      "call": 0.55
     },
     "33": {
-      "fold": 0.4,
-      "call": 0.6
+      "fold": 0.35,
+      "call": 0.65
     },
     "44": {
-      "fold": 0.3,
-      "call": 0.7
+      "fold": 0.25,
+      "call": 0.75
     },
     "55": {
       "call": 1
@@ -62,16 +62,14 @@
       "call": 1
     },
     "A8s": {
-      "fold": 0.1,
-      "call": 0.9
+      "call": 1
     },
     "A7s": {
-      "fold": 0.2,
-      "call": 0.8
+      "call": 1
     },
     "A6s": {
-      "fold": 0.6,
-      "call": 0.4
+      "fold": 0.55,
+      "call": 0.45
     },
     "A5s": {
       "fold": 0.55,
@@ -106,16 +104,16 @@
       "call": 1
     },
     "K9s": {
-      "fold": 0.8,
-      "raise": 0.2
+      "fold": 0.75,
+      "raise": 0.25
     },
     "K8s": {
-      "fold": 0.8,
-      "raise": 0.2
+      "fold": 0.75,
+      "raise": 0.25
     },
     "K7s": {
-      "fold": 0.8,
-      "raise": 0.2
+      "fold": 0.75,
+      "raise": 0.25
     },
     "K6s": {
       "fold": 1
@@ -150,7 +148,8 @@
       "call": 1
     },
     "Q9s": {
-      "fold": 1
+      "fold": 0.75,
+      "raise": 0.25
     },
     "Q8s": {
       "fold": 1
@@ -178,7 +177,8 @@
       "call": 0.5
     },
     "KJo": {
-      "fold": 1
+      "fold": 0.5,
+      "call": 0.5
     },
     "QJo": {
       "fold": 1
@@ -190,7 +190,7 @@
       "call": 1
     },
     "J9s": {
-      "fold": 1
+      "call": 1
     },
     "J8s": {
       "fold": 1
@@ -214,7 +214,8 @@
       "fold": 1
     },
     "ATo": {
-      "fold": 1
+      "fold": 0.5,
+      "call": 0.5
     },
     "KTo": {
       "fold": 1
@@ -232,7 +233,8 @@
       "call": 1
     },
     "T8s": {
-      "fold": 1
+      "fold": 0.15,
+      "call": 0.85
     },
     "T7s": {
       "fold": 1
@@ -346,8 +348,8 @@
       "fold": 1
     },
     "76s": {
-      "fold": 0.8,
-      "raise": 0.2
+      "call": 0.75,
+      "raise": 0.25
     },
     "75s": {
       "fold": 1
@@ -386,7 +388,8 @@
       "fold": 1
     },
     "65s": {
-      "fold": 1
+      "call": 0.75,
+      "raise": 0.25
     },
     "64s": {
       "fold": 1
@@ -425,7 +428,8 @@
       "fold": 1
     },
     "54s": {
-      "fold": 1
+      "fold": 0.6,
+      "call": 0.4
     },
     "53s": {
       "fold": 1
@@ -546,847 +550,847 @@
     "22": {
       "fold": 0,
       "call": 0,
-      "raise": -0.45
+      "raise": -0.43
     },
     "33": {
       "fold": 0,
       "call": 0,
-      "raise": -0.45
+      "raise": -0.43
     },
     "44": {
       "fold": 0,
       "call": 0,
-      "raise": -0.45
+      "raise": -0.42
     },
     "55": {
       "fold": 0,
-      "call": 0.1,
-      "raise": -0.22
+      "call": 0.14,
+      "raise": -0.17
     },
     "66": {
       "fold": 0,
-      "call": 0.11,
-      "raise": -0.29
+      "call": 0.21,
+      "raise": -0.25
     },
     "77": {
       "fold": 0,
-      "call": 0.16,
-      "raise": -0.26
+      "call": 0.32,
+      "raise": -0.17
     },
     "88": {
       "fold": 0,
-      "call": 0.27,
-      "raise": -0.19
+      "call": 0.61,
+      "raise": 0.03
     },
     "99": {
       "fold": 0,
-      "call": 0.58,
-      "raise": 0.58
+      "call": 1.05,
+      "raise": 1.05
     },
     "AA": {
       "fold": 0,
-      "call": 4.53,
+      "call": 4.49,
       "raise": 7
     },
     "AKs": {
       "fold": 0,
-      "call": 3.18,
-      "raise": 5.05
+      "call": 3.34,
+      "raise": 5.35
     },
     "AQs": {
       "fold": 0,
-      "call": 2.08,
-      "raise": 3.48
+      "call": 2.37,
+      "raise": 3.96
     },
     "AJs": {
       "fold": 0,
-      "call": 2.63,
-      "raise": 2.63
+      "call": 3.18,
+      "raise": 3.18
     },
     "ATs": {
       "fold": 0,
-      "call": 1.63,
-      "raise": 0.76
+      "call": 2.2,
+      "raise": 1.14
     },
     "A9s": {
       "fold": 0,
-      "call": 1.12,
-      "raise": 0.41
+      "call": 1.68,
+      "raise": 0.77
     },
     "A8s": {
       "fold": 0,
-      "call": 0,
-      "raise": -0.43
+      "call": 0.11,
+      "raise": -0.33
     },
     "A7s": {
       "fold": 0,
-      "call": 0,
-      "raise": -0.43
+      "call": 0.1,
+      "raise": -0.34
     },
     "A6s": {
       "fold": 0,
       "call": 0,
-      "raise": -0.74
+      "raise": -0.72
     },
     "A5s": {
       "fold": 0,
-      "call": -0.31,
+      "call": -0.26,
       "raise": 0
     },
     "A4s": {
       "fold": 0,
-      "call": -0.31,
+      "call": -0.26,
       "raise": 0
     },
     "A3s": {
       "fold": 0,
-      "call": -0.31,
+      "call": -0.27,
       "raise": 0
     },
     "A2s": {
       "fold": 0,
-      "call": -0.31,
+      "call": -0.27,
       "raise": 0
     },
     "AKo": {
       "fold": 0,
-      "call": 2.42,
-      "raise": 3.96
+      "call": 2.67,
+      "raise": 4.4
     },
     "KK": {
       "fold": 0,
-      "call": 4.05,
-      "raise": 6.31
+      "call": 4.08,
+      "raise": 6.42
     },
     "KQs": {
       "fold": 0,
-      "call": 2.26,
-      "raise": 2.26
+      "call": 2.83,
+      "raise": 2.83
     },
     "KJs": {
       "fold": 0,
-      "call": 1.36,
-      "raise": 0.57
+      "call": 1.93,
+      "raise": 0.94
     },
     "KTs": {
       "fold": 0,
-      "call": 0.92,
-      "raise": 0.26
+      "call": 1.45,
+      "raise": 0.61
     },
     "K9s": {
       "fold": 0,
-      "call": -0.62,
+      "call": -0.57,
       "raise": 0
     },
     "K8s": {
       "fold": 0,
-      "call": -0.77,
+      "call": -0.72,
       "raise": 0
     },
     "K7s": {
       "fold": 0,
-      "call": -0.93,
+      "call": -0.88,
       "raise": 0
     },
     "K6s": {
       "fold": 0,
-      "call": -1.36,
-      "raise": -1.58
+      "call": -0.85,
+      "raise": -1.07
     },
     "K5s": {
-      "fold": 0,
-      "call": -1.36,
-      "raise": -1.58
-    },
-    "K4s": {
-      "fold": 0,
-      "call": -1.37,
-      "raise": -1.59
-    },
-    "K3s": {
-      "fold": 0,
-      "call": -1.37,
-      "raise": -1.59
-    },
-    "K2s": {
-      "fold": 0,
-      "call": -1.37,
-      "raise": -1.59
-    },
-    "AQo": {
-      "fold": 0,
-      "call": 3.04,
-      "raise": 3.04
-    },
-    "KQo": {
-      "fold": 0,
-      "call": 0,
-      "raise": -0.38
-    },
-    "QQ": {
-      "fold": 0,
-      "call": 3.6,
-      "raise": 5.66
-    },
-    "QJs": {
-      "fold": 0,
-      "call": 0.74,
-      "raise": 0.14
-    },
-    "QTs": {
-      "fold": 0,
-      "call": 0.46,
-      "raise": -0.06
-    },
-    "Q9s": {
-      "fold": 0,
-      "call": -0.35,
-      "raise": -0.57
-    },
-    "Q8s": {
-      "fold": 0,
-      "call": -0.86,
-      "raise": -1.08
-    },
-    "Q7s": {
-      "fold": 0,
-      "call": -1.36,
-      "raise": -1.58
-    },
-    "Q6s": {
-      "fold": 0,
-      "call": -1.37,
-      "raise": -1.59
-    },
-    "Q5s": {
-      "fold": 0,
-      "call": -1.37,
-      "raise": -1.59
-    },
-    "Q4s": {
-      "fold": 0,
-      "call": -1.37,
-      "raise": -1.59
-    },
-    "Q3s": {
-      "fold": 0,
-      "call": -1.87,
-      "raise": -2.09
-    },
-    "Q2s": {
-      "fold": 0,
-      "call": -1.88,
-      "raise": -2.1
-    },
-    "AJo": {
-      "fold": 0,
-      "call": 0,
-      "raise": -0.38
-    },
-    "KJo": {
-      "fold": 0,
-      "call": -0.35,
-      "raise": -0.57
-    },
-    "QJo": {
-      "fold": 0,
-      "call": -0.35,
-      "raise": -0.57
-    },
-    "JJ": {
-      "fold": 0,
-      "call": 2.78,
-      "raise": 4.49
-    },
-    "JTs": {
-      "fold": 0,
-      "call": 0.35,
-      "raise": -0.13
-    },
-    "J9s": {
-      "fold": 0,
-      "call": -0.12,
-      "raise": -0.34
-    },
-    "J8s": {
-      "fold": 0,
-      "call": -0.86,
-      "raise": -1.08
-    },
-    "J7s": {
-      "fold": 0,
-      "call": -1.37,
-      "raise": -1.59
-    },
-    "J6s": {
-      "fold": 0,
-      "call": -1.37,
-      "raise": -1.59
-    },
-    "J5s": {
-      "fold": 0,
-      "call": -1.87,
-      "raise": -2.09
-    },
-    "J4s": {
-      "fold": 0,
-      "call": -2.38,
-      "raise": -2.6
-    },
-    "J3s": {
-      "fold": 0,
-      "call": -2.38,
-      "raise": -2.6
-    },
-    "J2s": {
-      "fold": 0,
-      "call": -2.38,
-      "raise": -2.6
-    },
-    "ATo": {
-      "fold": 0,
-      "call": -0.12,
-      "raise": -0.34
-    },
-    "KTo": {
-      "fold": 0,
-      "call": -0.6,
-      "raise": -0.82
-    },
-    "QTo": {
       "fold": 0,
       "call": -0.85,
       "raise": -1.07
     },
-    "JTo": {
+    "K4s": {
+      "fold": 0,
+      "call": -0.85,
+      "raise": -1.07
+    },
+    "K3s": {
+      "fold": 0,
+      "call": -0.85,
+      "raise": -1.07
+    },
+    "K2s": {
       "fold": 0,
       "call": -0.86,
       "raise": -1.08
     },
+    "AQo": {
+      "fold": 0,
+      "call": 3.56,
+      "raise": 3.56
+    },
+    "KQo": {
+      "fold": 0,
+      "call": 0,
+      "raise": -0.41
+    },
+    "QQ": {
+      "fold": 0,
+      "call": 3.7,
+      "raise": 5.87
+    },
+    "QJs": {
+      "fold": 0,
+      "call": 1.24,
+      "raise": 0.46
+    },
+    "QTs": {
+      "fold": 0,
+      "call": 0.88,
+      "raise": 0.22
+    },
+    "Q9s": {
+      "fold": 0,
+      "call": -0.42,
+      "raise": 0
+    },
+    "Q8s": {
+      "fold": 0,
+      "call": -0.34,
+      "raise": -0.56
+    },
+    "Q7s": {
+      "fold": 0,
+      "call": -0.85,
+      "raise": -1.07
+    },
+    "Q6s": {
+      "fold": 0,
+      "call": -0.85,
+      "raise": -1.07
+    },
+    "Q5s": {
+      "fold": 0,
+      "call": -0.85,
+      "raise": -1.07
+    },
+    "Q4s": {
+      "fold": 0,
+      "call": -0.86,
+      "raise": -1.08
+    },
+    "Q3s": {
+      "fold": 0,
+      "call": -1.36,
+      "raise": -1.58
+    },
+    "Q2s": {
+      "fold": 0,
+      "call": -1.36,
+      "raise": -1.58
+    },
+    "AJo": {
+      "fold": 0,
+      "call": 0,
+      "raise": -0.41
+    },
+    "KJo": {
+      "fold": 0,
+      "call": 0,
+      "raise": -0.4
+    },
+    "QJo": {
+      "fold": 0,
+      "call": -0.12,
+      "raise": -0.34
+    },
+    "JJ": {
+      "fold": 0,
+      "call": 3,
+      "raise": 4.86
+    },
+    "JTs": {
+      "fold": 0,
+      "call": 0.74,
+      "raise": 0.12
+    },
+    "J9s": {
+      "fold": 0,
+      "call": 0.5,
+      "raise": -0.05
+    },
+    "J8s": {
+      "fold": 0,
+      "call": -0.35,
+      "raise": -0.57
+    },
+    "J7s": {
+      "fold": 0,
+      "call": -0.85,
+      "raise": -1.07
+    },
+    "J6s": {
+      "fold": 0,
+      "call": -0.86,
+      "raise": -1.08
+    },
+    "J5s": {
+      "fold": 0,
+      "call": -1.36,
+      "raise": -1.58
+    },
+    "J4s": {
+      "fold": 0,
+      "call": -1.87,
+      "raise": -2.09
+    },
+    "J3s": {
+      "fold": 0,
+      "call": -1.87,
+      "raise": -2.09
+    },
+    "J2s": {
+      "fold": 0,
+      "call": -1.87,
+      "raise": -2.09
+    },
+    "ATo": {
+      "fold": 0,
+      "call": 0,
+      "raise": -0.25
+    },
+    "KTo": {
+      "fold": 0,
+      "call": -0.12,
+      "raise": -0.34
+    },
+    "QTo": {
+      "fold": 0,
+      "call": -0.34,
+      "raise": -0.56
+    },
+    "JTo": {
+      "fold": 0,
+      "call": -0.34,
+      "raise": -0.56
+    },
     "TT": {
       "fold": 0,
-      "call": 1,
-      "raise": 1.93
+      "call": 1.35,
+      "raise": 2.5
     },
     "T9s": {
       "fold": 0,
-      "call": 0.21,
-      "raise": -0.23
+      "call": 0.4,
+      "raise": -0.12
     },
     "T8s": {
+      "fold": 0,
+      "call": 0,
+      "raise": -0.41
+    },
+    "T7s": {
+      "fold": 0,
+      "call": -0.86,
+      "raise": -1.08
+    },
+    "T6s": {
+      "fold": 0,
+      "call": -0.86,
+      "raise": -1.08
+    },
+    "T5s": {
+      "fold": 0,
+      "call": -1.87,
+      "raise": -2.09
+    },
+    "T4s": {
+      "fold": 0,
+      "call": -1.87,
+      "raise": -2.09
+    },
+    "T3s": {
+      "fold": 0,
+      "call": -1.87,
+      "raise": -2.09
+    },
+    "T2s": {
+      "fold": 0,
+      "call": -1.87,
+      "raise": -2.09
+    },
+    "A9o": {
+      "fold": 0,
+      "call": -0.14,
+      "raise": -0.36
+    },
+    "K9o": {
+      "fold": 0,
+      "call": -0.59,
+      "raise": -0.81
+    },
+    "Q9o": {
+      "fold": 0,
+      "call": -0.85,
+      "raise": -1.07
+    },
+    "J9o": {
+      "fold": 0,
+      "call": -1.35,
+      "raise": -1.57
+    },
+    "T9o": {
+      "fold": 0,
+      "call": -1.1,
+      "raise": -1.32
+    },
+    "98s": {
+      "fold": 0,
+      "call": 0.26,
+      "raise": -0.21
+    },
+    "97s": {
+      "fold": 0,
+      "call": -0.12,
+      "raise": -0.34
+    },
+    "96s": {
       "fold": 0,
       "call": -0.36,
       "raise": -0.58
     },
-    "T7s": {
-      "fold": 0,
-      "call": -1.37,
-      "raise": -1.59
-    },
-    "T6s": {
-      "fold": 0,
-      "call": -1.37,
-      "raise": -1.59
-    },
-    "T5s": {
-      "fold": 0,
-      "call": -2.38,
-      "raise": -2.6
-    },
-    "T4s": {
-      "fold": 0,
-      "call": -2.38,
-      "raise": -2.6
-    },
-    "T3s": {
-      "fold": 0,
-      "call": -2.38,
-      "raise": -2.6
-    },
-    "T2s": {
-      "fold": 0,
-      "call": -2.39,
-      "raise": -2.61
-    },
-    "A9o": {
-      "fold": 0,
-      "call": -0.65,
-      "raise": -0.87
-    },
-    "K9o": {
-      "fold": 0,
-      "call": -1.11,
-      "raise": -1.33
-    },
-    "Q9o": {
-      "fold": 0,
-      "call": -1.36,
-      "raise": -1.58
-    },
-    "J9o": {
-      "fold": 0,
-      "call": -1.87,
-      "raise": -2.09
-    },
-    "T9o": {
-      "fold": 0,
-      "call": -1.62,
-      "raise": -1.84
-    },
-    "98s": {
-      "fold": 0,
-      "call": 0.13,
-      "raise": -0.28
-    },
-    "97s": {
-      "fold": 0,
-      "call": -0.37,
-      "raise": -0.59
-    },
-    "96s": {
-      "fold": 0,
-      "call": -0.87,
-      "raise": -1.09
-    },
     "95s": {
       "fold": 0,
-      "call": -1.88,
-      "raise": -2.1
+      "call": -1.37,
+      "raise": -1.59
     },
     "94s": {
       "fold": 0,
-      "call": -2.39,
-      "raise": -2.61
+      "call": -1.87,
+      "raise": -2.09
     },
     "93s": {
       "fold": 0,
-      "call": -2.39,
-      "raise": -2.61
+      "call": -1.87,
+      "raise": -2.09
     },
     "92s": {
       "fold": 0,
-      "call": -2.39,
-      "raise": -2.61
+      "call": -1.88,
+      "raise": -2.1
     },
     "A8o": {
       "fold": 0,
-      "call": -1.36,
-      "raise": -1.58
+      "call": -0.84,
+      "raise": -1.06
     },
     "K8o": {
       "fold": 0,
-      "call": -1.36,
-      "raise": -1.58
+      "call": -0.85,
+      "raise": -1.07
     },
     "Q8o": {
       "fold": 0,
-      "call": -1.87,
-      "raise": -2.09
+      "call": -1.35,
+      "raise": -1.57
     },
     "J8o": {
       "fold": 0,
-      "call": -1.87,
-      "raise": -2.09
+      "call": -1.35,
+      "raise": -1.57
     },
     "T8o": {
-      "fold": 0,
-      "call": -1.87,
-      "raise": -2.09
-    },
-    "98o": {
-      "fold": 0,
-      "call": -1.87,
-      "raise": -2.09
-    },
-    "87s": {
-      "fold": 0,
-      "call": 0.1,
-      "raise": -0.22
-    },
-    "86s": {
-      "fold": 0,
-      "call": -0.88,
-      "raise": -1.1
-    },
-    "85s": {
-      "fold": 0,
-      "call": -1.88,
-      "raise": -2.1
-    },
-    "84s": {
-      "fold": 0,
-      "call": -2.39,
-      "raise": -2.61
-    },
-    "83s": {
-      "fold": 0,
-      "call": -2.39,
-      "raise": -2.61
-    },
-    "82s": {
-      "fold": 0,
-      "call": -2.39,
-      "raise": -2.61
-    },
-    "A7o": {
-      "fold": 0,
-      "call": -1.11,
-      "raise": -1.33
-    },
-    "K7o": {
       "fold": 0,
       "call": -1.36,
       "raise": -1.58
     },
-    "Q7o": {
+    "98o": {
       "fold": 0,
-      "call": -2.37,
-      "raise": -2.59
+      "call": -1.36,
+      "raise": -1.58
     },
-    "J7o": {
+    "87s": {
       "fold": 0,
-      "call": -2.37,
-      "raise": -2.59
+      "call": 0.17,
+      "raise": -0.15
     },
-    "T7o": {
+    "86s": {
       "fold": 0,
-      "call": -2.38,
-      "raise": -2.6
+      "call": -0.36,
+      "raise": -0.58
     },
-    "97o": {
+    "85s": {
+      "fold": 0,
+      "call": -1.37,
+      "raise": -1.59
+    },
+    "84s": {
       "fold": 0,
       "call": -1.88,
       "raise": -2.1
     },
-    "87o": {
+    "83s": {
       "fold": 0,
-      "call": -2.13,
-      "raise": -2.35
+      "call": -1.88,
+      "raise": -2.1
     },
-    "76s": {
+    "82s": {
       "fold": 0,
-      "call": -0.32,
-      "raise": 0
+      "call": -1.88,
+      "raise": -2.1
     },
-    "75s": {
+    "A7o": {
       "fold": 0,
-      "call": -0.88,
-      "raise": -1.1
+      "call": -0.59,
+      "raise": -0.81
     },
-    "74s": {
+    "K7o": {
       "fold": 0,
-      "call": -1.89,
-      "raise": -2.11
+      "call": -0.85,
+      "raise": -1.07
     },
-    "73s": {
-      "fold": 0,
-      "call": -2.4,
-      "raise": -2.62
-    },
-    "72s": {
-      "fold": 0,
-      "call": -2.4,
-      "raise": -2.62
-    },
-    "A6o": {
+    "Q7o": {
       "fold": 0,
       "call": -1.86,
       "raise": -2.08
     },
+    "J7o": {
+      "fold": 0,
+      "call": -1.86,
+      "raise": -2.08
+    },
+    "T7o": {
+      "fold": 0,
+      "call": -1.86,
+      "raise": -2.08
+    },
+    "97o": {
+      "fold": 0,
+      "call": -1.36,
+      "raise": -1.58
+    },
+    "87o": {
+      "fold": 0,
+      "call": -1.62,
+      "raise": -1.84
+    },
+    "76s": {
+      "fold": 0,
+      "call": 0.12,
+      "raise": 0.12
+    },
+    "75s": {
+      "fold": 0,
+      "call": -0.37,
+      "raise": -0.59
+    },
+    "74s": {
+      "fold": 0,
+      "call": -1.38,
+      "raise": -1.6
+    },
+    "73s": {
+      "fold": 0,
+      "call": -1.88,
+      "raise": -2.1
+    },
+    "72s": {
+      "fold": 0,
+      "call": -1.88,
+      "raise": -2.1
+    },
+    "A6o": {
+      "fold": 0,
+      "call": -1.35,
+      "raise": -1.57
+    },
     "K6o": {
       "fold": 0,
-      "call": -2.12,
-      "raise": -2.34
+      "call": -1.6,
+      "raise": -1.82
     },
     "Q6o": {
       "fold": 0,
-      "call": -2.37,
-      "raise": -2.59
+      "call": -1.86,
+      "raise": -2.08
     },
     "J6o": {
       "fold": 0,
-      "call": -2.38,
-      "raise": -2.6
+      "call": -1.86,
+      "raise": -2.08
     },
     "T6o": {
       "fold": 0,
-      "call": -2.38,
-      "raise": -2.6
+      "call": -1.87,
+      "raise": -2.09
     },
     "96o": {
       "fold": 0,
-      "call": -2.38,
-      "raise": -2.6
+      "call": -1.87,
+      "raise": -2.09
     },
     "86o": {
       "fold": 0,
-      "call": -2.39,
-      "raise": -2.61
+      "call": -1.87,
+      "raise": -2.09
     },
     "76o": {
       "fold": 0,
-      "call": -2.39,
-      "raise": -2.61
+      "call": -1.88,
+      "raise": -2.1
     },
     "65s": {
       "fold": 0,
-      "call": -0.63,
-      "raise": -0.85
+      "call": 0.1,
+      "raise": 0.1
     },
     "64s": {
       "fold": 0,
-      "call": -1.39,
-      "raise": -1.61
+      "call": -0.88,
+      "raise": -1.1
     },
     "63s": {
       "fold": 0,
-      "call": -2.4,
-      "raise": -2.62
+      "call": -1.89,
+      "raise": -2.11
     },
     "62s": {
       "fold": 0,
-      "call": -2.4,
-      "raise": -2.62
+      "call": -1.89,
+      "raise": -2.11
     },
     "A5o": {
       "fold": 0,
-      "call": -1.61,
-      "raise": -1.83
+      "call": -1.1,
+      "raise": -1.32
     },
     "K5o": {
       "fold": 0,
-      "call": -2.37,
-      "raise": -2.59
+      "call": -1.86,
+      "raise": -2.08
     },
     "Q5o": {
       "fold": 0,
-      "call": -2.37,
-      "raise": -2.59
+      "call": -1.86,
+      "raise": -2.08
     },
     "J5o": {
       "fold": 0,
-      "call": -2.38,
-      "raise": -2.6
+      "call": -1.86,
+      "raise": -2.08
     },
     "T5o": {
       "fold": 0,
-      "call": -2.38,
-      "raise": -2.6
+      "call": -1.87,
+      "raise": -2.09
     },
     "95o": {
       "fold": 0,
-      "call": -2.39,
-      "raise": -2.61
+      "call": -1.87,
+      "raise": -2.09
     },
     "85o": {
       "fold": 0,
-      "call": -2.39,
-      "raise": -2.61
+      "call": -1.87,
+      "raise": -2.09
     },
     "75o": {
       "fold": 0,
-      "call": -2.39,
-      "raise": -2.61
+      "call": -1.88,
+      "raise": -2.1
     },
     "65o": {
       "fold": 0,
-      "call": -2.39,
-      "raise": -2.61
+      "call": -1.88,
+      "raise": -2.1
     },
     "54s": {
       "fold": 0,
-      "call": -1.14,
-      "raise": -1.36
+      "call": 0,
+      "raise": -0.89
     },
     "53s": {
+      "fold": 0,
+      "call": -1.38,
+      "raise": -1.6
+    },
+    "52s": {
+      "fold": 0,
+      "call": -1.89,
+      "raise": -2.11
+    },
+    "A4o": {
+      "fold": 0,
+      "call": -1.35,
+      "raise": -1.57
+    },
+    "K4o": {
+      "fold": 0,
+      "call": -1.86,
+      "raise": -2.08
+    },
+    "Q4o": {
+      "fold": 0,
+      "call": -1.86,
+      "raise": -2.08
+    },
+    "J4o": {
+      "fold": 0,
+      "call": -1.87,
+      "raise": -2.09
+    },
+    "T4o": {
+      "fold": 0,
+      "call": -1.87,
+      "raise": -2.09
+    },
+    "94o": {
+      "fold": 0,
+      "call": -1.87,
+      "raise": -2.09
+    },
+    "84o": {
+      "fold": 0,
+      "call": -1.88,
+      "raise": -2.1
+    },
+    "74o": {
+      "fold": 0,
+      "call": -1.88,
+      "raise": -2.1
+    },
+    "64o": {
+      "fold": 0,
+      "call": -1.88,
+      "raise": -2.1
+    },
+    "54o": {
+      "fold": 0,
+      "call": -1.89,
+      "raise": -2.11
+    },
+    "43s": {
+      "fold": 0,
+      "call": -1.64,
+      "raise": -1.86
+    },
+    "42s": {
+      "fold": 0,
+      "call": -1.89,
+      "raise": -2.11
+    },
+    "A3o": {
+      "fold": 0,
+      "call": -1.36,
+      "raise": -1.58
+    },
+    "K3o": {
+      "fold": 0,
+      "call": -1.86,
+      "raise": -2.08
+    },
+    "Q3o": {
+      "fold": 0,
+      "call": -1.87,
+      "raise": -2.09
+    },
+    "J3o": {
+      "fold": 0,
+      "call": -1.87,
+      "raise": -2.09
+    },
+    "T3o": {
+      "fold": 0,
+      "call": -1.87,
+      "raise": -2.09
+    },
+    "93o": {
+      "fold": 0,
+      "call": -1.88,
+      "raise": -2.1
+    },
+    "83o": {
+      "fold": 0,
+      "call": -1.88,
+      "raise": -2.1
+    },
+    "73o": {
+      "fold": 0,
+      "call": -1.88,
+      "raise": -2.1
+    },
+    "63o": {
+      "fold": 0,
+      "call": -1.89,
+      "raise": -2.11
+    },
+    "53o": {
+      "fold": 0,
+      "call": -1.89,
+      "raise": -2.11
+    },
+    "43o": {
+      "fold": 0,
+      "call": -1.89,
+      "raise": -2.11
+    },
+    "32s": {
       "fold": 0,
       "call": -1.9,
       "raise": -2.12
     },
-    "52s": {
-      "fold": 0,
-      "call": -2.4,
-      "raise": -2.62
-    },
-    "A4o": {
-      "fold": 0,
-      "call": -1.87,
-      "raise": -2.09
-    },
-    "K4o": {
-      "fold": 0,
-      "call": -2.37,
-      "raise": -2.59
-    },
-    "Q4o": {
-      "fold": 0,
-      "call": -2.38,
-      "raise": -2.6
-    },
-    "J4o": {
-      "fold": 0,
-      "call": -2.38,
-      "raise": -2.6
-    },
-    "T4o": {
-      "fold": 0,
-      "call": -2.38,
-      "raise": -2.6
-    },
-    "94o": {
-      "fold": 0,
-      "call": -2.39,
-      "raise": -2.61
-    },
-    "84o": {
-      "fold": 0,
-      "call": -2.39,
-      "raise": -2.61
-    },
-    "74o": {
-      "fold": 0,
-      "call": -2.39,
-      "raise": -2.61
-    },
-    "64o": {
-      "fold": 0,
-      "call": -2.4,
-      "raise": -2.62
-    },
-    "54o": {
-      "fold": 0,
-      "call": -2.4,
-      "raise": -2.62
-    },
-    "43s": {
-      "fold": 0,
-      "call": -2.15,
-      "raise": -2.37
-    },
-    "42s": {
-      "fold": 0,
-      "call": -2.41,
-      "raise": -2.63
-    },
-    "A3o": {
-      "fold": 0,
-      "call": -1.87,
-      "raise": -2.09
-    },
-    "K3o": {
-      "fold": 0,
-      "call": -2.38,
-      "raise": -2.6
-    },
-    "Q3o": {
-      "fold": 0,
-      "call": -2.38,
-      "raise": -2.6
-    },
-    "J3o": {
-      "fold": 0,
-      "call": -2.38,
-      "raise": -2.6
-    },
-    "T3o": {
-      "fold": 0,
-      "call": -2.39,
-      "raise": -2.61
-    },
-    "93o": {
-      "fold": 0,
-      "call": -2.39,
-      "raise": -2.61
-    },
-    "83o": {
-      "fold": 0,
-      "call": -2.39,
-      "raise": -2.61
-    },
-    "73o": {
-      "fold": 0,
-      "call": -2.4,
-      "raise": -2.62
-    },
-    "63o": {
-      "fold": 0,
-      "call": -2.4,
-      "raise": -2.62
-    },
-    "53o": {
-      "fold": 0,
-      "call": -2.4,
-      "raise": -2.62
-    },
-    "43o": {
-      "fold": 0,
-      "call": -2.41,
-      "raise": -2.63
-    },
-    "32s": {
-      "fold": 0,
-      "call": -2.41,
-      "raise": -2.63
-    },
     "A2o": {
       "fold": 0,
-      "call": -1.87,
-      "raise": -2.09
+      "call": -1.36,
+      "raise": -1.58
     },
     "K2o": {
       "fold": 0,
-      "call": -2.38,
-      "raise": -2.6
+      "call": -1.86,
+      "raise": -2.08
     },
     "Q2o": {
       "fold": 0,
-      "call": -2.38,
-      "raise": -2.6
+      "call": -1.87,
+      "raise": -2.09
     },
     "J2o": {
       "fold": 0,
-      "call": -2.38,
-      "raise": -2.6
+      "call": -1.87,
+      "raise": -2.09
     },
     "T2o": {
       "fold": 0,
-      "call": -2.39,
-      "raise": -2.61
+      "call": -1.87,
+      "raise": -2.09
     },
     "92o": {
       "fold": 0,
-      "call": -2.39,
-      "raise": -2.61
+      "call": -1.88,
+      "raise": -2.1
     },
     "82o": {
       "fold": 0,
-      "call": -2.4,
-      "raise": -2.62
+      "call": -1.88,
+      "raise": -2.1
     },
     "72o": {
       "fold": 0,
-      "call": -2.4,
-      "raise": -2.62
+      "call": -1.89,
+      "raise": -2.11
     },
     "62o": {
       "fold": 0,
-      "call": -2.4,
-      "raise": -2.62
+      "call": -1.89,
+      "raise": -2.11
     },
     "52o": {
       "fold": 0,
-      "call": -2.41,
-      "raise": -2.63
+      "call": -1.89,
+      "raise": -2.11
     },
     "42o": {
       "fold": 0,
-      "call": -2.41,
-      "raise": -2.63
+      "call": -1.89,
+      "raise": -2.11
     },
     "32o": {
       "fold": 0,
-      "call": -2.41,
-      "raise": -2.63
+      "call": -1.9,
+      "raise": -2.12
     }
   }
 }
