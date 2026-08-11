@@ -179,8 +179,24 @@ const REFERENCE_ODDS = 0.5;
  */
 export function priceScaleFor(potOdds: number, profile: BotProfile): number {
   if (potOdds <= 0) return 1;
-  const raw = (REFERENCE_ODDS / Math.max(potOdds, 0.05)) ** profile.priceSensitivity;
-  return Math.max(0.45, Math.min(1.7, raw));
+  // Asymmetric on purpose: how much a GOOD price loosens a bot is damped by
+  // its fear of aggression. A rock getting 3.7-to-1 still mostly folds — that
+  // is what makes it a rock — while a big bet tightens everyone at full
+  // sensitivity. Without the damping, price awareness walked the nit's VPIP
+  // from 12 to 18 and erased the archetype.
+  const goodPrice = potOdds < REFERENCE_ODDS;
+  const exponent = profile.priceSensitivity * (goodPrice ? 1 - profile.foldToAggression : 1);
+  let raw = (REFERENCE_ODDS / Math.max(potOdds, 0.05)) ** exponent;
+
+  // Pot odds asymptote at 0.5 as a raise grows — a 40bb overbet offers ~0.48,
+  // which the curve above reads as nearly neutral. So oversize is measured
+  // directly: the call against everything else in the pot. Past ~2.2x (a cold
+  // call of a 4bb+ open, a blind facing a 5x) the price turns bad fast, which
+  // is what makes a 40bb overbet and a min-raise genuinely different worlds.
+  const oversize = potOdds < 0.5 ? potOdds / (1 - 2 * potOdds) : Number.POSITIVE_INFINITY;
+  if (oversize > 2.2) raw *= (2.2 / oversize) ** 0.8;
+
+  return Math.max(0.45, Math.min(1.8, raw));
 }
 
 /** Applies the price exponent to the fold mass and renormalises the rest. */
@@ -430,11 +446,16 @@ function decidePreflop(
     const toCall = state.currentBet - hero.committedThisStreet;
     const scale = priceScaleFor(potOddsOf(toCall, state.pot), profile);
     frequencies = applyPriceScale(frequencies, scale);
+    // The band starts where the TIGHTER of the node's range and the profile's
+    // own defend width ends. Without the profile half, a good price walked the
+    // nit down to the node's boundary and "The Rock" measured VPIP 19 — an
+    // archetype's identity has to survive its price awareness.
+    const nodeThreshold = node === null ? 1 - profile.defendWidth : nodeContinueThreshold(node);
     frequencies = applyDefendBand(
       frequencies,
       scale,
       strengthPercentile(handKey),
-      node === null ? 1 - profile.defendWidth : nodeContinueThreshold(node),
+      Math.max(nodeThreshold, 1 - profile.defendWidth),
     );
   }
   frequencies = applyMixNoise(frequencies, profile.mixTemperature);

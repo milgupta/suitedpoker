@@ -5,11 +5,7 @@
   "actionSeq": "rfi",
   "potBb": 1.5,
   "effStackBb": 100,
-  "actions": [
-    "fold",
-    "call",
-    "raise"
-  ],
+  "actions": ["fold", "call", "raise"],
   "confidence": {
     "rangeShape": "high",
     "frequencies": "low",

@@ -183,12 +183,18 @@ describe("the measured stats matrix", () => {
     // Measured VPIP tracks that data plus the soft null-node defend path — bump
     // the anchor when the served set widens rather than bending the bot away
     // from the solution. Tag sits just below gto to keep the ordering.
+    //
+    // The realism pass moved every anchor up: the vs_rfi defends were widened
+    // to published chart widths, and price awareness plus the defend band let
+    // bots continue more at a good price. The nit is still the tightest seat
+    // at the table by eight points, which is what "very tight" means SEATED
+    // NEXT TO the others — its identity is relative, not an absolute 12.
     const expected: Record<BotId, { vpip: number; pfr: number }> = {
-      nit: { vpip: 12, pfr: 10 },
+      nit: { vpip: 16, pfr: 10 },
       station: { vpip: 45, pfr: 6 },
       maniac: { vpip: 55, pfr: 40 },
-      tag: { vpip: 23, pfr: 17 },
-      gto: { vpip: 25, pfr: 19 },
+      tag: { vpip: 27, pfr: 17 },
+      gto: { vpip: 29, pfr: 19 },
     };
     const violations: string[] = [];
     for (const id of BOT_IDS) {

@@ -5,11 +5,7 @@
   "actionSeq": "vs_4bet_BTN",
   "potBb": 33,
   "effStackBb": 100,
-  "actions": [
-    "fold",
-    "call",
-    "allin"
-  ],
+  "actions": ["fold", "call", "allin"],
   "confidence": {
     "rangeShape": "medium",
     "frequencies": "medium",

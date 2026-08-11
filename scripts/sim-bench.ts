@@ -15,8 +15,17 @@
  *   online       4000   2260        54.0%      65.1%          65.2%         68.7%     33.0%   63/9/8/20
  *   boss         4000   2217        51.8%      69.0%          59.9%         65.0%     39.2%   65/8/9/18
  *
- * AFTER: see the table printed by `npx tsx scripts/sim-bench.ts`, and the
- * asserted bounds in tests/unit/poker/bots-realism.test.ts.
+ * AFTER (same seed, same hero — widened vs_rfi defends, price-aware bots,
+ * defend band, mix noise, profile sizing, template scoring):
+ *
+ *   preset      hands  opens  fold-around  flop-seen  cbet-takedown  fold-to-cbet  showdown   bot f/x/c/r
+ *   home_game    4000   2196         8.1%      94.3%          16.7%         28.6%     85.0%   33/15/31/22
+ *   cardroom     4000   2607         8.4%      93.1%          14.0%         27.3%     83.2%   33/22/32/14
+ *   online       4000   2326        34.4%      75.3%          30.7%         36.0%     61.4%   47/10/15/27
+ *   boss         4000   2242        33.0%      79.2%          26.4%         34.4%     66.0%   50/12/18/20
+ *
+ * The bounds are asserted in tests/unit/poker/bots-realism.test.ts; re-run
+ * this script after any bot or preflop-data change and update this table.
  */
 
 import {
