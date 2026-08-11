@@ -57,13 +57,16 @@ function CardOutline() {
 }
 
 function FannedCards({ cards, folded }: { cards: readonly Card[]; folded: boolean }) {
+  // Side by side with a slight lean, never overlapping — a covered corner
+  // index is a covered piece of the one object the player decides with.
   return (
-    <div className="flex items-end pt-2" data-hero-cards data-folded={folded ? "true" : "false"}>
+    <div
+      className="flex items-end gap-1.5 pt-1"
+      data-hero-cards
+      data-folded={folded ? "true" : "false"}
+    >
       {cards.map((card, i) => (
-        <span
-          key={i}
-          className={cn("block", i === 0 ? "-rotate-6" : "-ml-9 translate-y-1.5 rotate-6")}
-        >
+        <span key={i} className={cn("block", i === 0 ? "-rotate-2" : "rotate-2")}>
           {folded ? (
             <CardOutline />
           ) : (
@@ -88,7 +91,10 @@ export function HeroDock({
   return (
     <div
       className={cn(
-        "border-border bg-surface-1 flex w-full items-center justify-between gap-3 rounded-lg border p-3",
+        // Content-hugging and centred, not full-width: at desktop widths the
+        // full surface span left a dead gulf between the cards and the
+        // strength card, which read as an empty tray rather than a hand.
+        "border-border bg-surface-1 mx-auto flex w-fit max-w-full items-center gap-5 rounded-lg border p-3",
         toAct && !folded && "halo",
         className,
       )}

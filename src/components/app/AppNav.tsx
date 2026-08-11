@@ -49,7 +49,10 @@ export function AppNav({
       </Link>
 
       {compact ? (
-        <div className="flex flex-1 items-center justify-center gap-2">
+        // Absolutely centred for the same reason as the full nav below: the
+        // wordmark outweighs the settings button, and flex centring sat the
+        // breadcrumb right of the screen's midline on every game screen.
+        <div className="absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2">
           <Link
             href={APP_HOME}
             className="text-text-secondary hover:text-text-primary tap-target rounded-full px-3 py-2 text-sm"
