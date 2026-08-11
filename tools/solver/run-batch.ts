@@ -35,7 +35,11 @@ import {
 /** Later index acts last postflop, i.e. is in position. */
 const POSTFLOP_ORDER = ["SB", "BB", "UTG", "MP", "CO", "BTN"];
 
-const DEFAULT_MAX_ITERATIONS = 200;
+// 600, not 200: the one MEASURED convergence (2026-08-10, see README) reached a
+// 0.5%-of-pot target at iteration 201 — the old cap of 200 would have stopped
+// one iteration short and stamped the solve `suspect`. The cap is a safety net
+// against a stalled solve, not a budget; convergence should stop the solver.
+const DEFAULT_MAX_ITERATIONS = 600;
 const SMOKE_MAX_ITERATIONS = 40;
 const SMOKE_ACCURACY_PCT_POT = 2.0;
 
