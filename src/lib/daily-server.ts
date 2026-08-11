@@ -14,11 +14,22 @@ import { DAILY_DIFFICULTIES, seedForDate } from "@/lib/daily";
  * nothing else, so every user gets the same challenge and the cron can be
  * retried without producing a different one.
  */
+/**
+ * Deterministic per date, so the result is memoised per process. Every answer
+ * and every /today load used to rebuild all five spots; cheap CPU, but pure
+ * waste on the hottest daily path. Two entries cover the timezone straddle
+ * (users on both sides of midnight hit the same instance).
+ */
+const spotsByDate = new Map<string, Spot[]>();
+
 export function buildDailySpots(dateKey: string): Spot[] {
+  const cached = spotsByDate.get(dateKey);
+  if (cached !== undefined) return cached;
+
   const data = loadSolutionData();
   const seen: string[] = [];
 
-  return DAILY_DIFFICULTIES.map((difficulty, index) => {
+  const spots = DAILY_DIFFICULTIES.map((difficulty, index) => {
     const spot = generateSpot(
       { type: "preflop", difficulty, excludeNodeRefs: [...seen] },
       data,
@@ -29,6 +40,10 @@ export function buildDailySpots(dateKey: string): Spot[] {
     seen.push(spot.nodeRef);
     return spot;
   });
+
+  if (spotsByDate.size > 4) spotsByDate.clear();
+  spotsByDate.set(dateKey, spots);
+  return spots;
 }
 
 /**
@@ -37,10 +52,28 @@ export function buildDailySpots(dateKey: string): Spot[] {
  * The insert is ON CONFLICT DO NOTHING against the UNIQUE date, so two
  * concurrent first-visitors cannot create two different challenges.
  */
-export async function ensureChallenge(dateKey: string): Promise<{
+type ChallengeRow = {
   id: string;
   spotRefs: { seed: string; nodeRef: string; handKey: string; difficulty: number }[];
-}> {
+};
+
+/**
+ * A challenge row never changes once created, so a warm instance answers from
+ * memory: one fewer Postgres round trip on every daily answer.
+ */
+const challengeByDate = new Map<string, ChallengeRow>();
+
+export async function ensureChallenge(dateKey: string): Promise<ChallengeRow> {
+  const cached = challengeByDate.get(dateKey);
+  if (cached !== undefined) return cached;
+
+  const row = await ensureChallengeUncached(dateKey);
+  if (challengeByDate.size > 4) challengeByDate.clear();
+  challengeByDate.set(dateKey, row);
+  return row;
+}
+
+async function ensureChallengeUncached(dateKey: string): Promise<ChallengeRow> {
   const db = getDb();
 
   const existing = await db

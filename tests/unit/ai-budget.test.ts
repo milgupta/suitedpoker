@@ -179,6 +179,8 @@ describe("a Redis outage", () => {
       del: () => Promise.reject(new Error("down")),
       incrBy: () => Promise.reject(new Error("down")),
       expire: () => Promise.reject(new Error("down")),
+      mget: () => Promise.reject(new Error("down")),
+      incrByWithExpire: () => Promise.reject(new Error("down")),
     });
 
     await expect(recordSpend(1)).resolves.toBeDefined();

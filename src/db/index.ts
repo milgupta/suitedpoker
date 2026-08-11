@@ -32,8 +32,16 @@ export function getDb() {
   }
 
   // prepare:false is required by Supabase's transaction-mode pooler, which
-  // does not support prepared statements.
-  client = postgres(url, { prepare: false });
+  // does not support prepared statements. The pool is sized for serverless:
+  // a Vercel instance handles one request at a time plus a Promise.all fan-out,
+  // so five connections is headroom, not a cap — and idle connections are
+  // released quickly so instances do not squat on the pooler between bursts.
+  client = postgres(url, {
+    prepare: false,
+    max: 5,
+    idle_timeout: 20,
+    connect_timeout: 10,
+  });
   database = drizzle(client, { schema });
   return database;
 }

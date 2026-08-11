@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { z } from "zod";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { withEntitlement } from "@/lib/api-guard";
 import { getDb } from "@/db";
 import { dailyResults, dailySpotResults, drillAttempts, profiles } from "@/db/schema";
@@ -80,33 +80,47 @@ export const POST = withEntitlement(async (request, auth) => {
 
   const result = gradePreflop(node, spot.handKey, action as PreflopActionName);
 
-  // The result row for this user and challenge.
-  await db
+  // The result row for this user and challenge: upsert-with-returning, one
+  // round trip whether or not it already existed. The `set` is a no-op that
+  // exists so ON CONFLICT still returns the row.
+  const [row] = await db
     .insert(dailyResults)
     .values({ userId: auth.userId, challengeId: challenge.id })
-    .onConflictDoNothing();
-
-  const [row] = await db
-    .select({ id: dailyResults.id })
-    .from(dailyResults)
-    .where(and(eq(dailyResults.userId, auth.userId), eq(dailyResults.challengeId, challenge.id)))
-    .limit(1);
+    .onConflictDoUpdate({
+      target: [dailyResults.userId, dailyResults.challengeId],
+      set: { challengeId: challenge.id },
+    })
+    .returning({ id: dailyResults.id });
 
   if (row === undefined) return NextResponse.json({ error: "result_missing" }, { status: 500 });
 
-  const attempt = await db
-    .insert(drillAttempts)
-    .values({
-      userId: auth.userId,
-      nodeRef: spot.nodeRef,
-      heroHand: spot.handKey,
-      chosenAction: action,
-      grade: result.grade,
-      evLoss: result.evLoss.toFixed(3),
-      timeMs,
-      source: "daily",
-    })
-    .returning({ id: drillAttempts.id });
+  // The attempt write and the read of what was already answered are
+  // independent — one round trip instead of two. The prior rows cannot yet
+  // include this spotIndex: the unique index below rejects a duplicate before
+  // the tally is used.
+  const [attempt, prior] = await Promise.all([
+    db
+      .insert(drillAttempts)
+      .values({
+        userId: auth.userId,
+        nodeRef: spot.nodeRef,
+        heroHand: spot.handKey,
+        chosenAction: action,
+        grade: result.grade,
+        evLoss: result.evLoss.toFixed(3),
+        timeMs,
+        source: "daily",
+      })
+      .returning({ id: drillAttempts.id }),
+    db
+      .select({
+        spotIndex: dailySpotResults.spotIndex,
+        grade: dailySpotResults.grade,
+        evLoss: dailySpotResults.evLoss,
+      })
+      .from(dailySpotResults)
+      .where(eq(dailySpotResults.resultId, row.id)),
+  ]);
 
   // THE one-attempt guarantee. A duplicate violates the unique index.
   const inserted = await db
@@ -127,15 +141,10 @@ export const POST = withEntitlement(async (request, auth) => {
     return NextResponse.json({ error: "already_answered" }, { status: 409 });
   }
 
-  // Tally, and finish the challenge if this was the last spot.
-  const answered = await db
-    .select({
-      spotIndex: dailySpotResults.spotIndex,
-      grade: dailySpotResults.grade,
-      evLoss: dailySpotResults.evLoss,
-    })
-    .from(dailySpotResults)
-    .where(eq(dailySpotResults.resultId, row.id));
+  const answered = [
+    ...prior.filter((a) => a.spotIndex !== spotIndex),
+    { spotIndex, grade: result.grade, evLoss: result.evLoss.toFixed(3) },
+  ];
 
   const tally = scoreDaily(
     answered.map((a) => ({
@@ -161,25 +170,37 @@ export const POST = withEntitlement(async (request, auth) => {
       timeZone,
     );
 
-    await db
-      .update(dailyResults)
-      .set({
-        score: tally.score,
-        evLossTotal: tally.evLossTotal.toFixed(3),
-        completedAt: new Date(),
-      })
-      .where(eq(dailyResults.id, row.id));
+    // The response already carries the score and the streak, computed above —
+    // neither UPDATE's result is read. after() runs them once the response has
+    // gone out (Vercel keeps the function alive via waitUntil), so the user is
+    // not kept waiting on two writes they will never see. Failures are logged:
+    // a silently lost streak write is the 7.3 bare-catch lesson again.
+    const finalStreak = streakResult;
+    after(async () => {
+      try {
+        await db
+          .update(dailyResults)
+          .set({
+            score: tally.score,
+            evLossTotal: tally.evLossTotal.toFixed(3),
+            completedAt: new Date(),
+          })
+          .where(eq(dailyResults.id, row.id));
 
-    await db
-      .update(profiles)
-      .set({
-        streakCount: streakResult.count,
-        longestStreak: streakResult.longest,
-        lastDailyAt: streakResult.lastPlayedDay,
-        streakFreezeUsedMonth:
-          streakResult.freezeUsedMonth === null ? null : `${streakResult.freezeUsedMonth}-01`,
-      })
-      .where(eq(profiles.id, auth.userId));
+        await db
+          .update(profiles)
+          .set({
+            streakCount: finalStreak.count,
+            longestStreak: finalStreak.longest,
+            lastDailyAt: finalStreak.lastPlayedDay,
+            streakFreezeUsedMonth:
+              finalStreak.freezeUsedMonth === null ? null : `${finalStreak.freezeUsedMonth}-01`,
+          })
+          .where(eq(profiles.id, auth.userId));
+      } catch (error) {
+        console.error("[daily/answer] deferred finish writes failed", error);
+      }
+    });
   }
 
   return NextResponse.json({

@@ -29,7 +29,7 @@ export const SPOT_TTL_SECONDS = 30 * 60;
  * answer detectable.
  */
 export const POST = withEntitlement(async (request, auth) => {
-  const gate = await limit(auth.userId, RULES.DRILL_ANSWER);
+  const gate = await limit(auth.userId, RULES.DRILL_NEXT);
   if (!gate.allowed) {
     return NextResponse.json({ error: "rate_limited", resetAt: gate.resetAt }, { status: 429 });
   }
@@ -59,20 +59,25 @@ export const POST = withEntitlement(async (request, auth) => {
 
   try {
     const db = getDb();
-    const [profile] = await db
-      .select({ rating: profiles.rating, primaryLeak: profiles.primaryLeakKey })
-      .from(profiles)
-      .where(eq(profiles.id, auth.userId))
-      .limit(1);
-
-    if (profile?.rating != null) {
-      rating = profile.rating;
-      const recent = await db
+    // Fired together: the recent-grades read is only USED when a rating
+    // exists, but running them sequentially put a full Postgres round trip
+    // behind another on the hottest route in the product.
+    const [[profile], recent] = await Promise.all([
+      db
+        .select({ rating: profiles.rating, primaryLeak: profiles.primaryLeakKey })
+        .from(profiles)
+        .where(eq(profiles.id, auth.userId))
+        .limit(1),
+      db
         .select({ grade: drillAttempts.grade })
         .from(drillAttempts)
         .where(eq(drillAttempts.userId, auth.userId))
         .orderBy(desc(drillAttempts.createdAt))
-        .limit(3);
+        .limit(3),
+    ]);
+
+    if (profile?.rating != null) {
+      rating = profile.rating;
 
       // Only the primary leak is persisted — Q6's list is not. Targeting still
       // fires ~30% when one exists; the chip tells the user why this hand feels

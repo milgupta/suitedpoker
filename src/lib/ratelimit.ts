@@ -73,6 +73,20 @@ export const RULES = {
   },
 
   /**
+   * Dealing the next spot. Its own bucket: /drills/next used to charge
+   * DRILL_ANSWER, so every hand cost two units of a budget the product
+   * describes as answers — with prefetch, dealing and answering also happen
+   * at different moments and must not race each other's allowance.
+   */
+  DRILL_NEXT: {
+    key: "drill_next",
+    limit: 120,
+    kind: "sliding",
+    windowSeconds: 60,
+    failMode: "open",
+  },
+
+  /**
    * A flood guard, NOT the hint budget — `HINTS_DAILY` is that.
    *
    * It must stay strictly above `HINTS_DAILY.limit`, or it fires first and the
@@ -194,10 +208,7 @@ async function limitSliding(
 
   const redis = getRedis();
 
-  const [currentRaw, previousRaw] = await Promise.all([
-    redis.get(currentKey),
-    redis.get(previousKey),
-  ]);
+  const [currentRaw, previousRaw] = await redis.mget([currentKey, previousKey]);
 
   const current = Number(currentRaw ?? "0");
   const previous = Number(previousRaw ?? "0");
@@ -216,9 +227,9 @@ async function limitSliding(
     };
   }
 
-  await redis.incrBy(currentKey, cost);
-  // Two windows, so the previous bucket is still readable while it decays.
-  await redis.expire(currentKey, (rule.windowSeconds ?? 60) * 2);
+  // Two windows of TTL, so the previous bucket is still readable while it
+  // decays. One round trip for both commands — this runs on every drill.
+  await redis.incrByWithExpire(currentKey, cost, (rule.windowSeconds ?? 60) * 2);
 
   return {
     allowed: true,
@@ -249,9 +260,8 @@ async function limitCalendarDay(
     };
   }
 
-  await redis.incrBy(redisKey, cost);
   // Two days of slack, so a key cannot outlive its usefulness or vanish early.
-  await redis.expire(redisKey, 172_800);
+  await redis.incrByWithExpire(redisKey, cost, 172_800);
 
   return {
     allowed: true,

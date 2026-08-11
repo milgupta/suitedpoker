@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { z } from "zod";
 import { withEntitlement } from "@/lib/api-guard";
 import { getSession, putSession } from "@/lib/sessionstore";
@@ -101,8 +101,12 @@ export const POST = withEntitlement(async (request, auth) => {
   // rather than the feedback being withheld.
   let attemptId: string | null = null;
 
-  try {
-    const [inserted] = await getDb()
+  // The attempt write and the rating read are independent — one Postgres
+  // round trip instead of two, each still best-effort on its own: a failed
+  // write must not cost the user their feedback.
+  const db = getDb();
+  const [insertedRows, profileRows] = await Promise.all([
+    db
       .insert(drillAttempts)
       .values({
         userId: auth.userId,
@@ -117,12 +121,16 @@ export const POST = withEntitlement(async (request, auth) => {
         source: stored.config.tags?.[0] ?? "arena",
         hintsUsed: hintLevelReached,
       })
-      .returning({ id: drillAttempts.id });
-    attemptId = inserted?.id ?? null;
-  } catch {
-    // A failed write must not cost the user their feedback — the whole point of
-    // the loop is the explanation, and the attempt row is telemetry.
-  }
+      .returning({ id: drillAttempts.id })
+      .catch(() => [] as { id: string }[]),
+    db
+      .select({ rating: profiles.rating, ratingDeviation: profiles.ratingDeviation })
+      .from(profiles)
+      .where(eq(profiles.id, auth.userId))
+      .limit(1)
+      .catch(() => [] as { rating: number | null; ratingDeviation: number | null }[]),
+  ]);
+  attemptId = insertedRows[0]?.id ?? null;
 
   // Rating update. Failures here must not cost the user their feedback, so the
   // whole block is best-effort and the response still carries the grade.
@@ -131,14 +139,7 @@ export const POST = withEntitlement(async (request, auth) => {
   let crossedTier = false;
 
   try {
-    const db = getDb();
-    const rows = await db
-      .select({ rating: profiles.rating, ratingDeviation: profiles.ratingDeviation })
-      .from(profiles)
-      .where(eq(profiles.id, auth.userId))
-      .limit(1);
-
-    const before = rows[0];
+    const before = profileRows[0];
     if (before?.rating != null) {
       const updated = updateRating(
         { rating: before.rating, rd: before.ratingDeviation ?? MAX_RD },
@@ -159,10 +160,21 @@ export const POST = withEntitlement(async (request, auth) => {
       newRating = before.rating + ratingDelta;
       crossedTier = tieredUp(before.rating, newRating);
 
-      await db
-        .update(profiles)
-        .set({ rating: newRating, ratingDeviation: Math.round(updated.rd) })
-        .where(eq(profiles.id, auth.userId));
+      // The response carries the new rating computed above; the write is not
+      // read again on this request, so it runs after the response goes out.
+      // The next /drills/next reads it seconds later at the earliest.
+      const ratingToWrite = newRating;
+      const rdToWrite = Math.round(updated.rd);
+      after(async () => {
+        try {
+          await db
+            .update(profiles)
+            .set({ rating: ratingToWrite, ratingDeviation: rdToWrite })
+            .where(eq(profiles.id, auth.userId));
+        } catch (error) {
+          console.error("[drills/answer] deferred rating write failed", error);
+        }
+      });
     }
   } catch {
     // Leave the delta at zero rather than failing the request.
