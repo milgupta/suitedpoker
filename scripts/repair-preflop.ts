@@ -1074,15 +1074,48 @@ function widthOf(strategy: Strategy, key: "continue" | "raise"): number {
  */
 const EV_ONLY: readonly string[] = ["UTG:rfi", "MP:rfi", "CO:rfi", "BTN:rfi", "SB:rfi"];
 
+/** ≥ grader MISTAKE_FROM (2bb) vs the BEST alternative, never the worst. */
+const RFI_LIMP_PENALTY = 2.1;
+
+/**
+ * Limp EV = best alternative minus a fixed penalty. Against the BEST action,
+ * not the worst: `min(fold, raise) - penalty` made limping AA (-2.1) grade
+ * worse than folding AA (0), and this product cannot show a beginner that
+ * folding aces beats limping them. Against the best action the invariants
+ * hold by construction: limping is never the best action, limping a premium
+ * (raise EV above the penalty) still beats folding it, and limping a fold
+ * hand still loses to folding. The stronger the hand, the less bad the limp —
+ * which is also the true ordering.
+ */
+function applyRfiLimpPenalty(file: NodeFile): void {
+  if (!file.actions.includes("call")) return;
+  for (const hand of Object.keys(file.ev)) {
+    const e = file.ev[hand]!;
+    const fold = e.fold ?? 0;
+    const raise = e.raise ?? fold;
+    e.call = Math.round((Math.max(fold, raise) - RFI_LIMP_PENALTY) * 100) / 100;
+  }
+}
+
 function main(): void {
   const rows: string[] = [];
 
   for (const ref of EV_ONLY) {
     const path = pathFor(ref);
     const file = JSON.parse(readFileSync(path, "utf8")) as NodeFile;
+    // Call (limp) stays on the button bar so an open feels like live poker.
+    // Frequency stays 0 — we are not authoring a limp mix; EV is a fixed
+    // penalty so limping grades as a mistake against fold or raise.
+    if (!file.actions.includes("call")) {
+      file.actions = ["fold", "call", "raise"];
+    }
+    for (const hand of Object.keys(file.strategy)) {
+      file.strategy[hand]!.call = file.strategy[hand]!.call ?? 0;
+    }
     file.ev = deriveEv(file.strategy, file.actions, 7);
+    applyRfiLimpPenalty(file);
     writeFileSync(path, `${JSON.stringify(file, null, 2)}\n`);
-    rows.push(`${ref.padEnd(20)} strategy unchanged, EV column re-derived`);
+    rows.push(`${ref.padEnd(20)} strategy unchanged, EV column re-derived (+ limp call)`);
   }
 
   for (const spec of SPECS) {

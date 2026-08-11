@@ -1,12 +1,21 @@
 import type { SpotConfig } from "@/poker/generator";
 
-/** Below Recreational — default Arena stays the beginner preflop grind. */
-export const ARENA_MIX_FLOOR = 1000;
+/**
+ * Below this the default Arena is the pure preflop grind. Onboarding places
+ * beginners at 700–850, so the floor sits at the TOP of that band — at the old
+ * floor of 1000 the target audience never saw a single postflop spot, because
+ * nothing they were placed at reached it.
+ */
+export const ARENA_MIX_FLOOR = 850;
+/** Recreational — the postflop share steps up. */
+export const ARENA_MIX_REC = 1000;
 /** Solid — wider postflop textures and turn. */
 export const ARENA_MIX_SOLID = 1200;
 /** Strong — river can appear in the mix. */
 export const ARENA_MIX_STRONG = 1400;
 
+/** 850–999: a small taste, drawn only from the easiest flop textures. */
+export const ARENA_MIX_SHARE_STARTER = 0.1;
 export const ARENA_MIX_SHARE_REC = 0.2;
 export const ARENA_MIX_SHARE_SOLID = 0.35;
 
@@ -37,13 +46,18 @@ export interface ArenaMixInput {
 /**
  * Rating-gated postflop lottery for the default Arena.
  *
- * Returns the input config unchanged when the player is below Rec or when
- * the mix roll misses. Difficulty is preserved by the caller.
+ * Returns the input config unchanged when the player is below the floor or
+ * when the mix roll misses. Difficulty is preserved by the caller.
  */
 export function applyArenaMix(config: SpotConfig, input: ArenaMixInput): SpotConfig {
   if (input.rating < ARENA_MIX_FLOOR) return config;
 
-  const share = input.rating >= ARENA_MIX_SOLID ? ARENA_MIX_SHARE_SOLID : ARENA_MIX_SHARE_REC;
+  const share =
+    input.rating >= ARENA_MIX_SOLID
+      ? ARENA_MIX_SHARE_SOLID
+      : input.rating >= ARENA_MIX_REC
+        ? ARENA_MIX_SHARE_REC
+        : ARENA_MIX_SHARE_STARTER;
   if (input.mixRoll >= share) return config;
 
   if (input.rating >= ARENA_MIX_STRONG && input.familyRoll < 0.25) {
@@ -69,7 +83,7 @@ export function applyArenaMix(config: SpotConfig, input: ArenaMixInput): SpotCon
     };
   }
 
-  // Recreational: flop only, easier textures.
+  // Starter (850+) and Recreational: flop only, easiest textures.
   return {
     ...config,
     type: "postflop",

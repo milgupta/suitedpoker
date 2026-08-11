@@ -25,11 +25,18 @@ import { serverEnv } from "@/lib/env.server";
  */
 export interface RedisPort {
   get(key: string): Promise<string | null>;
+  /** Reads several keys in ONE round trip. Order matches the input. */
+  mget(keys: readonly string[]): Promise<(string | null)[]>;
   set(key: string, value: string, ttlSeconds?: number): Promise<void>;
   del(key: string): Promise<void>;
   /** Returns the value after incrementing. Creates the key at 0 first. */
   incrBy(key: string, amount: number): Promise<number>;
   expire(key: string, ttlSeconds: number): Promise<void>;
+  /**
+   * incrBy + expire in ONE round trip. The rate limiter runs on every drill
+   * request, and two sequential Upstash calls per request is pure wire time.
+   */
+  incrByWithExpire(key: string, amount: number, ttlSeconds: number): Promise<number>;
 }
 
 /* ── In-memory implementation ────────────────────────────────────────────── */
@@ -76,6 +83,10 @@ export class MemoryRedis implements RedisPort {
     return Promise.resolve();
   }
 
+  mget(keys: readonly string[]): Promise<(string | null)[]> {
+    return Promise.resolve(keys.map((key) => this.live(key)?.value ?? null));
+  }
+
   incrBy(key: string, amount: number): Promise<number> {
     const current = this.live(key);
     const next = Number(current?.value ?? "0") + amount;
@@ -89,6 +100,12 @@ export class MemoryRedis implements RedisPort {
       entry.expiresAt = this.now() + ttlSeconds * 1000;
     }
     return Promise.resolve();
+  }
+
+  async incrByWithExpire(key: string, amount: number, ttlSeconds: number): Promise<number> {
+    const next = await this.incrBy(key, amount);
+    await this.expire(key, ttlSeconds);
+    return next;
   }
 
   /** Test helper. Not part of the port. */
@@ -130,12 +147,32 @@ export class UpstashRedis implements RedisPort {
     await this.client.del(key);
   }
 
+  async mget(keys: readonly string[]): Promise<(string | null)[]> {
+    if (keys.length === 0) return [];
+    const values = await this.client.mget<unknown[]>(...keys);
+    return values.map((value) => {
+      if (value === null || value === undefined) return null;
+      return typeof value === "string" ? value : JSON.stringify(value);
+    });
+  }
+
   incrBy(key: string, amount: number): Promise<number> {
     return this.client.incrby(key, amount);
   }
 
   async expire(key: string, ttlSeconds: number): Promise<void> {
     await this.client.expire(key, ttlSeconds);
+  }
+
+  async incrByWithExpire(key: string, amount: number, ttlSeconds: number): Promise<number> {
+    // One HTTP request to Upstash, not two — the REST pipeline batches both
+    // commands into a single round trip.
+    const [incremented] = await this.client
+      .pipeline()
+      .incrby(key, amount)
+      .expire(key, ttlSeconds)
+      .exec<[number, number]>();
+    return incremented;
   }
 }
 

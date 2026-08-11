@@ -320,6 +320,41 @@ describe("folding a 100% raise", () => {
   });
 });
 
+// ── RFI limp (call) ───────────────────────────────────────────────────────────
+
+describe("first-in Call (limp) on RFI", () => {
+  const rfi = nodes.filter((n) => n.actionSeq === "rfi");
+
+  it("offers call on every opening node", () => {
+    expect(rfi.length).toBe(5);
+    for (const node of rfi) {
+      expect(node.actions).toEqual(["fold", "call", "raise"]);
+    }
+    record("rfi limp offered", `${rfi.length} opening nodes include call`);
+  });
+
+  it("never recommends limping — call frequency is zero across the range", () => {
+    for (const node of rfi) {
+      for (const hand of HAND_KEYS) {
+        expect(node.strategy[hand]?.call ?? 0).toBe(0);
+      }
+    }
+  });
+
+  it("grades limping as a mistake on raise hands and fold hands alike", () => {
+    const btn = rfi.find((n) => n.heroPos === "BTN")!;
+    const raiseHand = grade(btn, "22" as HandKey, "call");
+    const foldHand = grade(btn, "72o" as HandKey, "call");
+    expect(raiseHand.grade).toMatch(/mistake|blunder/);
+    expect(foldHand.grade).toMatch(/mistake|blunder/);
+    expect(raiseHand.frequencies.call ?? 0).toBe(0);
+    record(
+      "rfi limp grades badly",
+      `BTN 22 → ${raiseHand.grade} (−${raiseHand.evLoss.toFixed(2)}bb); 72o → ${foldHand.grade}`,
+    );
+  });
+});
+
 // ── 2d. Accuracy ──────────────────────────────────────────────────────────────
 
 describe("accuracy", () => {

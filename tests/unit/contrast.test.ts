@@ -110,6 +110,16 @@ function buildPairings(): Pairing[] {
     min: AA_TEXT,
   });
 
+  // Star ratings — decorative glyphs, large-text threshold (icons, not body).
+  for (const bg of ["--color-canvas", "--color-surface-1"] as const) {
+    pairings.push({
+      fg: "--color-star",
+      bg,
+      use: "5-star rating glyph",
+      min: AA_LARGE,
+    });
+  }
+
   // Range grid cell labels sit on an accent fill or a bare surface depending on
   // the hand, so the same colour has to clear both.
   pairings.push({

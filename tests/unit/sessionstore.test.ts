@@ -111,6 +111,8 @@ describe("session degradation", () => {
     del: () => Promise.reject(new Error("redis down")),
     incrBy: () => Promise.reject(new Error("redis down")),
     expire: () => Promise.reject(new Error("redis down")),
+    mget: () => Promise.reject(new Error("redis down")),
+    incrByWithExpire: () => Promise.reject(new Error("redis down")),
   };
 
   beforeEach(() => __setRedisForTests(broken));

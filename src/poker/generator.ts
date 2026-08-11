@@ -27,6 +27,7 @@ import {
   type HeroPosition,
   evOf,
 } from "./solutions";
+import { committedBbOf, seatActivity } from "./seat-activity";
 
 export type SpotType = "preflop" | "postflop";
 
@@ -64,6 +65,14 @@ export interface SeatView {
   position: HeroPosition;
   stackBb: number;
   isHero: boolean;
+  /** Server-owned: this seat is out of the hand. */
+  folded: boolean;
+  /** Server-owned: still to speak behind the hero. */
+  toAct: boolean;
+  /** Last action text for the badge (no position prefix), or null. */
+  action: string | null;
+  /** Chips in front of this seat (blind or bet), else null. */
+  committedBb: number | null;
 }
 
 /** The server's view. Never serialise this to a browser — use `toClientSpot`. */
@@ -237,13 +246,30 @@ function matchesConfig(node: PreflopNode, config: SpotConfig): boolean {
 
 const POSITION_STACKS: readonly HeroPosition[] = ["UTG", "MP", "CO", "BTN", "SB", "BB"];
 
-function seatsFor(heroPos: HeroPosition, effStackBb: number): SeatView[] {
-  return POSITION_STACKS.map((position, seat) => ({
-    seat,
-    position,
-    stackBb: effStackBb,
-    isHero: position === heroPos,
-  }));
+/**
+ * Six seats with fold / waiting / action / chip state computed once on the
+ * server. The client must not re-derive this from history strings.
+ */
+function seatsFor(
+  heroPos: HeroPosition,
+  effStackBb: number,
+  actionHistory: readonly string[],
+  boardCount: number,
+): SeatView[] {
+  const activity = seatActivity(heroPos, actionHistory);
+  return POSITION_STACKS.map((position, seat) => {
+    const state = activity[position]!;
+    return {
+      seat,
+      position,
+      stackBb: effStackBb,
+      isHero: position === heroPos,
+      folded: state.folded,
+      toAct: state.toAct,
+      action: state.action,
+      committedBb: committedBbOf(position, state, boardCount),
+    };
+  });
 }
 
 function actionHistoryFor(node: PreflopNode): string[] {
@@ -383,6 +409,7 @@ function generatePreflop(config: SpotConfig, data: SolutionData, rng: Rng, seed:
   }
   const chosen = best!;
   const combo = comboFor(chosen.handKey, [], rng);
+  const actionHistory = actionHistoryFor(node);
 
   return {
     id: spotId(node.ref, seed),
@@ -396,9 +423,9 @@ function generatePreflop(config: SpotConfig, data: SolutionData, rng: Rng, seed:
     board: [],
     potBb: node.potBb,
     effStackBb: node.effStackBb,
-    actionHistory: actionHistoryFor(node),
+    actionHistory,
     legalActions: [...node.actions],
-    seats: seatsFor(node.heroPos, node.effStackBb),
+    seats: seatsFor(node.heroPos, node.effStackBb, actionHistory, 0),
     difficulty: chosen.difficulty,
   };
 }
@@ -445,6 +472,8 @@ function generatePostflop(config: SpotConfig, data: SolutionData, rng: Rng, seed
       classAmbiguity: template.strategies.length > 10 ? 1 : 0.5,
     });
 
+    const actionHistory = [...template.actionHistory];
+
     return {
       id: spotId(template.id, seed),
       seed,
@@ -457,9 +486,9 @@ function generatePostflop(config: SpotConfig, data: SolutionData, rng: Rng, seed
       board,
       potBb: template.potBb,
       effStackBb: template.effStackBb,
-      actionHistory: [...template.actionHistory],
+      actionHistory,
       legalActions: [...template.actions],
-      seats: seatsFor(template.heroPos, template.effStackBb),
+      seats: seatsFor(template.heroPos, template.effStackBb, actionHistory, board.length),
       difficulty,
     };
   }

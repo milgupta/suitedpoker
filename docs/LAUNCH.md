@@ -12,6 +12,18 @@ top to bottom; do not skip the verification column.
       solver.** It is the one claim a numerate audience will check, and the one
       the competitor cannot answer.
 
+## 0b. Launch-day constants and budgets
+
+- [ ] **Set `DAILY_EPOCH` in `src/lib/daily.ts` to the real launch date.** It
+      numbers every share text; a placeholder date makes day one read "Daily
+      #200-something" or "Daily #-3". Currently a placeholder (2026-08-11).
+- [ ] **Set `AI_DAILY_BUDGET_USD` in Vercel deliberately.** Unset it defaults
+      to $25/day shared across ALL users — at real scale the soft cap silently
+      degrades every paying user's coach to templates. Scale it with
+      subscriber count.
+- [ ] **Set `ALERT_WEBHOOK_URL` in Vercel** (Slack/Discord webhook). Without
+      it the only budget warning is a server log nobody reads.
+
 ## 1. Stripe — live mode
 
 | Step | Verify |

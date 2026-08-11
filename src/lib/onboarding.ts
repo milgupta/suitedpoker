@@ -282,6 +282,17 @@ export function resumeIndex(answers: Answers): number {
   return TOTAL_STEPS;
 }
 
+/**
+ * Where /welcome's Start button should go after the webhook lands.
+ *
+ * Sending a finished quiz back into /onboarding resumes the last step, which
+ * re-runs the demo hand and diagnosis and dumps a paying user on the paywall
+ * again. Incomplete quizzes still need the quiz; everyone else is in.
+ */
+export function continueAfterWelcome(answers: Answers): "/onboarding" | "/practice" {
+  return resumeIndex(answers) < TOTAL_STEPS ? "/onboarding" : "/practice";
+}
+
 /** True for a step that shows the comparison chart rather than a question. */
 export function isChartStep(step: number): boolean {
   return step === CHART_STEP;

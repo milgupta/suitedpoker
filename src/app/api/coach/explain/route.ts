@@ -12,7 +12,7 @@ import { generateSpot } from "@/poker/generator";
 import { streamExplanation, type ExplainEvent } from "@/lib/ai/coach";
 import { COACH_MODEL } from "@/lib/ai/client";
 import { tierOf } from "@/lib/explain-policy";
-import { canGenerate, recordSpend } from "@/lib/ai/budget";
+import { canGenerateFor, recordSpendFor } from "@/lib/ai/budget";
 import { spotConfigSchema } from "@/lib/arena-preset";
 
 const bodySchema = z.object({
@@ -104,7 +104,10 @@ export const POST = withEntitlement(async (request, auth) => {
    * explanation is the product, and it survives until the hard cap.
    */
   const path = result.evLoss > 0 ? "expensive" : "cheap";
-  const generationAllowed = await canGenerate(path);
+  // Global breaker AND the caller's own daily fair share. Over-cap users fall
+  // to the template stream (`done` carries source: "template"), everyone else
+  // stays live.
+  const generationAllowed = await canGenerateFor(auth.userId, path);
 
   const encoder = new TextEncoder();
 
@@ -130,7 +133,7 @@ export const POST = withEntitlement(async (request, auth) => {
 
           if (event.type === "done") {
             await persist(auth.userId, full.trim(), event);
-            await recordSpend(event.costUsd);
+            await recordSpendFor(auth.userId, event.costUsd);
           }
         }
       } catch {

@@ -20,7 +20,8 @@ export interface EventMap {
   landing_viewed: Record<string, never>;
   signup_started: { method: SignupMethod };
   signup_completed: { method: SignupMethod };
-  onboarding_started: Record<string, never>;
+  /** `start` = paid-ads pre-account quiz; `app` = post-signup `/onboarding`. */
+  onboarding_started: { entry: "start" | "app" };
   /** Fired PER QUESTION — the whole point is seeing which one loses people. */
   onboarding_question_answered: { question: string; answer: string; index: number };
   onboarding_completed: { skillTier: string; primaryLeak: string; rating: number };

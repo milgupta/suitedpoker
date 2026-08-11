@@ -10,7 +10,7 @@ import { gradeSpot, strategyForSpot } from "@/lib/grade-spot";
 import { generateSpot } from "@/poker/generator";
 import { COACH_MODEL } from "@/lib/ai/client";
 import { tierOf } from "@/lib/explain-policy";
-import { canGenerate, recordSpend } from "@/lib/ai/budget";
+import { canGenerateFor, recordSpendFor } from "@/lib/ai/budget";
 import {
   answerChat,
   atTurnCap,
@@ -127,8 +127,10 @@ export const POST = withEntitlement(async (request, auth) => {
   }
 
   // Chat is an `expensive` path: it stays live under the soft cap and stops
-  // only at the hard one, where every user gets templates.
-  const generationAllowed = await canGenerate("expensive");
+  // only at the hard one, where every user gets templates. The per-user fair
+  // share sits on top — an over-cap user is templated without touching anyone
+  // else, and chat is the likeliest surface for one user to burn the pool.
+  const generationAllowed = await canGenerateFor(auth.userId, "expensive");
 
   const reply = await answerChat({
     spot,
@@ -141,7 +143,7 @@ export const POST = withEntitlement(async (request, auth) => {
   });
 
   await persist(auth.userId, attempt.id, parsed.data.message, reply);
-  await recordSpend(reply.costUsd);
+  await recordSpendFor(auth.userId, reply.costUsd);
 
   return NextResponse.json({
     text: reply.text,

@@ -152,30 +152,46 @@ export function archetypeFrequencies(
   // Preflop every seat but the big blind has a call available, so keying off
   // "is call legal" made openWidth dead code and every archetype came out
   // defending-wide and opening-never.
-  const width = facingBet ? profile.defendWidth : profile.openWidth;
-  const inWidth = strengthPercentile(handKey) >= 1 - width;
-  const archetypePlay = inWidth ? 1 : 0;
+  const baseWidth = facingBet ? profile.defendWidth : profile.openWidth;
+  /**
+   * Missing tree (no node): a hard cut at defendWidth made mid-strength hands
+   * pure folds, so a hero raise got folded by five seats every time. Widen and
+   * soften the edge so continue rates have real variance.
+   */
+  const width =
+    node === null && facingBet
+      ? Math.min(0.7, Math.max(baseWidth * 1.65, profile.vpipTarget))
+      : baseWidth;
+
+  const percentile = strengthPercentile(handKey);
+  const cut = 1 - width;
+  let archetypePlay = 0;
+  if (percentile >= cut) {
+    archetypePlay = 1;
+  } else if (node === null && facingBet && percentile >= cut - 0.14) {
+    // Soft band below the cut — sometimes continue, never a cliff.
+    archetypePlay = (percentile - (cut - 0.14)) / 0.14;
+  }
+
   const archetypeAggressionShare = profile.raiseShare;
 
   if (node === null) {
-    // No modelled node for this line — a limped pot, a four-way flop, anything
-    // the 43-node set does not cover. Falling through to a fold here was the
-    // first calibration bug: it dropped every bot's VPIP by roughly ten points
-    // and made the archetypes indistinguishable.
+    // No modelled node for this line — a limped pot, a four-way pot, or a
+    // pairing the set does not cover. Soft play above replaces the old
+    // binary fold cliff.
     const aggressive = archetypePlay * archetypeAggressionShare;
-    return { fold: 1 - archetypePlay, call: archetypePlay - aggressive, raise: aggressive };
+    const callShare = Math.max(0, archetypePlay - aggressive);
+    return { fold: 1 - archetypePlay, call: callShare, raise: aggressive };
   }
 
+  const hardInWidth = percentile >= 1 - baseWidth ? 1 : 0;
   const base: Record<string, number> = {};
   for (const action of node.actions) base[action] = frequencyOf(node, handKey, action);
 
   const solutionPlay = 1 - (base.fold ?? 0);
   const play = Math.max(
     0,
-    Math.min(
-      1,
-      solutionPlay * profile.solutionWeight + archetypePlay * (1 - profile.solutionWeight),
-    ),
+    Math.min(1, solutionPlay * profile.solutionWeight + hardInWidth * (1 - profile.solutionWeight)),
   );
 
   const aggressive = node.actions.filter((a) => a !== "fold" && a !== "call");
@@ -284,23 +300,27 @@ function decidePostflop(
 
   const handClass = classifyHand(hero.holeCards, state.board as readonly Card[]);
   const strength = classStrength(handClass);
-
-  // A matching template is ground truth; the archetype only bends it.
-  const template = data.templates?.find(
-    (t) => t.street === streetName(state.board.length) && t.heroPos === hero.position,
-  );
-  const entry = template === undefined ? undefined : getPostflopStrategy(template, handClass);
-  const templateBet = entry
-    ? Object.entries(entry.strategy)
-        .filter(([action]) => action.startsWith("bet_") || action.startsWith("raise"))
-        .reduce((sum, [, f]) => sum + f, 0)
-    : null;
-
+  const street = streetName(state.board.length);
   const facingBet = legal.some((a) => a.type === "call");
 
+  const template = pickPostflopTemplate(data.templates, street, hero.position, facingBet);
+  const entry = template === undefined ? undefined : getPostflopStrategy(template, handClass);
+
   if (!facingBet) {
+    const templateBet = entry
+      ? Object.entries(entry.strategy)
+          .filter(([action]) => action.startsWith("bet_") || action.startsWith("raise"))
+          .reduce((sum, [, f]) => sum + f, 0)
+      : null;
     const base = templateBet ?? strength;
-    const betProbability = profile.valueAggression * base + profile.bluffFrequency * (1 - base);
+    // Small noise so two identical spots do not always bet or always check.
+    const betProbability = Math.max(
+      0,
+      Math.min(
+        1,
+        profile.valueAggression * base + profile.bluffFrequency * (1 - base) + (rng() - 0.5) * 0.12,
+      ),
+    );
     if (rng() < betProbability) {
       const fraction = strength > 0.6 ? 0.66 : 0.4;
       const bet = aggressiveAction(legal, state.pot, fraction);
@@ -309,26 +329,72 @@ function decidePostflop(
     return passiveFallback(legal);
   }
 
-  // Facing a bet: continue in proportion to strength, fold in proportion to the
-  // archetype's fear of aggression.
-  const continueProbability = Math.max(
-    0,
-    Math.min(1, strength * (1 - profile.foldToAggression) + (1 - profile.foldToAggression) * 0.35),
-  );
+  // Facing a bet: prefer the template's fold/call/raise mix when we have one.
+  let continueProbability: number;
+  if (entry !== undefined) {
+    const foldF = entry.strategy.fold ?? 0;
+    const templateContinue = Math.max(0, Math.min(1, 1 - foldF));
+    // Stations trust the call side; nits lean toward the fold side.
+    const fear = profile.foldToAggression;
+    continueProbability = templateContinue * (1.15 - fear * 0.55);
+  } else {
+    // No template: pot-odds floor stops pure-air auto-folds, then strength and
+    // archetype fear decide the rest. Noise keeps sessions from feeling scripted.
+    const potOddsFloor = 0.2 * (1 - profile.foldToAggression * 0.5);
+    continueProbability = Math.max(
+      potOddsFloor,
+      strength * (1 - profile.foldToAggression) + (1 - profile.foldToAggression) * 0.42,
+    );
+  }
+  continueProbability = Math.max(0, Math.min(1, continueProbability + (rng() - 0.5) * 0.16));
+
   if (rng() >= continueProbability) {
     return legal.some((a) => a.type === "fold") ? { type: "fold" } : passiveFallback(legal);
   }
 
-  // The bluff term carries real weight here: it is what separates the maniac's
-  // aggression factor from the regular's. At 0.08 both bots measured the same.
-  const raiseProbability =
-    profile.valueAggression * strength * 0.45 + profile.bluffFrequency * 0.26;
+  // Raise frequency from template when present, else archetype aggression.
+  let raiseProbability: number;
+  if (entry !== undefined) {
+    const raiseF = Object.entries(entry.strategy)
+      .filter(([action]) => action.startsWith("raise") || action === "allin")
+      .reduce((sum, [, f]) => sum + f, 0);
+    raiseProbability = raiseF * (0.55 + profile.valueAggression * 0.45);
+  } else {
+    raiseProbability = profile.valueAggression * strength * 0.45 + profile.bluffFrequency * 0.26;
+  }
+
   if (rng() < raiseProbability) {
     const raise = aggressiveAction(legal, state.pot, 0.8);
     if (raise !== undefined) return raise;
   }
   const call = legal.find((a) => a.type === "call");
   return call === undefined ? passiveFallback(legal) : { type: "call", amount: call.amount };
+}
+
+/**
+ * Best-effort template for this seat and street.
+ *
+ * Exact position match first; if none (most UTG/MP/CO spots), fall back to any
+ * template on the street so the bot still gets a class-based mix instead of the
+ * strength coin-flip. Prefer facing-bet vs betting templates by their action
+ * vocabulary.
+ */
+function pickPostflopTemplate(
+  templates: readonly PostflopTemplate[] | undefined,
+  street: "flop" | "turn" | "river",
+  position: Position,
+  facingBet: boolean,
+): PostflopTemplate | undefined {
+  if (templates === undefined || templates.length === 0) return undefined;
+
+  const byPos = templates.filter((t) => t.street === street && t.heroPos === position);
+  const pool = byPos.length > 0 ? byPos : templates.filter((t) => t.street === street);
+  if (pool.length === 0) return undefined;
+
+  if (facingBet) {
+    return pool.find((t) => t.actions.includes("fold") || t.actions.includes("call")) ?? pool[0];
+  }
+  return pool.find((t) => t.actions.some((a) => a.startsWith("bet_") || a === "check")) ?? pool[0];
 }
 
 function streetName(boardLength: number): "flop" | "turn" | "river" {

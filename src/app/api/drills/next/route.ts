@@ -2,8 +2,17 @@ import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { withEntitlement } from "@/lib/api-guard";
 import { putSession } from "@/lib/sessionstore";
+import { cacheGet, cacheSet } from "@/lib/redis";
 import { loadSolutionData } from "@/lib/solution-data";
-import { generateSpot, toClientSpot, type SpotConfig } from "@/poker/generator";
+import { toClientSpot, type SpotConfig } from "@/poker/generator";
+import {
+  generateSpotExcludingRecent,
+  parseRecentNodes,
+  pushRecentNode,
+  recentNodesKey,
+  RECENT_NODES_TTL_SECONDS,
+  type ServedSpot,
+} from "@/lib/drill-dedup";
 import { spotConfigSchema } from "@/lib/arena-preset";
 import { applyArenaMix, isOpenArenaConfig } from "@/lib/arena-mix";
 import { leakToSpotConfig } from "@/lib/leak-targeting";
@@ -29,7 +38,7 @@ export const SPOT_TTL_SECONDS = 30 * 60;
  * answer detectable.
  */
 export const POST = withEntitlement(async (request, auth) => {
-  const gate = await limit(auth.userId, RULES.DRILL_ANSWER);
+  const gate = await limit(auth.userId, RULES.DRILL_NEXT);
   if (!gate.allowed) {
     return NextResponse.json({ error: "rate_limited", resetAt: gate.resetAt }, { status: 429 });
   }
@@ -57,22 +66,32 @@ export const POST = withEntitlement(async (request, auth) => {
   let leakTag: string | null = null;
   let rating: number | null = null;
 
+  // Fired BEFORE the Postgres round trip so both are in flight together —
+  // this route was latency-optimised and must not regain a sequential hop.
+  // cacheGet never throws; a miss or an outage reads as "no recent nodes".
+  const recentPromise = cacheGet<unknown>(recentNodesKey(auth.userId));
+
   try {
     const db = getDb();
-    const [profile] = await db
-      .select({ rating: profiles.rating, primaryLeak: profiles.primaryLeakKey })
-      .from(profiles)
-      .where(eq(profiles.id, auth.userId))
-      .limit(1);
-
-    if (profile?.rating != null) {
-      rating = profile.rating;
-      const recent = await db
+    // Fired together: the recent-grades read is only USED when a rating
+    // exists, but running them sequentially put a full Postgres round trip
+    // behind another on the hottest route in the product.
+    const [[profile], recent] = await Promise.all([
+      db
+        .select({ rating: profiles.rating, primaryLeak: profiles.primaryLeakKey })
+        .from(profiles)
+        .where(eq(profiles.id, auth.userId))
+        .limit(1),
+      db
         .select({ grade: drillAttempts.grade })
         .from(drillAttempts)
         .where(eq(drillAttempts.userId, auth.userId))
         .orderBy(desc(drillAttempts.createdAt))
-        .limit(3);
+        .limit(3),
+    ]);
+
+    if (profile?.rating != null) {
+      rating = profile.rating;
 
       // Only the primary leak is persisted — Q6's list is not. Targeting still
       // fires ~30% when one exists; the chip tells the user why this hand feels
@@ -115,32 +134,52 @@ export const POST = withEntitlement(async (request, auth) => {
   }
 
   const seed = randomUUID();
-  let spot;
+
+  // The rolling window of this user's recently served nodes. Excluding them is
+  // what stops a first session from dealing the same situation twice in ten
+  // hands; when a filtered config's pool is smaller than the window, the
+  // exclusion shrinks (oldest dropped first) rather than failing the deal.
+  const recent = parseRecentNodes(await recentPromise);
+
+  let served: ServedSpot;
   try {
-    spot = generateSpot(config, loadSolutionData(), seed);
+    served = generateSpotExcludingRecent(config, recent, loadSolutionData(), seed);
   } catch {
     // A leak/mix filter can miss if the served set has no matching template
     // yet — fall back to the difficulty-adjusted request rather than 500.
     config = { ...requested, difficulty: config.difficulty };
-    spot = generateSpot(config, loadSolutionData(), seed);
+    served = generateSpotExcludingRecent(config, recent, loadSolutionData(), seed);
     leakTag = null;
   }
+  const { spot } = served;
 
   const spotId = randomUUID();
 
-  const stored = await putSession(
-    "drill",
-    spotId,
-    auth.userId,
-    {
-      seed,
-      nodeRef: spot.nodeRef,
-      handKey: spot.handKey,
-      config,
-      answered: false,
-    },
-    SPOT_TTL_SECONDS,
-  );
+  // The session write and the window write are independent — one parallel
+  // round trip, not two sequential ones. The window is advanced even when the
+  // session write fails: over-remembering one undealt node costs nothing.
+  const [stored] = await Promise.all([
+    putSession(
+      "drill",
+      spotId,
+      auth.userId,
+      {
+        seed,
+        nodeRef: spot.nodeRef,
+        handKey: spot.handKey,
+        // The config WITH the exclusions the successful attempt used — /answer
+        // regenerates from this and 409s if it lands on a different node.
+        config: served.config,
+        answered: false,
+      },
+      SPOT_TTL_SECONDS,
+    ),
+    cacheSet(
+      recentNodesKey(auth.userId),
+      pushRecentNode(recent, spot.nodeRef),
+      RECENT_NODES_TTL_SECONDS,
+    ),
+  ]);
 
   if (!stored) {
     // A lost write means /answer could never grade this spot. Better to fail

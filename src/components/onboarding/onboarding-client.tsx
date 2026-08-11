@@ -17,6 +17,7 @@ import {
   type Question,
 } from "@/lib/onboarding";
 import { ComparisonChart } from "@/components/onboarding/ComparisonChart";
+import { saveStartAnswers } from "@/lib/start-answers-client";
 import { cn } from "@/lib/utils";
 
 /**
@@ -41,9 +42,14 @@ const FOOTER = "You can adjust later.";
 
 export interface OnboardingClientProps {
   initialAnswers: Answers;
+  /**
+   * `api` — signed-in `/onboarding` (organic). Persists to the profile.
+   * `local` — public `/start` (paid ads). Persists to localStorage, then signup.
+   */
+  mode?: "api" | "local";
 }
 
-export function OnboardingClient({ initialAnswers }: OnboardingClientProps) {
+export function OnboardingClient({ initialAnswers, mode = "api" }: OnboardingClientProps) {
   const router = useRouter();
   const reduced = useReducedMotion() ?? false;
 
@@ -56,24 +62,31 @@ export function OnboardingClient({ initialAnswers }: OnboardingClientProps) {
   const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    capture("onboarding_started", {});
+    capture("onboarding_started", { entry: mode === "local" ? "start" : "app" });
     return () => {
       if (advanceTimer.current !== null) clearTimeout(advanceTimer.current);
     };
-  }, []);
+  }, [mode]);
 
-  const persist = useCallback(async (next: Answers, complete = false): Promise<void> => {
-    try {
-      await fetch("/api/onboarding", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ answers: next, complete }),
-      });
-    } catch {
-      // A failed write must not block the flow. The next answer posts the whole
-      // merged set again, so one dropped request costs nothing.
-    }
-  }, []);
+  const persist = useCallback(
+    async (next: Answers, complete = false): Promise<void> => {
+      if (mode === "local") {
+        saveStartAnswers(next);
+        return;
+      }
+      try {
+        await fetch("/api/onboarding", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ answers: next, complete }),
+        });
+      } catch {
+        // A failed write must not block the flow. The next answer posts the whole
+        // merged set again, so one dropped request costs nothing.
+      }
+    },
+    [mode],
+  );
 
   const question = step === 0 ? undefined : questionAt(step);
 
@@ -96,8 +109,17 @@ export function OnboardingClient({ initialAnswers }: OnboardingClientProps) {
   }
 
   async function finish(final: Answers): Promise<void> {
+    if (busy) return;
     setBusy(true);
     try {
+      if (mode === "local") {
+        // Account next — Lead and onboarding_completed fire after commit, once
+        // there is an email for Meta to match and a profile row to derive into.
+        saveStartAnswers(final);
+        router.push("/signup?from=start");
+        return;
+      }
+
       const response = await fetch("/api/onboarding", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -120,8 +142,6 @@ export function OnboardingClient({ initialAnswers }: OnboardingClientProps) {
         });
       }
 
-      // 7.2 builds the diagnosis. Until it exists this lands on the paywall,
-      // which is where the funnel goes next either way.
       // 7.2b: one real hand before the wall. The diagnosis opens with it, so
       // it has to come first — the hand is the evidence, the quiz is context.
       router.push("/onboarding/hand");

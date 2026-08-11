@@ -36,7 +36,7 @@ export const metadata: Metadata = {
 export default function PricingPage() {
   return (
     <>
-      <SiteHeader cta="Get started" />
+      <SiteHeader />
 
       <main>
         <section className="ambient-host">

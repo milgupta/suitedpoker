@@ -104,6 +104,21 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
     return NextResponse.redirect(redirect);
   }
 
+  /**
+   * API routes skip the middleware's Supabase work entirely.
+   *
+   * No PROTECTED_PREFIX matches /api, so the getUser() result below was never
+   * used for anything on an API call — it was one full HTTPS round trip to
+   * Supabase auth per request, paid before the route's own withAuth() paid the
+   * same round trip again. The session-refresh side effect is covered too:
+   * route handlers run createClient() with a WRITABLE cookie store (unlike
+   * server components), so an expired token refreshes and persists there.
+   * Geo-blocking has already run above; it must keep covering /api.
+   */
+  if (request.nextUrl.pathname.startsWith("/api")) {
+    return applyAttribution(response);
+  }
+
   // Without credentials there is no session to refresh and nothing to protect.
   // Let everything through rather than locking the whole app out of a build
   // that was never meant to have auth.

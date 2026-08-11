@@ -122,7 +122,10 @@ test.describe("the /welcome race", () => {
 
     await page.getByTestId("welcome-continue").click();
     // Not /paywall, which is the failure this whole page exists to prevent.
+    // Fresh users still need the quiz; anyone who already finished it goes
+    // straight into the product (continueAfterWelcome) — either way, not the wall.
     await expect(page).not.toHaveURL(/\/paywall/);
+    await expect(page).toHaveURL(/\/(onboarding|practice)/);
   });
 
   test("an unpaid user reaching a gated page still hits the paywall", async ({ page }) => {

@@ -14,8 +14,22 @@ export default async function CancelPage() {
   if (user === null) redirect("/login");
 
   const billing = await loadBilling(user.id);
-  // Nothing to cancel — most likely a second visit after cancelling.
-  if (billing.plan === null || billing.cancelAtPeriodEnd) redirect("/account");
+
+  // Already cancelling — send them back to the account panel that shows the end date.
+  if (billing.cancelAtPeriodEnd) redirect("/account");
+
+  // Entitled but price id does not match env (stale test price, live/test mismatch).
+  // Still render a cancel shell so Account → Cancel never bounces to a blank loop.
+  if (billing.plan === null) {
+    if (!billing.entitled) redirect("/account");
+    return (
+      <CancelClient
+        plan="monthly"
+        periodEnd={billing.currentPeriodEnd?.toISOString() ?? null}
+        planUnknown
+      />
+    );
+  }
 
   return (
     <CancelClient plan={billing.plan} periodEnd={billing.currentPeriodEnd?.toISOString() ?? null} />

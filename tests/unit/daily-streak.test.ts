@@ -11,6 +11,7 @@ import {
   dayNumberFor,
   scoreDaily,
   seedForDate,
+  DAILY_EPOCH,
   type DailySpotResult,
 } from "../../src/lib/daily";
 import { completeDaily, currentStreak, isMilestone, type StreakState } from "../../src/lib/streak";
@@ -340,8 +341,13 @@ describe("the share grid is spoiler-free", () => {
     expect(buildShareText({ dayNumber: 142, results: shuffled, streak: 12 })).toBe(text);
   });
 
-  it("numbers days from the epoch", () => {
-    expect(dayNumberFor("2026-01-01")).toBe(1);
-    expect(dayNumberFor("2026-01-02")).toBe(2);
+  it("numbers days from the epoch, whatever the epoch is set to", () => {
+    // Derived from DAILY_EPOCH rather than a hardcoded date: the epoch is
+    // deliberately set to the launch date so day one shares as Daily 1.
+    expect(dayNumberFor(DAILY_EPOCH)).toBe(1);
+    const dayAfter = new Date(Date.parse(`${DAILY_EPOCH}T00:00:00Z`) + 86_400_000)
+      .toISOString()
+      .slice(0, 10);
+    expect(dayNumberFor(dayAfter)).toBe(2);
   });
 });

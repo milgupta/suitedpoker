@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { withEntitlement } from "@/lib/api-guard";
 import { getDb } from "@/db";
 import { dailyResults, dailySpotResults, drillAttempts, profiles } from "@/db/schema";
-import { buildDailySpots, ensureChallenge } from "@/lib/daily-server";
-import { loadSolutionData } from "@/lib/solution-data";
+import { challengeSpots, ensureChallenge } from "@/lib/daily-server";
+import { loadAllSolutionData } from "@/lib/solution-data";
 import { grade as gradePreflop } from "@/poker/grader";
 import { nodeRefOf, type PreflopActionName } from "@/poker/solutions";
 import { localDay } from "@/lib/local-day";
@@ -63,12 +63,13 @@ export const POST = withEntitlement(async (request, auth) => {
   const ref = challenge.spotRefs[spotIndex];
   if (ref === undefined) return NextResponse.json({ error: "no_such_spot" }, { status: 400 });
 
-  const data = loadSolutionData();
-  // Rebuild the WHOLE day, not this spot alone: buildDailySpots threads an
-  // accumulating excludeNodeRefs through the sequence, so regenerating one spot
-  // from its seed with a bare config produces a different node.
-  const spot = buildDailySpots(today)[spotIndex];
-  if (spot === undefined || spot.nodeRef !== ref.nodeRef) {
+  // Regenerated from the STORED ref, so the spot graded is the spot served —
+  // even when the solution data changed since the challenge was built. The
+  // full set is read for the same reason: a mid-day quarantine must not cut
+  // off a user who already started, so they are graded against what they saw.
+  const data = loadAllSolutionData();
+  const spot = challengeSpots(challenge)[spotIndex];
+  if (spot === undefined) {
     return NextResponse.json({ error: "spot_mismatch" }, { status: 409 });
   }
   if (!spot.legalActions.includes(action)) {
@@ -80,33 +81,47 @@ export const POST = withEntitlement(async (request, auth) => {
 
   const result = gradePreflop(node, spot.handKey, action as PreflopActionName);
 
-  // The result row for this user and challenge.
-  await db
+  // The result row for this user and challenge: upsert-with-returning, one
+  // round trip whether or not it already existed. The `set` is a no-op that
+  // exists so ON CONFLICT still returns the row.
+  const [row] = await db
     .insert(dailyResults)
     .values({ userId: auth.userId, challengeId: challenge.id })
-    .onConflictDoNothing();
-
-  const [row] = await db
-    .select({ id: dailyResults.id })
-    .from(dailyResults)
-    .where(and(eq(dailyResults.userId, auth.userId), eq(dailyResults.challengeId, challenge.id)))
-    .limit(1);
+    .onConflictDoUpdate({
+      target: [dailyResults.userId, dailyResults.challengeId],
+      set: { challengeId: challenge.id },
+    })
+    .returning({ id: dailyResults.id });
 
   if (row === undefined) return NextResponse.json({ error: "result_missing" }, { status: 500 });
 
-  const attempt = await db
-    .insert(drillAttempts)
-    .values({
-      userId: auth.userId,
-      nodeRef: spot.nodeRef,
-      heroHand: spot.handKey,
-      chosenAction: action,
-      grade: result.grade,
-      evLoss: result.evLoss.toFixed(3),
-      timeMs,
-      source: "daily",
-    })
-    .returning({ id: drillAttempts.id });
+  // The attempt write and the read of what was already answered are
+  // independent — one round trip instead of two. The prior rows cannot yet
+  // include this spotIndex: the unique index below rejects a duplicate before
+  // the tally is used.
+  const [attempt, prior] = await Promise.all([
+    db
+      .insert(drillAttempts)
+      .values({
+        userId: auth.userId,
+        nodeRef: spot.nodeRef,
+        heroHand: spot.handKey,
+        chosenAction: action,
+        grade: result.grade,
+        evLoss: result.evLoss.toFixed(3),
+        timeMs,
+        source: "daily",
+      })
+      .returning({ id: drillAttempts.id }),
+    db
+      .select({
+        spotIndex: dailySpotResults.spotIndex,
+        grade: dailySpotResults.grade,
+        evLoss: dailySpotResults.evLoss,
+      })
+      .from(dailySpotResults)
+      .where(eq(dailySpotResults.resultId, row.id)),
+  ]);
 
   // THE one-attempt guarantee. A duplicate violates the unique index.
   const inserted = await db
@@ -127,15 +142,10 @@ export const POST = withEntitlement(async (request, auth) => {
     return NextResponse.json({ error: "already_answered" }, { status: 409 });
   }
 
-  // Tally, and finish the challenge if this was the last spot.
-  const answered = await db
-    .select({
-      spotIndex: dailySpotResults.spotIndex,
-      grade: dailySpotResults.grade,
-      evLoss: dailySpotResults.evLoss,
-    })
-    .from(dailySpotResults)
-    .where(eq(dailySpotResults.resultId, row.id));
+  const answered = [
+    ...prior.filter((a) => a.spotIndex !== spotIndex),
+    { spotIndex, grade: result.grade, evLoss: result.evLoss.toFixed(3) },
+  ];
 
   const tally = scoreDaily(
     answered.map((a) => ({
@@ -161,25 +171,30 @@ export const POST = withEntitlement(async (request, auth) => {
       timeZone,
     );
 
-    await db
-      .update(dailyResults)
-      .set({
-        score: tally.score,
-        evLossTotal: tally.evLossTotal.toFixed(3),
-        completedAt: new Date(),
-      })
-      .where(eq(dailyResults.id, row.id));
-
-    await db
-      .update(profiles)
-      .set({
-        streakCount: streakResult.count,
-        longestStreak: streakResult.longest,
-        lastDailyAt: streakResult.lastPlayedDay,
-        streakFreezeUsedMonth:
-          streakResult.freezeUsedMonth === null ? null : `${streakResult.freezeUsedMonth}-01`,
-      })
-      .where(eq(profiles.id, auth.userId));
+    // Inline, not deferred: these two writes happen once per DAY, and the very
+    // next /api/daily/today read (a redirect to the summary, a refresh) must
+    // see completed=true. Deferring them saved ~80ms once a day and made that
+    // read a race — the per-answer writes above are where the latency was.
+    await Promise.all([
+      db
+        .update(dailyResults)
+        .set({
+          score: tally.score,
+          evLossTotal: tally.evLossTotal.toFixed(3),
+          completedAt: new Date(),
+        })
+        .where(eq(dailyResults.id, row.id)),
+      db
+        .update(profiles)
+        .set({
+          streakCount: streakResult.count,
+          longestStreak: streakResult.longest,
+          lastDailyAt: streakResult.lastPlayedDay,
+          streakFreezeUsedMonth:
+            streakResult.freezeUsedMonth === null ? null : `${streakResult.freezeUsedMonth}-01`,
+        })
+        .where(eq(profiles.id, auth.userId)),
+    ]);
   }
 
   return NextResponse.json({
@@ -189,5 +204,7 @@ export const POST = withEntitlement(async (request, auth) => {
     answeredCount: answered.length,
     finished,
     streak: streakResult,
+    // Post-answer disclosure of data quality — never sent before the decision.
+    source: { provenance: node.provenance, evConfidence: node.confidence.ev },
   });
 });

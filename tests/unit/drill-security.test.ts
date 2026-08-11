@@ -51,6 +51,10 @@ const ALLOWED_KEYS = new Set([
   "position",
   "stackBb",
   "isHero",
+  "folded",
+  "toAct",
+  "action",
+  "committedBb",
 ]);
 
 function collectKeys(value: unknown, into: Set<string> = new Set()): Set<string> {

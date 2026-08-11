@@ -41,6 +41,10 @@ describe("testimonials", () => {
     const names = TESTIMONIALS.map((t) => t.name.toLowerCase());
     expect(new Set(names).size).toBe(names.length);
   });
+
+  it("has enough real quotes for the landing band", () => {
+    expect(TESTIMONIALS.length).toBeGreaterThanOrEqual(8);
+  });
 });
 
 describe("the proof band's fallback", () => {

@@ -422,17 +422,19 @@ export function describeLeak(leak: Leak): string {
   // `leak.position` is the hero seat. For vs_rfi_*, the aggressor is the suffix —
   // saying "facing an open from the CO" when the hero IS the CO was backwards.
   const where =
-    leak.actionSeq === "rfi"
-      ? `when it folds to you in the ${leak.position}`
-      : leak.actionSeq.startsWith("vs_rfi_")
-        ? `in the ${leak.position} facing a ${leak.actionSeq.slice("vs_rfi_".length)} open`
-        : leak.actionSeq.startsWith("vs_3bet_")
-          ? `in the ${leak.position} facing a ${leak.actionSeq.slice("vs_3bet_".length)} 3-bet`
-          : leak.actionSeq.startsWith("vs_4bet_")
-            ? `in the ${leak.position} facing a ${leak.actionSeq.slice("vs_4bet_".length)} 4-bet`
-            : leak.actionSeq.startsWith("vs_3bet")
-              ? `facing a 3-bet in the ${leak.position}`
-              : `facing a 4-bet in the ${leak.position}`;
+    leak.actionSeq === "postflop"
+      ? `after the flop, on ${leak.street}s`
+      : leak.actionSeq === "rfi"
+        ? `when it folds to you in the ${leak.position}`
+        : leak.actionSeq.startsWith("vs_rfi_")
+          ? `in the ${leak.position} facing a ${leak.actionSeq.slice("vs_rfi_".length)} open`
+          : leak.actionSeq.startsWith("vs_3bet_")
+            ? `in the ${leak.position} facing a ${leak.actionSeq.slice("vs_3bet_".length)} 3-bet`
+            : leak.actionSeq.startsWith("vs_4bet_")
+              ? `in the ${leak.position} facing a ${leak.actionSeq.slice("vs_4bet_".length)} 4-bet`
+              : leak.actionSeq.startsWith("vs_3bet")
+                ? `facing a 3-bet in the ${leak.position}`
+                : `facing a 4-bet in the ${leak.position}`;
 
   return `You're ${verb} ${where} — costing about ${leak.meanEvLoss.toFixed(1)}bb each time, over ${leak.sampleSize} samples.`;
 }

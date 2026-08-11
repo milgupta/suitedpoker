@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { actionLabel } from "@/lib/action-label";
 import { fadeUp } from "@/lib/motion";
 import { DEMO_INTRO, DEMO_OUTRO_CTA } from "@/lib/demo-hand";
+import { missingActionTip, TRAINER_ACTIONS_CAPTION } from "@/lib/spot-situation";
 
 /**
  * The one hand, played before the wall.
@@ -133,6 +134,7 @@ export function HandClient() {
 
   const segments =
     result === null || spot === null ? [] : capsuleSegments(spot.legalActions, result);
+  const limpTip = result !== null && spot !== null ? missingActionTip(spot.legalActions) : null;
 
   if (phase === "intro") {
     return (
@@ -184,30 +186,24 @@ export function HandClient() {
           uses — the same table, the same cards. Swapping in a lighter mock here
           would make the demo a lie, and this is the one hand that decides
           whether anybody pays. */}
-      <div className="flex flex-col gap-3">
-        <SpotTable
-          seats={spot.seats}
-          heroPos={spot.heroPos}
-          heroCards={spot.heroCards}
-          board={spot.board}
-          potBb={spot.potBb}
-          effStackBb={spot.effStackBb}
-          actionHistory={spot.actionHistory}
-        />
-        {/* Only when there is a SEQUENCE — with one action the seat chip on
-            the table already says it. */}
-        {spot.actionHistory.length > 1 && (
-          <p className="text-text-secondary text-body-sm text-center">
-            {spot.actionHistory.join(" · ")}
-          </p>
-        )}
-      </div>
+      <SpotTable
+        seats={spot.seats}
+        heroPos={spot.heroPos}
+        heroCards={spot.heroCards}
+        board={spot.board}
+        potBb={spot.potBb}
+        effStackBb={spot.effStackBb}
+        actionHistory={spot.actionHistory}
+      />
 
       {result !== null && (
         <FrequencyCapsules segments={segments} topAction={result.topAction} revealed />
       )}
 
       <div className={cn("grid gap-2.5", actionGridClass(spot.legalActions.length))}>
+        <p className="text-text-tertiary text-caption col-span-full text-center text-balance">
+          {TRAINER_ACTIONS_CAPTION}
+        </p>
         {spot.legalActions.map((action) => (
           <Button
             key={action}
@@ -222,6 +218,12 @@ export function HandClient() {
           </Button>
         ))}
       </div>
+
+      {limpTip !== null && (
+        <p className="text-text-tertiary text-caption text-center" data-missing-action-tip>
+          {limpTip}
+        </p>
+      )}
 
       {error !== "" && (
         <p role="alert" className="text-grade-mistake text-body-md">

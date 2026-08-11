@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createRng } from "@/poker/cards";
-import { getBot, preflopNodeFor, type BotId } from "@/poker/bots";
+import { getBot, preflopNodeFor, type BotData, type BotId } from "@/poker/bots";
 import { PROFILES } from "@/poker/bots";
 import {
   advanceUntilAction,
@@ -62,13 +62,17 @@ export function chipsToBb(chips: number): number {
   return chips / CHIPS_PER_BB;
 }
 
-let cachedIndex: SolutionIndex | null = null;
+/**
+ * Servable preflop only — what we grade the hero against. Quarantined nodes
+ * must not become ground truth for a paying user's score.
+ */
+let cachedGradeIndex: SolutionIndex | null = null;
 
-function solutionIndex(): SolutionIndex {
-  if (cachedIndex === null) {
-    cachedIndex = buildSolutionIndex(loadSolutionData().preflop);
+function gradeIndex(): SolutionIndex {
+  if (cachedGradeIndex === null) {
+    cachedGradeIndex = buildSolutionIndex(loadSolutionData().preflop);
   }
-  return cachedIndex;
+  return cachedGradeIndex;
 }
 
 function servedTemplates(): readonly PostflopTemplate[] {
@@ -82,8 +86,10 @@ function servedTemplates(): readonly PostflopTemplate[] {
  * The hero and the bots read ONE strategy standard: the served set. The hero
  * on a quarantined line is honestly ungraded — grading against a neighbouring
  * pairing's chart is the exact bug quarantine exists to prevent — but a bot
- * still has to ACT, and the family representative is a far better stand-in
- * than the archetype fallback that ignores the solution entirely.
+ * still has to ACT, and without a solution mix every quarantined pairing
+ * falls through to a hard percentile cut and the table folds everything to a
+ * raise. The family representative is real released data, which beats both
+ * the archetype fallback and the imperfect quarantined copy.
  *
  * Every target must be a servable ref that exists on disk; a test walks the
  * quarantine list and asserts both.
@@ -111,14 +117,14 @@ let cachedBotIndex: SolutionIndex | null = null;
 
 /**
  * The served index plus quarantine aliases, for the BOTS only. The grading
- * paths keep using `solutionIndex()`, so an aliased node can never grade a
+ * paths keep using `gradeIndex()`, so an aliased node can never grade a
  * user — it only stops a bot falling back to pure-archetype play on the
  * biggest preflop pots in the tree.
  */
 function botSolutionIndex(): SolutionIndex {
   if (cachedBotIndex !== null) return cachedBotIndex;
 
-  const served = solutionIndex();
+  const served = gradeIndex();
   const nodes = new Map(served.nodes);
   for (const { ref } of QUARANTINED_NODES) {
     const representative = QUARANTINE_FALLBACKS[ref];
@@ -140,7 +146,6 @@ export function createLiveSession(input: {
   seed: string;
 }): LiveSimState {
   const preset = PRESETS[input.presetId];
-  const seatCount = preset.villains.length + 1;
 
   // Hero always at seat 0; villains fill the rest in preset order.
   const botBySeat: (BotId | null)[] = [null, ...preset.villains];
@@ -164,7 +169,6 @@ export function createLiveSession(input: {
     pendingDecisions: [],
   };
 
-  void seatCount;
   return dealNextHand(base, input.seed);
 }
 
@@ -182,7 +186,6 @@ export function dealNextHand(live: LiveSimState, sessionSeed: string): LiveSimSt
 
   const handNumber = live.handNumber + 1;
   const seats = live.botBySeat.length;
-  const button = (live.button % seats) + 1 === seats ? 0 : live.button % seats;
 
   const game = advanceUntilAction(
     createGame({
@@ -196,8 +199,6 @@ export function dealNextHand(live: LiveSimState, sessionSeed: string): LiveSimSt
       seed: `${sessionSeed}:hand:${handNumber}`,
     }),
   );
-
-  void button;
 
   let next: LiveSimState = {
     ...live,
@@ -434,7 +435,7 @@ function heroPreflopDecision(
   const hero = game.players[live.heroSeat];
   if (hero?.holeCards == null) return null;
 
-  const node = preflopNodeFor(game, live.heroSeat, solutionIndex());
+  const node = preflopNodeFor(game, live.heroSeat, gradeIndex());
   if (node === null) {
     return ungraded(
       "preflop",

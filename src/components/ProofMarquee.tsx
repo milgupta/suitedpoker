@@ -77,12 +77,18 @@ function PointChip({ point }: { point: string }) {
 
 function QuoteChip({ testimonial }: { testimonial: Testimonial }) {
   const { quote, name, context } = testimonial;
+  const detail = context != null && context.trim() !== "" ? ` · ${context}` : "";
 
   return (
     <li className="border-border bg-surface-1/60 flex w-[20rem] shrink-0 flex-col gap-2 rounded-lg border px-4 py-3">
-      <p className="text-text-primary text-body-sm">“{quote}”</p>
+      <p className="text-star text-caption tracking-wide" aria-hidden>
+        ★★★★★
+      </p>
+      {/* Long beta reviews — clamp so the paywall band stays a skim, not a wall. */}
+      <p className="text-text-primary text-body-sm line-clamp-3">“{quote}”</p>
       <p className="text-text-tertiary text-caption">
-        {name} · {context}
+        {name}
+        {detail}
       </p>
     </li>
   );

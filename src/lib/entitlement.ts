@@ -15,7 +15,14 @@ import { isEntitled } from "@/lib/entitlement-rule";
  * change then.
  */
 
-export const ENTITLEMENT_TTL_SECONDS = 60;
+/**
+ * Five minutes, up from one. The webhook busts this cache the moment a
+ * subscription changes (invalidateEntitlement below), so the TTL only covers
+ * out-of-band expiry — a period end passing while cached — and five minutes of
+ * slack against a 3-day past-due grace window costs nothing. At 60s every
+ * user paid an extra Postgres select + Redis write each minute of play.
+ */
+export const ENTITLEMENT_TTL_SECONDS = 300;
 
 export class EntitlementError extends Error {
   readonly code = "ENTITLEMENT_REQUIRED";

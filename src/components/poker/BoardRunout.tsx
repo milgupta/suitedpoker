@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import type { Card } from "@/poker/cards";
 import type { Street } from "@/poker/gamestate";
 import { PlayingCard } from "./PlayingCard";
@@ -21,36 +20,22 @@ export interface BoardRunoutProps {
  *
  * Undealt cards render as dimmed backs in position, so a runout never shifts
  * the layout under the player's thumb.
+ *
+ * Card size is TWO renders (`sm:hidden` / `hidden sm:flex`), never `matchMedia`
+ * state — that path changed size one frame after paint and put CLS on /arena
+ * once already.
  */
 export function BoardRunout({ board, street, className }: BoardRunoutProps) {
   const flop = [0, 1, 2];
   const late = [3, 4];
 
-  /*
-   * `md` below 640px, not `lg`.
-   *
-   * Cards roughly doubled in the card pass and this did not shrink with them:
-   * three 72px cards over two is 216x200 in the middle of a 390px ring, which
-   * buried the side seats behind the undealt backs. The board is context on a
-   * phone — the hero's own two cards are the subject, and they stay `xl`.
-   */
-  const [narrow, setNarrow] = useState(false);
-
-  useEffect(() => {
-    const query = window.matchMedia("(max-width: 640px)");
-    const update = (): void => setNarrow(query.matches);
-    update();
-    query.addEventListener("change", update);
-    return () => query.removeEventListener("change", update);
-  }, []);
-
-  const renderSlot = (i: number) => {
+  const renderSlot = (i: number, size: "md" | "lg") => {
     const card = board[i];
     return (
       <PlayingCard
-        key={i}
+        key={`${size}-${i}`}
         card={card}
-        size={narrow ? "md" : "lg"}
+        size={size}
         index={i < 3 ? i : 0}
         dealCount={i < 3 ? 3 : 1}
         placeholder={card === undefined}
@@ -64,8 +49,10 @@ export function BoardRunout({ board, street, className }: BoardRunoutProps) {
       role="group"
       aria-label={`Board, ${street}`}
     >
-      <div className="flex gap-2">{flop.map(renderSlot)}</div>
-      <div className="flex gap-2">{late.map(renderSlot)}</div>
+      <div className="flex gap-1.5 sm:hidden">{flop.map((i) => renderSlot(i, "md"))}</div>
+      <div className="flex gap-1.5 sm:hidden">{late.map((i) => renderSlot(i, "md"))}</div>
+      <div className="hidden gap-2 sm:flex">{flop.map((i) => renderSlot(i, "lg"))}</div>
+      <div className="hidden gap-2 sm:flex">{late.map((i) => renderSlot(i, "lg"))}</div>
     </div>
   );
 }

@@ -45,6 +45,7 @@ const PUBLIC_ROUTES = [
   "/legal/privacy",
   "/login",
   "/signup",
+  "/start",
 ];
 const APP_ROUTES = [
   "/practice",

@@ -39,38 +39,39 @@ export interface DemoSpot {
  * this list is only the candidate pool.
  */
 const SHORTLIST: Record<SkillTier, readonly DemoSpot[]> = {
-  // Never studied: open-or-fold, the simplest real decision in poker.
+  // Never studied: facing an open is readable on a table (blinds + a raise).
+  // First-in RFI looks like "broken buttons" to someone who expects Check/Call.
   never: [
     {
-      id: "btn-rfi",
-      heroPos: "BTN",
-      actionSeq: "rfi",
+      id: "bb-vs-btn",
+      heroPos: "BB",
+      actionSeq: "vs_rfi_BTN",
       difficulty: 4,
-      teaches: "the button opens far wider than instinct says",
+      teaches: "defending the big blind against a button open — call, fold, or 3-bet",
     },
     {
-      id: "co-rfi",
-      heroPos: "CO",
-      actionSeq: "rfi",
+      id: "bb-vs-co",
+      heroPos: "BB",
+      actionSeq: "vs_rfi_CO",
       difficulty: 4,
-      teaches: "cutoff is wide too, but not button-wide",
+      teaches: "big blind vs cutoff open, still a real mix",
     },
   ],
-  // Watched videos: the first spot where position stops being the whole answer.
+  // Watched videos: still facing aggression, slightly tougher seats.
   videos: [
     {
-      id: "sb-rfi",
+      id: "sb-vs-btn-open",
       heroPos: "SB",
-      actionSeq: "rfi",
+      actionSeq: "vs_rfi_BTN",
       difficulty: 5,
-      teaches: "the small blind is out of position for the whole hand",
+      teaches: "small blind vs button — out of position for the whole hand",
     },
     {
-      id: "mp-rfi",
-      heroPos: "MP",
-      actionSeq: "rfi",
+      id: "bb-vs-utg",
+      heroPos: "BB",
+      actionSeq: "vs_rfi_UTG",
       difficulty: 5,
-      teaches: "middle position with players still to act",
+      teaches: "big blind vs the tightest open in the game",
     },
   ],
   // Used charts: facing aggression, where charts usually run out.
@@ -354,7 +355,7 @@ export function nounOf(action: string): string {
 /** The framing screen, before the hand. */
 export const DEMO_INTRO = {
   heading: "Before we build your plan, one hand.",
-  body: "No right or wrong. I just want to see how you think.",
+  body: "You'll see a real table — who folded, who's still in, and what you can do. No right or wrong. I just want to see how you think.",
   cta: "Deal me in",
   skip: "Skip this",
 } as const;

@@ -35,7 +35,7 @@ export const HERO = {
   title: "Stop guessing.",
   titleAccent: "Start knowing.",
   body: "Learn the strategy behind every decision — explained in plain English, one hand at a time. Built for players who know the rules and are stuck on everything after that.",
-  cta: "Find my biggest leak",
+  cta: "Sign Up",
   ctaNote: "Eight questions and one real hand. About two minutes.",
   secondary: "See how it works",
 } as const;
@@ -186,5 +186,14 @@ export const FAQ: readonly FaqItem[] = [
 export const FINAL_CTA = {
   title: "Find out where your game leaks.",
   body: "Eight questions, then one real hand you play yourself. The read you get at the end is built from what you actually did, not from what you said.",
-  cta: "Find my biggest leak",
+  cta: "Sign Up",
+} as const;
+
+/**
+ * Landing social proof. Quotes themselves live in `testimonials.ts` (with
+ * sources); this is only the frame around them so the page stays copy-central.
+ */
+export const TRUST = {
+  eyebrow: "From our beta testers",
+  headline: "Trusted by hundreds of recreational and pro players",
 } as const;

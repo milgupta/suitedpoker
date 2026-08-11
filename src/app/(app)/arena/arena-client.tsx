@@ -23,6 +23,7 @@ import { capture } from "@/lib/analytics-client";
 import { cn } from "@/lib/utils";
 import { GRADES } from "@/lib/grade";
 import { actionLabel } from "@/lib/action-label";
+import { missingActionTip, TRAINER_ACTIONS_CAPTION } from "@/lib/spot-situation";
 import { actionGridClass, capsuleSegments } from "@/lib/action-grid";
 import { evColor } from "@/lib/ev-color";
 
@@ -32,7 +33,23 @@ interface Answered {
   action: string;
 }
 
-const DEFAULT_PRESET: ArenaPreset = { config: { type: "preflop" } };
+type SourceQuality = { provenance: string; evConfidence: string };
+
+interface NextSpotData {
+  spotId: string;
+  spot: ClientSpot;
+  leakTag?: string | null;
+}
+
+/**
+ * The open Arena deals 20-hand sessions, not an endless feed. Endless was the
+ * old default, which made the fully-built SessionSummary unreachable from the
+ * main practice mode — nobody ever saw their accuracy, distribution or worst
+ * hands without arriving through a deep link. Twenty ends at a summary with
+ * "Keep going" starting a fresh twenty; deep-linked presets keep whatever
+ * length (or endlessness) they asked for.
+ */
+const DEFAULT_PRESET: ArenaPreset = { config: { type: "preflop" }, length: 20 };
 
 /**
  * Module scope on purpose. The React Compiler treats a Date.now() call inside a
@@ -53,7 +70,9 @@ export function ArenaClient() {
 
   const [spotId, setSpotId] = useState<string | null>(null);
   const [spot, setSpot] = useState<ClientSpot | null>(null);
-  const [result, setResult] = useState<(Grade & { ratingDelta?: number }) | null>(null);
+  const [result, setResult] = useState<
+    (Grade & { ratingDelta?: number; source?: SourceQuality | null }) | null
+  >(null);
   const [answeredAction, setAnsweredAction] = useState<string | null>(null);
   const [history, setHistory] = useState<Answered[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,6 +87,39 @@ export function ArenaClient() {
   const hintLevel = useRef(0);
   /** Set in `next()` before fetch — never read a render-time ref copy. */
   const advancingRef = useRef(false);
+  /**
+   * The next spot, requested the moment an answer is graded — while the user
+   * reads their feedback. That reading time used to be pure idle, and then
+   * "Next hand" paid the whole server round trip on the click. With the
+   * prefetch, the click usually swaps a spot that is already here. Resolves to
+   * null on any failure so a stored rejection can never surface as an
+   * unhandled one; loadNext retries with a fresh fetch in that case.
+   */
+  const prefetchRef = useRef<Promise<NextSpotData | null> | null>(null);
+
+  const fetchNextSpot = useCallback(async (): Promise<NextSpotData> => {
+    const response = await fetch("/api/drills/next", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ config: preset.config }),
+    });
+    if (!response.ok) {
+      throw new Error(response.status === 402 ? "lapsed" : "load_failed");
+    }
+    return (await response.json()) as NextSpotData;
+  }, [preset.config]);
+
+  const applySpot = useCallback((data: NextSpotData) => {
+    setResult(null);
+    setAnsweredAction(null);
+    setAttemptId(null);
+    setChatOpen(false);
+    setSpotId(data.spotId);
+    setSpot(data.spot);
+    setLeakFocus(data.leakTag ?? null);
+    hintLevel.current = 0;
+    startedAt.current = nowMs();
+  }, []);
 
   const loadNext = useCallback(async () => {
     // Remember whether we were leaving a graded hand. Clearing the grade
@@ -80,44 +132,18 @@ export function ArenaClient() {
     setError("");
 
     try {
-      const response = await fetch("/api/drills/next", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ config: preset.config }),
-      });
-
-      if (!response.ok) {
-        setError(
-          response.status === 402
-            ? "Your subscription has lapsed."
-            : "Could not load the next hand. Try again.",
-        );
-        if (advancing) {
-          setSpot(null);
-          setSpotId(null);
-          setResult(null);
-          setAnsweredAction(null);
-          setAttemptId(null);
-        }
-        return;
-      }
-
-      const data = (await response.json()) as {
-        spotId: string;
-        spot: ClientSpot;
-        leakTag?: string | null;
-      };
-      setResult(null);
-      setAnsweredAction(null);
-      setAttemptId(null);
-      setChatOpen(false);
-      setSpotId(data.spotId);
-      setSpot(data.spot);
-      setLeakFocus(data.leakTag ?? null);
-      hintLevel.current = 0;
-      startedAt.current = nowMs();
-    } catch {
-      setError("Could not reach the server.");
+      // A prefetched spot swaps in immediately; a failed or absent prefetch
+      // falls back to fetching now.
+      const prefetched = prefetchRef.current === null ? null : await prefetchRef.current;
+      prefetchRef.current = null;
+      const data = prefetched ?? (await fetchNextSpot());
+      applySpot(data);
+    } catch (error) {
+      setError(
+        error instanceof Error && error.message === "lapsed"
+          ? "Your subscription has lapsed."
+          : "Could not load the next hand. Try again.",
+      );
       if (advancing) {
         setSpot(null);
         setSpotId(null);
@@ -129,7 +155,7 @@ export function ArenaClient() {
       advancingRef.current = false;
       setLoading(false);
     }
-  }, [preset.config]);
+  }, [fetchNextSpot, applySpot]);
 
   useEffect(() => {
     capture("drill_started", {
@@ -162,11 +188,20 @@ export function ArenaClient() {
       ratingDelta: number;
       hintsUsed?: number;
       attemptId?: string | null;
+      source?: SourceQuality | null;
     };
     setResult(graded);
     setAttemptId(graded.attemptId ?? null);
     setAnsweredAction(action);
     setHistory((h) => [...h, { spot, result: graded, action }]);
+
+    // Start fetching the next spot NOW, while the feedback is being read —
+    // unless this answer just completed a fixed-length session, where dealing
+    // another hand would burn a spot nobody will play.
+    const playedAfterThis = history.length + 1;
+    if (preset.length === undefined || playedAfterThis < preset.length) {
+      prefetchRef.current = fetchNextSpot().catch(() => null);
+    }
 
     capture("drill_answered", {
       grade: graded.grade,
@@ -213,6 +248,9 @@ export function ArenaClient() {
   }
 
   function next(): void {
+    // Re-entry guard: the Space shortcut and a slow advance can otherwise
+    // stack a second fetch on top of the first.
+    if (loading || advancingRef.current) return;
     const played = history.length;
     if (preset.length !== undefined && played >= preset.length) {
       setFinished(true);
@@ -271,6 +309,8 @@ export function ArenaClient() {
    */
   const segments =
     result === null || spot === null ? [] : capsuleSegments(spot.legalActions, result);
+  const actionGapTip =
+    result !== null && spot !== null ? missingActionTip(spot.legalActions) : null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -298,15 +338,27 @@ export function ArenaClient() {
             Focusing on {leakFocusLabel(leakFocus)}
           </span>
         )}
-        <Hud label="Hands" value={hands} />
-        <Hud label="Accuracy" value={accuracy} decimals={0} suffix="%" />
-        <Hud label="Streak" value={streak} />
-        {/* bb lost and Sharp sit in the secondary line — three above the fold
-            on 390px, the rest available without crowding the table. */}
-        <span className="text-text-tertiary flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[0.9em]">
-          <Hud label="bb lost" value={bbLost} decimals={2} />
-          <Hud label="Sharp" value={sharpCount} />
-        </span>
+        {hands === 0 ? (
+          <span className="text-text-secondary text-body-sm" data-arena-goal>
+            {leakFocus !== null
+              ? `Focus: ${leakFocusLabel(leakFocus)}`
+              : preset.label !== undefined
+                ? `Session: ${preset.label}`
+                : "Play a hand — metrics appear after your first decision."}
+          </span>
+        ) : (
+          <>
+            <Hud label="Hands" value={hands} />
+            <Hud label="Accuracy" value={accuracy} decimals={0} suffix="%" />
+            <Hud label="Streak" value={streak} />
+            {/* bb lost and Sharp sit in the secondary line — three above the fold
+                on 390px, the rest available without crowding the table. */}
+            <span className="text-text-tertiary flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[0.9em]">
+              <Hud label="bb lost" value={bbLost} decimals={2} />
+              <Hud label="Sharp" value={sharpCount} />
+            </span>
+          </>
+        )}
         {preset.length !== undefined && (
           <span className="text-caption font-mono">
             {hands} / {preset.length}
@@ -328,8 +380,11 @@ export function ArenaClient() {
         </div>
       )}
 
-      {/* Error first: a failed load must never sit behind an eternal skeleton. */}
-      {error !== "" && spot === null ? null : loading || spot === null ? (
+      {/* Error first: a failed load must never sit behind an eternal skeleton.
+          The skeleton renders only when there is NO spot on screen (first
+          load, or a failed advance) — while a slow next-spot request runs, the
+          just-played table stays up instead of collapsing into shimmer. */}
+      {error !== "" && spot === null ? null : spot === null ? (
         /*
          * The skeleton mirrors SpotTable's GEOMETRY, not just its existence.
          *
@@ -340,12 +395,11 @@ export function ArenaClient() {
          * loading state, it is a guaranteed reflow.
          */
         <div className="flex flex-col items-center gap-4">
-          <Shimmer className="aspect-square w-full sm:aspect-[5/4]" />
-          {/* Two xl cards: 96px wide, 1:1.4, with the 10px gap between them. */}
+          <Shimmer className="h-10 w-full max-w-md" />
+          <Shimmer className="aspect-square w-full max-w-[min(100%,52dvh)] sm:aspect-[5/4] sm:max-w-[min(100%,calc(55dvh*1.25))]" />
           <Shimmer className="h-[134px] w-[202px]" />
-          {/* Two lines: "100BB effective", then the action history. */}
-          <Shimmer className="h-4 w-32" />
-          <Shimmer className="h-4 w-56" />
+          <Shimmer className="h-4 w-64" />
+          <Shimmer className="h-12 w-full max-w-md" />
           <Shimmer className="h-14 w-full" />
         </div>
       ) : (
@@ -360,6 +414,9 @@ export function ArenaClient() {
           )}
 
           <div className={cn("grid gap-2.5", actionGridClass(spot.legalActions.length))}>
+            <p className="text-text-tertiary text-caption col-span-full text-center text-balance">
+              {TRAINER_ACTIONS_CAPTION}
+            </p>
             {spot.legalActions.map((action) => (
               <Button
                 key={action}
@@ -383,6 +440,12 @@ export function ArenaClient() {
             ))}
           </div>
 
+          {actionGapTip !== null && (
+            <p className="text-text-tertiary text-caption text-center" data-missing-action-tip>
+              {actionGapTip}
+            </p>
+          )}
+
           {result === null && spotId !== null && (
             <HintButton
               key={spotId}
@@ -397,6 +460,8 @@ export function ArenaClient() {
               result={result}
               ratingDelta={result.ratingDelta ?? 0}
               onNext={next}
+              nextPending={loading}
+              source={result.source}
               showMix={false}
               explanation={
                 spotId === null ? undefined : (
@@ -483,28 +548,15 @@ function SpotView({ spot }: { spot: ClientSpot }) {
    * that was the wrong presentation of a poker hand.
    */
   return (
-    <div className="flex flex-col gap-3">
-      <SpotTable
-        seats={spot.seats}
-        heroPos={spot.heroPos}
-        heroCards={spot.heroCards}
-        board={spot.board}
-        potBb={spot.potBb}
-        effStackBb={spot.effStackBb}
-        actionHistory={spot.actionHistory}
-      />
-
-      {/* The ordered sequence still has a home. The seat chips say who did
-          what; this says in what order, which the ring cannot show. */}
-      {/* Only when there is a SEQUENCE. With one action the seat chip already
-          says it, and repeating it underneath is the wall of text this screen
-          was rebuilt to get rid of. */}
-      {spot.actionHistory.length > 1 && (
-        <p className="text-text-secondary text-body-sm text-center">
-          {spot.actionHistory.join(" · ")}
-        </p>
-      )}
-    </div>
+    <SpotTable
+      seats={spot.seats}
+      heroPos={spot.heroPos}
+      heroCards={spot.heroCards}
+      board={spot.board}
+      potBb={spot.potBb}
+      effStackBb={spot.effStackBb}
+      actionHistory={spot.actionHistory}
+    />
   );
 }
 
@@ -596,7 +648,7 @@ function SessionSummary({
 
       <div className="flex flex-wrap gap-3">
         <Button variant="primary" size="lg" onClick={onRestart}>
-          Play again
+          Keep going
         </Button>
         {returnTo !== undefined && (
           <Button

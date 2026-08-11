@@ -4,8 +4,13 @@ import { motion, useReducedMotion } from "motion/react";
 import type { Card } from "@/poker/cards";
 import type { SeatView } from "@/poker/generator";
 import type { HeroPosition } from "@/poker/solutions";
-import { seatActivity } from "@/lib/spot-seats";
-import { actionVerb, betAmountOf } from "@/lib/bet-chip";
+import { actionVerb } from "@/lib/bet-chip";
+import {
+  formatActionHistory,
+  formatCommittedBb,
+  situationLine,
+  spotCoachTip,
+} from "@/lib/spot-situation";
 import { SPRING } from "@/lib/motion";
 import { PlayingCard } from "./PlayingCard";
 import { SeatAvatar } from "./SeatAvatar";
@@ -15,22 +20,9 @@ import { cn } from "@/lib/utils";
 /**
  * A DRILL SPOT, DRAWN AS A TABLE.
  *
- * Every screen that asks for a decision — the arena, the daily challenge, the
- * one demo hand before the paywall — used to render the spot as a stack of
- * text: a row of stats, a sentence of action history, and two small cards in a
- * box. There is no poker product anywhere that shows a hand that way, because
- * it does not work: the reader has to reconstruct six seats, who folded, who
- * raised and where they were sitting, all before they can start on the actual
- * question. That reconstruction is the part a beginner is worst at, and this
- * app's entire audience is beginners.
- *
- * Same visual language as the table simulator (`PokerTable`) on purpose — the
- * glowing ring, the seat pills, the same card faces. A drill and a hand at the
- * table are the same game, so they should not be two different-looking
- * products. `PokerTable` cannot be reused directly because a drill has no
- * `GameState`: the client is deliberately given a spot with no deck, no villain
- * cards and no node reference, and that boundary is not worth widening for a
- * layout.
+ * Seat fold / waiting / chip state arrives on `SeatView` from `generateSpot`.
+ * The client must not re-infer who folded from history strings for display —
+ * that is how a legal chart decision looked like broken poker.
  */
 
 export interface SpotTableProps {
@@ -41,6 +33,10 @@ export interface SpotTableProps {
   potBb: number;
   effStackBb: number;
   actionHistory: readonly string[];
+  /** Extra pre-decision line. Defaults to the shared coach tip for the spot. */
+  coachTip?: string | null;
+  /** Hide the auto coach tip (Arena veterans). Situation line still shows. */
+  hideCoachTip?: boolean;
   className?: string;
 }
 
@@ -52,55 +48,46 @@ export function SpotTable({
   potBb,
   effStackBb,
   actionHistory,
+  coachTip,
+  hideCoachTip = false,
   className,
 }: SpotTableProps) {
   const reduced = useReducedMotion() ?? false;
-  const activity = seatActivity(heroPos, actionHistory);
+  const situation = situationLine(heroPos, actionHistory, board.length);
+  const history = formatActionHistory(actionHistory, heroPos);
+  const tip =
+    coachTip !== undefined
+      ? coachTip
+      : hideCoachTip
+        ? null
+        : spotCoachTip(heroPos, actionHistory, board.length);
 
   const heroIndex = Math.max(
     seats.findIndex((seat) => seat.isHero),
     0,
   );
   const layout = seatLayout(seats.length, heroIndex);
-
-  /*
-   * The hero's own arc is lit, because in a drill the hero is always the one to
-   * act — that is what a drill IS. On the sim the arc tracks whoever is to act;
-   * here it is a constant, and it points at the person being asked.
-   */
   const heroAngle = 0;
 
   return (
-    <div className={cn("flex w-full flex-col items-center gap-4", className)}>
-      {/*
-       * The aspect ratio is a CSS breakpoint, NOT the `narrow` state.
-       *
-       * Driving it from a matchMedia effect meant the ring was 5/4 on first
-       * paint and 1/1 a frame later, which is a layout shift on the busiest
-       * screen in the product — CLS on /arena went from 0.0000 to 0.0568 doing
-       * it that way. Nothing here is sized from state any more.
-       */}
+    <div className={cn("flex w-full flex-col items-center gap-3", className)} data-spot-table>
+      <p
+        className="text-text-primary text-body-md max-w-md text-center font-medium text-balance"
+        data-situation
+      >
+        {situation}
+      </p>
+
       <div
-        className="relative aspect-square w-full sm:aspect-[5/4]"
+        className="relative mx-auto aspect-square w-full max-w-[min(100%,52dvh)] sm:aspect-[5/4] sm:max-w-[min(100%,calc(55dvh*1.25))]"
         role="img"
-        aria-label={`Six-handed table. You are in ${heroPos}. Pot ${potBb.toFixed(1)} big blinds, ${effStackBb.toFixed(0)} big blinds effective.`}
+        aria-label={`Six-handed table. You are in ${heroPos}. ${situation} Pot ${potBb.toFixed(1)} big blinds, ${effStackBb.toFixed(0)} big blinds effective.`}
       >
         <TableRing activeAngle={heroAngle} />
 
-        {/* The middle of the table: board, then the pot under it. */}
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
           {board.length > 0 && (
             <>
-              {/*
-               * The board twice, one shown per breakpoint.
-               *
-               * Card size is a NUMBER inside PlayingCard, so it cannot come
-               * from a Tailwind class — and taking it from a matchMedia effect
-               * resizes the board one frame after first paint, which moves
-               * every seat anchor on the ring. That was the last 0.043 of CLS
-               * on /arena. Five extra spans of pure-SVG card, rendered once, is
-               * a cheaper fix than a layout shift on the busiest screen here.
-               */}
               <div className="flex flex-wrap justify-center gap-1.5 sm:hidden">
                 {board.map((card, i) => (
                   <PlayingCard key={i} card={card} size="md" index={i} dealCount={board.length} />
@@ -113,20 +100,13 @@ export function SpotTable({
               </div>
             </>
           )}
-          <PotChip potBb={potBb} />
+          <PotChip potBb={potBb} effStackBb={effStackBb} />
         </div>
 
-        {/*
-         * The chips each player has put in, INSIDE the rim between their seat
-         * and the pot — where they sit on a real table, and where a player
-         * looks to price a call. Halfway in clears both the seat pill and the
-         * board.
-         */}
         {seats.map((seat, i) => {
           const spot = layout[i];
           if (spot === undefined) return null;
-          const bet = betAmountOf(activity[seat.position].action);
-          if (bet === null) return null;
+          if (seat.committedBb === null) return null;
 
           return (
             <div
@@ -137,7 +117,7 @@ export function SpotTable({
                 top: `${50 + (spot.top - 50) * 0.58}%`,
               }}
             >
-              <BetChip amount={bet} />
+              <BetChip amount={formatCommittedBb(seat.committedBb)} />
             </div>
           );
         })}
@@ -145,7 +125,6 @@ export function SpotTable({
         {seats.map((seat, i) => {
           const spot = layout[i];
           if (spot === undefined) return null;
-          const state = activity[seat.position];
 
           return (
             <div
@@ -158,8 +137,9 @@ export function SpotTable({
                 position={seat.position}
                 stackBb={seat.stackBb}
                 isHero={seat.isHero}
-                action={state.action}
-                folded={state.folded}
+                action={seat.action}
+                folded={seat.folded}
+                toAct={seat.toAct}
                 reduced={reduced}
               />
             </div>
@@ -167,32 +147,29 @@ export function SpotTable({
         })}
       </div>
 
-      {/* The hero's hand, below the ring where a player's own cards actually
-          sit, and the largest object on the screen. It is the thing being
-          decided about; nothing else should be bigger. */}
+      <p className="text-text-secondary text-body-sm max-w-md text-center" data-history>
+        {history}
+      </p>
+
       <div className="flex gap-2.5">
         {heroCards.map((card, i) => (
           <PlayingCard key={i} card={card} size="xl" index={i} dealCount={heroCards.length} />
         ))}
       </div>
 
-      <p className="text-text-secondary text-body-sm text-center font-mono">
-        {effStackBb.toFixed(0)}BB effective
-      </p>
+      {tip !== null && tip !== "" && (
+        <p
+          className="border-border bg-surface-2 text-text-secondary text-body-sm max-w-md rounded-md border px-3 py-2 text-center text-balance"
+          data-coach-tip
+        >
+          {tip}
+        </p>
+      )}
     </div>
   );
 }
 
-/**
- * A stack of chips with the amount beside it.
- *
- * The disc is drawn rather than emoji'd, for the same reason the suit pips are:
- * a chip emoji is a different picture on every platform and several of them are
- * a roulette wheel, which is the one image this product must never show.
- */
 function BetChip({ amount }: { amount: string }) {
-  // body-md, not caption: these chips are how the pot is read. At caption size
-  // the figure that decides the hand is smaller than the seat label next to it.
   return (
     <span className="border-border-strong bg-surface-2/90 text-body-md flex items-center gap-2 rounded-full border py-1 pr-2.5 pl-1.5 font-mono font-semibold whitespace-nowrap tabular-nums backdrop-blur-sm">
       <svg viewBox="0 0 24 24" className="block size-5" aria-hidden="true">
@@ -213,14 +190,6 @@ function BetChip({ amount }: { amount: string }) {
   );
 }
 
-/**
- * The dealer button.
- *
- * White with dark type, which is what a real one is — and deliberately NOT the
- * amber a casino button often uses, because amber is `--grade-inaccuracy` and
- * a token from the grade ramp on a table would read as a judgement about the
- * seat it is sitting next to.
- */
 function DealerButton() {
   return (
     <span
@@ -233,29 +202,30 @@ function DealerButton() {
   );
 }
 
-function PotChip({ potBb }: { potBb: number }) {
+function PotChip({ potBb, effStackBb }: { potBb: number; effStackBb: number }) {
   return (
-    <span className="border-border-strong bg-surface-2/80 text-body-md rounded-full border px-3.5 py-1.5 font-mono font-semibold tabular-nums backdrop-blur-sm">
-      {potBb.toFixed(1)}
-      <span className="text-text-tertiary ml-1">BB pot</span>
+    <span className="border-border-strong bg-surface-2/80 text-body-md flex max-w-[90%] flex-col items-center rounded-full border px-3.5 py-1.5 font-mono font-semibold tabular-nums backdrop-blur-sm sm:flex-row sm:gap-2">
+      <span>
+        {potBb.toFixed(1)}
+        <span className="text-text-tertiary ml-1">BB pot</span>
+      </span>
+      <span className="text-text-tertiary hidden sm:inline" aria-hidden>
+        ·
+      </span>
+      <span className="text-text-secondary text-caption font-medium">
+        {effStackBb.toFixed(0)}BB eff
+      </span>
     </span>
   );
 }
 
-/**
- * A seat on the ring: position, stack, and what they did.
- *
- * Folded seats stay in place at low opacity rather than disappearing. An empty
- * chair tells you as much as an occupied one — "everybody in front of me passed"
- * is the single most important fact about an unopened pot, and a table that
- * simply omits those seats has hidden it.
- */
 function SpotSeat({
   position,
   stackBb,
   isHero,
   action,
   folded,
+  toAct,
   reduced,
 }: {
   position: HeroPosition;
@@ -263,6 +233,7 @@ function SpotSeat({
   isHero: boolean;
   action: string | null;
   folded: boolean;
+  toAct: boolean;
   reduced: boolean;
 }) {
   return (
@@ -271,18 +242,17 @@ function SpotSeat({
       data-position={position}
       data-hero={isHero ? "true" : "false"}
       data-folded={folded ? "true" : "false"}
+      data-to-act={toAct ? "true" : "false"}
     >
-      {/* Above the pill, never inside it. At 390px the side seats sit at the
-          very edge of the ring; another 30px of pill width pushes them off the
-          screen, and vertical space is the one thing the ring has spare. */}
       <SeatAvatar seed={position} isHero={isHero} folded={folded} />
 
       <motion.div
         className={cn(
           "flex items-center gap-1.5 rounded-full border px-2.5 py-1 whitespace-nowrap",
           isHero ? "border-accent bg-surface-2" : "border-border bg-surface-1",
+          folded && "border-border-subtle",
         )}
-        style={{ opacity: folded ? 0.35 : 1 }}
+        style={{ opacity: folded ? 0.45 : 1 }}
         animate={
           reduced || !isHero
             ? { boxShadow: "0 0 0 0 transparent" }
@@ -300,20 +270,20 @@ function SpotSeat({
             : { duration: 0.18 }
         }
       >
-        {/* The position, never the word "you", inside the pill. Position is the
-            single most decision-relevant fact about a seat and it is what the
-            hint, the explanation and the range grid all refer to — replacing it
-            with "You" on the one seat that matters most makes the player look
-            elsewhere to find out where they are sitting. */}
         <span
           className={cn(
             "text-overline font-mono uppercase",
-            isHero ? "text-accent-bright" : "text-text-tertiary",
+            isHero ? "text-accent-bright" : folded ? "text-text-tertiary" : "text-text-secondary",
           )}
         >
           {position}
         </span>
-        <span className="text-body-sm font-mono font-semibold tabular-nums">
+        <span
+          className={cn(
+            "text-body-sm font-mono font-semibold tabular-nums",
+            folded && "text-text-tertiary",
+          )}
+        >
           {stackBb.toFixed(0)}
           <span className="text-text-tertiary ml-0.5">BB</span>
         </span>
@@ -322,9 +292,28 @@ function SpotSeat({
 
       {isHero && <span className="text-accent-bright text-overline uppercase">you</span>}
 
+      {folded && !isHero && (
+        <span
+          className="border-border bg-surface-1 text-text-tertiary text-caption rounded-full border px-2 py-0.5 font-medium tracking-wide uppercase"
+          data-seat-status="folded"
+        >
+          Fold
+        </span>
+      )}
+
+      {!folded && toAct && !isHero && action === null && (
+        <span
+          className="border-border-subtle bg-surface-1 text-text-tertiary text-caption rounded-full border px-2 py-0.5 font-medium tracking-wide uppercase"
+          data-seat-status="waiting"
+        >
+          Waiting
+        </span>
+      )}
+
       {action !== null && !folded && (
         <motion.span
           className="border-accent/40 bg-accent/10 text-accent-bright text-body-sm rounded-full border px-2.5 py-1 whitespace-nowrap"
+          data-seat-status="acted"
           initial={reduced ? false : { opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={SPRING.snappy}

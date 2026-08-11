@@ -35,6 +35,7 @@ const FULL_ANSWERS = {
 async function makeUserWithAnswers(
   tag: string,
   answers: Record<string, unknown> | null,
+  opts: { subscribe?: boolean } = {},
 ): Promise<{ id: string; email: string }> {
   const email = `e2e+diag${tag}${Date.now()}${Math.floor(Math.random() * 1000)}@suitedpoker.com`;
   const { data, error } = await admin.auth.admin.createUser({
@@ -47,12 +48,14 @@ async function makeUserWithAnswers(
   if (id === undefined) throw new Error("no user id");
   created.push(id);
 
-  await admin.from("subscriptions").insert({
-    user_id: id,
-    status: "active",
-    price_id: "price_e2e",
-    current_period_end: new Date(Date.now() + 30 * 86_400_000).toISOString(),
-  });
+  if (opts.subscribe !== false) {
+    await admin.from("subscriptions").insert({
+      user_id: id,
+      status: "active",
+      price_id: "price_e2e",
+      current_period_end: new Date(Date.now() + 30 * 86_400_000).toISOString(),
+    });
+  }
 
   if (answers !== null) {
     await admin.from("profiles").update({ onboarding: answers }).eq("id", id);
@@ -61,12 +64,12 @@ async function makeUserWithAnswers(
   return { id, email };
 }
 
-async function login(page: Page, email: string): Promise<void> {
+async function login(page: Page, email: string, expectUrl: RegExp = /\/practice/): Promise<void> {
   await page.goto("/login");
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
   await page.getByRole("button", { name: "Log in" }).click();
-  await expect(page).toHaveURL(/\/practice/, { timeout: 30_000 });
+  await expect(page).toHaveURL(expectUrl, { timeout: 30_000 });
 }
 
 test.describe("diagnosis", () => {
@@ -82,43 +85,27 @@ test.describe("diagnosis", () => {
     }
   });
 
-  test("renders THEIR report: their pain's headline, their venue's dollars", async ({ page }) => {
+  test("renders THEIR report: rating, path, and Q6 reflected back", async ({ page }) => {
     const { email } = await makeUserWithAnswers("mine", FULL_ANSWERS);
     await login(page, email);
     await page.goto("/diagnosis");
 
-    // Their Q2 answer, as the headline.
-    await expect(page.locator("[data-leak-headline]")).toHaveText(
-      "Calling too much, in too many spots",
-    );
-
-    // Their stakes and frequency: 10,000 × 3.5bb/100 × $2 = $700.
-    await expect(page.locator("[data-cost]")).toContainText("$700");
-    await expect(page.locator("[data-cost]")).toContainText("estimated");
+    await expect(page.getByText(/Rating/i)).toBeVisible();
+    await expect(page.getByText(/Where you stand/i)).toBeVisible();
 
     // Their Q6 picks, reflected back.
     await expect(page.getByText(/defending your blinds/)).toBeVisible();
 
     // Their path, from their minutes answer.
     await expect(page.locator("[data-path]")).toContainText("10 min/day");
+
+    // Leak headline and dollar cost are no longer on this screen.
+    await expect(page.getByText(/Primary leak/i)).toHaveCount(0);
+    await expect(page.getByText(/What it costs you/i)).toHaveCount(0);
+    await expect(page.getByText(/\/ year, estimated/i)).toHaveCount(0);
   });
 
-  test("the tooltip shows the real arithmetic", async ({ page }) => {
-    const { email } = await makeUserWithAnswers("tooltip", FULL_ANSWERS);
-    await login(page, email);
-    await page.goto("/diagnosis");
-
-    await page.getByRole("button", { name: /how we estimate this/i }).click();
-    const formula = page.locator("[data-formula]");
-    await expect(formula).toBeVisible();
-    // The same numbers that produced the headline, verbatim.
-    await expect(formula).toContainText("10,000 hands/year");
-    await expect(formula).toContainText("3.5bb per 100 hands");
-    await expect(formula).toContainText("$2.00 per big blind");
-    await expect(formula).toContainText("$700/year");
-  });
-
-  test("a play-money user sees big blinds, never dollars", async ({ page }) => {
+  test("a play-money user still gets a diagnosis with no dollar framing", async ({ page }) => {
     const { email } = await makeUserWithAnswers("playmoney", {
       ...FULL_ANSWERS,
       venue: "play_money",
@@ -126,16 +113,16 @@ test.describe("diagnosis", () => {
     await login(page, email);
     await page.goto("/diagnosis");
 
-    const cost = page.locator("[data-cost]");
-    await expect(cost).toContainText("big blinds / year");
-    await expect(cost).not.toContainText("$");
+    await expect(page.locator("[data-diagnosis]")).toBeVisible();
+    const text = await page.locator("[data-diagnosis]").innerText();
+    expect(text).not.toMatch(/\$\d/);
   });
 
   test("never frames a figure as winnings anywhere on the page", async ({ page }) => {
     const { email } = await makeUserWithAnswers("clean", FULL_ANSWERS);
     await login(page, email);
     await page.goto("/diagnosis");
-    await page.waitForTimeout(2600);
+    await page.waitForTimeout(1_600);
 
     const text = await page.locator("[data-diagnosis]").innerText();
     for (const claim of [/won \$/i, /win \$/i, /profit/i, /\+\s*\$\d/, /\+\d+%/, /earn/i]) {
@@ -155,8 +142,9 @@ test.describe("diagnosis", () => {
     // in. Poll the computed opacity instead.
     await page.waitForFunction(
       () => {
-        const link = Array.from(document.querySelectorAll("a")).find((a) =>
-          a.textContent?.includes("See my plan"),
+        const link = Array.from(document.querySelectorAll("a")).find(
+          (a) =>
+            a.textContent?.includes("See my plan") || a.textContent?.includes("Start practicing"),
         );
         if (!link) return false;
         const staged = link.closest("[data-diagnosis] > *") ?? link;
@@ -170,8 +158,7 @@ test.describe("diagnosis", () => {
 
     // And nothing disappears afterwards.
     await page.waitForTimeout(1_000);
-    await expect(page.locator("[data-leak-headline]")).toBeVisible();
-    await expect(page.locator("[data-cost]")).toBeVisible();
+    await expect(page.getByText(/Where you stand/i)).toBeVisible();
     await expect(page.locator("[data-path]")).toBeVisible();
   });
 
@@ -181,9 +168,11 @@ test.describe("diagnosis", () => {
     await login(page, email);
     await page.goto("/diagnosis");
 
-    // No 2.5s wait: the whole report is up as soon as the page is.
-    await expect(page.locator("[data-leak-headline]")).toBeVisible({ timeout: 1_500 });
-    await expect(page.getByRole("link", { name: /See my plan/ })).toBeVisible({ timeout: 1_500 });
+    // No staged wait: the whole report is up as soon as the page is.
+    await expect(page.getByText(/Where you stand/i)).toBeVisible({ timeout: 1_500 });
+    await expect(page.getByRole("link", { name: /Start practicing/ })).toBeVisible({
+      timeout: 1_500,
+    });
   });
 
   test("fits 390x844 with the CTA reachable", async ({ page }) => {
@@ -191,7 +180,7 @@ test.describe("diagnosis", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await login(page, email);
     await page.goto("/diagnosis");
-    await page.waitForTimeout(2_600);
+    await page.waitForTimeout(1_600);
 
     const overflowX = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -200,14 +189,15 @@ test.describe("diagnosis", () => {
 
     // The CTA must be reachable; the report may scroll vertically, the button
     // must not be lost.
-    const cta = page.getByRole("link", { name: /See my plan/ });
+    const cta = page.getByRole("link", { name: /Start practicing/ });
     await cta.scrollIntoViewIfNeeded();
     await expect(cta).toBeVisible();
   });
 
   test("leads to the paywall, which carries the leak framing", async ({ page }) => {
-    const { email } = await makeUserWithAnswers("paywall", FULL_ANSWERS);
-    await login(page, email);
+    // Unpaid — a subscriber's CTA is practice, not the wall.
+    const { email } = await makeUserWithAnswers("paywall", FULL_ANSWERS, { subscribe: false });
+    await login(page, email, /\/paywall/);
     await page.goto("/diagnosis");
 
     await page.getByRole("link", { name: /See my plan/ }).click();

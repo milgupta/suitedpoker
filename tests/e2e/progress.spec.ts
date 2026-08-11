@@ -111,11 +111,15 @@ test.describe("progress", () => {
 
     await expect(page.locator("[data-section='numbers']")).toBeVisible();
     await expect(page.locator("[data-section='start-here']")).toHaveCount(0);
+    // 10 hands < MIN_HANDS_FOR_STATS (20) — early estimate, not a mature report.
+    await expect(page.locator("[data-section='sample-gate']")).toBeVisible();
+    await expect(page.locator("[data-section='numbers']")).toHaveAttribute("data-early", "true");
 
     const numbers = await page.locator("[data-section='numbers']").innerText();
     console.log(`SEEDED PROGRESS NUMBERS:\n${numbers}`);
     expect(numbers).toContain("50");
     expect(numbers).toContain("90.0");
+    expect(numbers).toMatch(/Early estimate/i);
 
     const attemptsByStreet = await page.evaluate(() => {
       const out: Record<string, string> = {};
