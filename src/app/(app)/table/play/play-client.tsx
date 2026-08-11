@@ -296,7 +296,11 @@ function Hud({ state }: { state: ClientSimState }) {
           </span>
         }
       />
-      <HudStat label="bb/100" value={<AnimatedNumber value={bb100} decimals={1} />} />
+      {/* Only once the sample can carry it — a per-100 rate over a dozen
+          hands swings hundreds of bb and reads as the grader being broken. */}
+      {state.handsPlayed >= 50 && (
+        <HudStat label="bb/100" value={<AnimatedNumber value={bb100} decimals={1} />} />
+      )}
     </div>
   );
 }
@@ -367,7 +371,7 @@ function SessionSummary({ state }: { state: ClientSimState }) {
       <div className="grid grid-cols-3 gap-4">
         <HudStat label="Hands" value={state.handsPlayed} />
         <HudStat label="Net bb" value={state.netBbTotal.toFixed(1)} />
-        <HudStat label="bb/100" value={bb100.toFixed(1)} />
+        <HudStat label="bb/100" value={state.handsPlayed >= 50 ? bb100.toFixed(1) : "—"} />
       </div>
       <div className="flex gap-3">
         <Button variant="accent" size="lg" asChild>

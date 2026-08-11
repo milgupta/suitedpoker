@@ -29,6 +29,12 @@ export interface FeedbackProps {
    */
   nextPending?: boolean;
   /**
+   * Where the numbers behind this grade came from. /methodology promises the
+   * label is "visible in the product rather than buried here" — and the panel
+   * that grades you against the numbers is where it belongs.
+   */
+  source?: { provenance: string; evConfidence: string } | null;
+  /**
    * The AI explanation slot. Passed in rather than fetched here so this stays a
    * presentational component — the styleguide renders it with nothing, and the
    * arena renders it with a live stream.
@@ -122,6 +128,7 @@ export function Feedback({
   chat,
   nextLabel,
   nextPending = false,
+  source,
   explanation,
   showMix = true,
   className,
@@ -248,6 +255,17 @@ export function Feedback({
 
       {/* 6. Ask about this hand (4.4). Never between the user and "next". */}
       {chat}
+
+      {/* 6b. Data provenance — the honest label on the numbers above. */}
+      {source != null && (
+        <p className="text-text-tertiary text-caption text-center" data-source-quality>
+          {source.provenance === "solver-verified"
+            ? "Solver-verified strategy"
+            : "Authored chart, not solver-verified"}
+          {" · EV confidence: "}
+          {source.evConfidence}
+        </p>
+      )}
 
       {/* 7. Next */}
       <Button

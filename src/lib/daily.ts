@@ -123,8 +123,14 @@ export function buildShareText(input: ShareInput): string {
   return lines.join("\n");
 }
 
-/** Day 1 is the launch date, so the number in the share text is stable. */
-export const DAILY_EPOCH = "2026-01-01";
+/**
+ * Day 1 is the LAUNCH date, so the first subscriber's share text reads
+ * "Daily 1" — a day number in the hundreds on day one either looks like a lie
+ * or advertises months nobody played. SET THIS TO THE REAL LAUNCH DATE BEFORE
+ * GOING LIVE; it is on the checklist in docs/LAUNCH.md, and moving it after
+ * launch renumbers everyone's history.
+ */
+export const DAILY_EPOCH = "2026-08-11";
 
 export function dayNumberFor(dateKey: string, epoch: string = DAILY_EPOCH): number {
   const parse = (key: string): number => {

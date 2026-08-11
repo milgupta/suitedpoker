@@ -94,7 +94,6 @@ export function createLiveSession(input: {
   seed: string;
 }): LiveSimState {
   const preset = PRESETS[input.presetId];
-  const seatCount = preset.villains.length + 1;
 
   // Hero always at seat 0; villains fill the rest in preset order.
   const botBySeat: (BotId | null)[] = [null, ...preset.villains];
@@ -117,7 +116,6 @@ export function createLiveSession(input: {
     pendingGrade: null,
   };
 
-  void seatCount;
   return dealNextHand(base, input.seed);
 }
 
@@ -135,7 +133,6 @@ export function dealNextHand(live: LiveSimState, sessionSeed: string): LiveSimSt
 
   const handNumber = live.handNumber + 1;
   const seats = live.botBySeat.length;
-  const button = (live.button % seats) + 1 === seats ? 0 : live.button % seats;
 
   const game = advanceUntilAction(
     createGame({
@@ -149,8 +146,6 @@ export function dealNextHand(live: LiveSimState, sessionSeed: string): LiveSimSt
       seed: `${sessionSeed}:hand:${handNumber}`,
     }),
   );
-
-  void button;
 
   let next: LiveSimState = {
     ...live,

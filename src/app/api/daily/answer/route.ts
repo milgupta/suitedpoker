@@ -204,5 +204,7 @@ export const POST = withEntitlement(async (request, auth) => {
     answeredCount: answered.length,
     finished,
     streak: streakResult,
+    // Post-answer disclosure of data quality — never sent before the decision.
+    source: { provenance: node.provenance, evConfidence: node.confidence.ev },
   });
 });

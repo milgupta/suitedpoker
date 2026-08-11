@@ -33,6 +33,8 @@ interface Answered {
   action: string;
 }
 
+type SourceQuality = { provenance: string; evConfidence: string };
+
 interface NextSpotData {
   spotId: string;
   spot: ClientSpot;
@@ -60,7 +62,9 @@ export function ArenaClient() {
 
   const [spotId, setSpotId] = useState<string | null>(null);
   const [spot, setSpot] = useState<ClientSpot | null>(null);
-  const [result, setResult] = useState<(Grade & { ratingDelta?: number }) | null>(null);
+  const [result, setResult] = useState<
+    (Grade & { ratingDelta?: number; source?: SourceQuality | null }) | null
+  >(null);
   const [answeredAction, setAnsweredAction] = useState<string | null>(null);
   const [history, setHistory] = useState<Answered[]>([]);
   const [loading, setLoading] = useState(true);
@@ -176,6 +180,7 @@ export function ArenaClient() {
       ratingDelta: number;
       hintsUsed?: number;
       attemptId?: string | null;
+      source?: SourceQuality | null;
     };
     setResult(graded);
     setAttemptId(graded.attemptId ?? null);
@@ -448,6 +453,7 @@ export function ArenaClient() {
               ratingDelta={result.ratingDelta ?? 0}
               onNext={next}
               nextPending={loading}
+              source={result.source}
               showMix={false}
               explanation={
                 spotId === null ? undefined : (

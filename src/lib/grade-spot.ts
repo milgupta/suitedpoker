@@ -35,6 +35,28 @@ export function gradeSpot(
   return gradePreflop(node, spot.handKey, action as PreflopActionName);
 }
 
+/**
+ * Where the numbers behind a grade came from, for the feedback panel.
+ *
+ * /methodology promises "every spot carries a confidence rating and a
+ * provenance label, and both are visible in the product" — and the one place
+ * a user is actually graded against low-confidence EVs was the one place
+ * without the label. Post-answer only: this discloses data quality, never the
+ * strategy.
+ */
+export function sourceQualityForSpot(
+  data: SolutionData,
+  spot: Spot,
+  configType: "preflop" | "postflop",
+): { provenance: string; evConfidence: string } | null {
+  const node =
+    configType === "postflop"
+      ? data.postflop.find((t) => t.id === spot.nodeRef)
+      : data.preflop.find((n) => nodeRefOf(n.heroPos, n.actionSeq) === spot.nodeRef);
+  if (node === undefined) return null;
+  return { provenance: node.provenance, evConfidence: node.confidence.ev };
+}
+
 /** Strategy mix + best action for hints, shared by preflop and postflop. */
 export function strategyForSpot(
   data: SolutionData,

@@ -48,6 +48,7 @@ interface AnswerResponse extends Grade {
   answeredCount: number;
   finished: boolean;
   streak: { count: number; freezeApplied: boolean; milestone: number | null } | null;
+  source?: { provenance: string; evConfidence: string } | null;
 }
 
 function hydrateResults(answered: TodayAnswered[]): DailySpotResult[] {
@@ -289,6 +290,7 @@ export function DailyClient() {
       */}
       {result !== null && (
         <Feedback
+          source={result.source}
           result={result}
           explanation={null}
           onNext={next}

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { withEntitlement } from "@/lib/api-guard";
 import { getSession, putSession } from "@/lib/sessionstore";
 import { loadSolutionData } from "@/lib/solution-data";
-import { gradeSpot } from "@/lib/grade-spot";
+import { gradeSpot, sourceQualityForSpot } from "@/lib/grade-spot";
 import { generateSpot } from "@/poker/generator";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
@@ -197,5 +197,7 @@ export const POST = withEntitlement(async (request, auth) => {
     tieredUp: crossedTier,
     hintsUsed: hintLevelReached,
     attemptId,
+    // Post-answer disclosure of data quality — never sent before the decision.
+    source: sourceQualityForSpot(data, spot, stored.config.type),
   });
 });
