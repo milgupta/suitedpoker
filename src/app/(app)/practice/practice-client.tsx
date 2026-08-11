@@ -14,6 +14,13 @@ const HUB = {
   table: "/brand/hub/hub-table.png",
 } as const;
 
+/*
+ * Both focus sessions are longer than their pools (13 postflop templates,
+ * 8 vs-3bet nodes), which is fine ONLY because the server's recency window
+ * cycles the whole pool before any situation repeats — a repeat arrives with a
+ * different dealt hand, at least a full pool-cycle later. If a pool ever
+ * shrinks below ~5, shorten the session instead of trusting the window.
+ */
 const POSTFLOP_FOCUS = buildArenaLink({
   config: { type: "postflop", tags: ["dry", "ace-high", "wet", "connected"] },
   length: 20,
@@ -54,7 +61,7 @@ export function PracticeView() {
           <HubCard
             href="/arena"
             title="Arena"
-            description="Endless adaptive drills. Difficulty follows your rating."
+            description="Twenty-hand adaptive sessions. Difficulty follows your rating."
             cta="Open arena"
             imageSrc={HUB.arena}
             dataQuick="Arena"
