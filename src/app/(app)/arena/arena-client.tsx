@@ -41,7 +41,15 @@ interface NextSpotData {
   leakTag?: string | null;
 }
 
-const DEFAULT_PRESET: ArenaPreset = { config: { type: "preflop" } };
+/**
+ * The open Arena deals 20-hand sessions, not an endless feed. Endless was the
+ * old default, which made the fully-built SessionSummary unreachable from the
+ * main practice mode — nobody ever saw their accuracy, distribution or worst
+ * hands without arriving through a deep link. Twenty ends at a summary with
+ * "Keep going" starting a fresh twenty; deep-linked presets keep whatever
+ * length (or endlessness) they asked for.
+ */
+const DEFAULT_PRESET: ArenaPreset = { config: { type: "preflop" }, length: 20 };
 
 /**
  * Module scope on purpose. The React Compiler treats a Date.now() call inside a
@@ -640,7 +648,7 @@ function SessionSummary({
 
       <div className="flex flex-wrap gap-3">
         <Button variant="primary" size="lg" onClick={onRestart}>
-          Play again
+          Keep going
         </Button>
         {returnTo !== undefined && (
           <Button
