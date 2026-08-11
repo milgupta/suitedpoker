@@ -9,13 +9,9 @@ import { GradeBadge } from "@/components/ui/grade-badge";
 import { Streak } from "@/components/ui/streak";
 import { SegmentedMeter } from "@/components/ui/segmented-meter";
 import { AnimatedNumber, Shimmer } from "@/components/motion";
-import { Feedback, SpotTable } from "@/components/poker";
+import { DrillSurface, Feedback } from "@/components/poker";
 import { buildShareText, MAX_DAILY_SCORE, type DailySpotResult } from "@/lib/daily";
 import { capture } from "@/lib/analytics-client";
-import { cn } from "@/lib/utils";
-import { actionLabel } from "@/lib/action-label";
-import { actionGridClass } from "@/lib/action-grid";
-import { missingActionTip, TRAINER_ACTIONS_CAPTION } from "@/lib/spot-situation";
 import { APP_HOME } from "@/lib/app-chrome";
 
 /**
@@ -199,8 +195,6 @@ export function DailyClient() {
 
   const spot = today.spots[index];
   const progressValue = result !== null ? index + 1 : index;
-  const actionGapTip =
-    result !== null && spot !== undefined ? missingActionTip(spot.legalActions) : null;
 
   return (
     <div className="flex flex-col gap-5" data-daily>
@@ -236,65 +230,35 @@ export function DailyClient() {
       )}
 
       {spot !== undefined && (
-        <>
-          {/*
-            Drawn as a table, the same as the arena — a daily spot is a drill
-            spot and there is no reason for the two to look like two products.
+        /*
+          The game surface, the same as the arena — a daily spot is a drill
+          spot and there is no reason for the two to look like two products.
 
-            `Card` is a BRANDED NUMBER and already the right type on the wire.
-            Stringifying each one and feeding it back through cardsFromString
-            threw `not a card: "43"` and blanked the whole daily behind the
-            error boundary. 7.1 fixed exactly this in the arena; the same line
-            survived here. SpotTable takes the cards as they arrive.
-          */}
-          <SpotTable
-            seats={spot.seats}
-            heroPos={spot.heroPos}
-            heroCards={spot.heroCards}
-            board={spot.board}
-            potBb={spot.potBb}
-            effStackBb={spot.effStackBb}
-            actionHistory={spot.actionHistory}
-          />
+          `Card` is a BRANDED NUMBER and already the right type on the wire.
+          Stringifying each one and feeding it back through cardsFromString
+          threw `not a card: "43"` and blanked the whole daily behind the
+          error boundary. 7.1 fixed exactly this in the arena; the same line
+          survived here. DrillSurface takes the cards as they arrive.
 
-          <div className={cn("grid gap-2.5", actionGridClass(spot.legalActions.length))}>
-            <p className="text-text-tertiary text-caption col-span-full text-center text-balance">
-              {TRAINER_ACTIONS_CAPTION}
-            </p>
-            {spot.legalActions.map((action) => (
-              <Button
-                key={action}
-                variant="action"
-                size="action"
-                disabled={result !== null || answering}
-                data-action={action}
-                onClick={() => void answer(action)}
-                className="w-full"
-              >
-                {actionLabel(action)}
-              </Button>
-            ))}
-          </div>
-
-          {actionGapTip !== null && (
-            <p className="text-text-tertiary text-caption text-center" data-missing-action-tip>
-              {actionGapTip}
-            </p>
-          )}
-        </>
-      )}
-
-      {/*
-        Always show Feedback after an answer — including the fifth hand.
-        Summary opens only when the player taps Done on that last grade.
-      */}
-      {result !== null && (
-        <Feedback
-          source={result.source}
-          result={result}
-          explanation={null}
-          onNext={next}
-          nextLabel={result.finished ? "Done" : "Next hand"}
+          Feedback always follows an answer — including the fifth hand. The
+          summary opens only when the player taps Done on that last grade.
+        */
+        <DrillSurface
+          spot={spot}
+          onAction={(action) => void answer(action)}
+          answered={result !== null}
+          actionsDisabled={answering}
+          feedback={
+            result === null ? undefined : (
+              <Feedback
+                source={result.source}
+                result={result}
+                explanation={null}
+                onNext={next}
+                nextLabel={result.finished ? "Done" : "Next hand"}
+              />
+            )
+          }
         />
       )}
     </div>

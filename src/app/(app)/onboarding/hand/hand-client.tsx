@@ -7,15 +7,11 @@ import type { ClientSpot } from "@/poker/generator";
 import type { Grade } from "@/poker/grader";
 import { Button } from "@/components/ui/button";
 import { Shimmer } from "@/components/motion";
-import { Explanation, Feedback, FrequencyCapsules, SpotTable } from "@/components/poker";
+import { DrillSurface, Explanation, Feedback, FrequencyCapsules } from "@/components/poker";
 import { capsuleSegments } from "@/lib/action-grid";
 import { capture } from "@/lib/analytics-client";
-import { actionGridClass } from "@/lib/action-grid";
-import { cn } from "@/lib/utils";
-import { actionLabel } from "@/lib/action-label";
 import { fadeUp } from "@/lib/motion";
 import { DEMO_INTRO, DEMO_OUTRO_CTA } from "@/lib/demo-hand";
-import { missingActionTip, TRAINER_ACTIONS_CAPTION } from "@/lib/spot-situation";
 
 /**
  * The one hand, played before the wall.
@@ -134,7 +130,6 @@ export function HandClient() {
 
   const segments =
     result === null || spot === null ? [] : capsuleSegments(spot.legalActions, result);
-  const limpTip = result !== null && spot !== null ? missingActionTip(spot.legalActions) : null;
 
   if (phase === "intro") {
     return (
@@ -183,72 +178,46 @@ export function HandClient() {
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-5">
       {/* The hand itself, rendered with the same components the paid product
-          uses — the same table, the same cards. Swapping in a lighter mock here
-          would make the demo a lie, and this is the one hand that decides
+          uses — the same surface, the same cards. Swapping in a lighter mock
+          here would make the demo a lie, and this is the one hand that decides
           whether anybody pays. */}
-      <SpotTable
-        seats={spot.seats}
-        heroPos={spot.heroPos}
-        heroCards={spot.heroCards}
-        board={spot.board}
-        potBb={spot.potBb}
-        effStackBb={spot.effStackBb}
-        actionHistory={spot.actionHistory}
+      <DrillSurface
+        spot={spot}
+        onAction={(action) => void answer(action)}
+        answered={result !== null}
+        capsules={
+          result === null ? undefined : (
+            <FrequencyCapsules segments={segments} topAction={result.topAction} revealed />
+          )
+        }
+        belowActions={
+          error === "" ? undefined : (
+            <p role="alert" className="text-grade-mistake text-body-md text-center">
+              {error}
+            </p>
+          )
+        }
+        feedback={
+          result === null ? undefined : (
+            <Feedback
+              result={result}
+              ratingDelta={0}
+              onNext={finish}
+              nextLabel={DEMO_OUTRO_CTA}
+              explanation={
+                spotId === null ? undefined : (
+                  <Explanation
+                    key={spotId}
+                    spotId={spotId}
+                    action={answeredAction ?? ""}
+                    grade={result.grade}
+                  />
+                )
+              }
+            />
+          )
+        }
       />
-
-      {result !== null && (
-        <FrequencyCapsules segments={segments} topAction={result.topAction} revealed />
-      )}
-
-      <div className={cn("grid gap-2.5", actionGridClass(spot.legalActions.length))}>
-        <p className="text-text-tertiary text-caption col-span-full text-center text-balance">
-          {TRAINER_ACTIONS_CAPTION}
-        </p>
-        {spot.legalActions.map((action) => (
-          <Button
-            key={action}
-            data-action={action}
-            variant="action"
-            size="action"
-            disabled={result !== null}
-            onClick={() => void answer(action)}
-            className="w-full"
-          >
-            {actionLabel(action)}
-          </Button>
-        ))}
-      </div>
-
-      {limpTip !== null && (
-        <p className="text-text-tertiary text-caption text-center" data-missing-action-tip>
-          {limpTip}
-        </p>
-      )}
-
-      {error !== "" && (
-        <p role="alert" className="text-grade-mistake text-body-md">
-          {error}
-        </p>
-      )}
-
-      {result !== null && (
-        <Feedback
-          result={result}
-          ratingDelta={0}
-          onNext={finish}
-          nextLabel={DEMO_OUTRO_CTA}
-          explanation={
-            spotId === null ? undefined : (
-              <Explanation
-                key={spotId}
-                spotId={spotId}
-                action={answeredAction ?? ""}
-                grade={result.grade}
-              />
-            )
-          }
-        />
-      )}
     </div>
   );
 }
