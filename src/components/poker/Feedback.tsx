@@ -24,6 +24,11 @@ export interface FeedbackProps {
   /** Overrides "Next hand" — the demo hand's one CTA leads to the diagnosis. */
   nextLabel?: string;
   /**
+   * True while the next hand is still in flight. With prefetch this is rare —
+   * but when it happens the button must say so rather than swallow clicks.
+   */
+  nextPending?: boolean;
+  /**
    * The AI explanation slot. Passed in rather than fetched here so this stays a
    * presentational component — the styleguide renders it with nothing, and the
    * arena renders it with a live stream.
@@ -116,6 +121,7 @@ export function Feedback({
   onNext,
   chat,
   nextLabel,
+  nextPending = false,
   explanation,
   showMix = true,
   className,
@@ -244,9 +250,17 @@ export function Feedback({
       {chat}
 
       {/* 7. Next */}
-      <Button variant="primary" size="lg" className="w-full" onClick={onNext}>
-        {nextLabel ?? "Next hand"}
-        {nextLabel === undefined && <span className="text-caption opacity-60">Space</span>}
+      <Button
+        variant="primary"
+        size="lg"
+        className="w-full"
+        onClick={onNext}
+        disabled={nextPending}
+      >
+        {nextPending ? "Dealing…" : (nextLabel ?? "Next hand")}
+        {nextLabel === undefined && !nextPending && (
+          <span className="text-caption opacity-60">Space</span>
+        )}
       </Button>
     </motion.section>
   );

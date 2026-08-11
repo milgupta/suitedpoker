@@ -33,6 +33,12 @@ interface Answered {
   action: string;
 }
 
+interface NextSpotData {
+  spotId: string;
+  spot: ClientSpot;
+  leakTag?: string | null;
+}
+
 const DEFAULT_PRESET: ArenaPreset = { config: { type: "preflop" } };
 
 /**
@@ -69,6 +75,39 @@ export function ArenaClient() {
   const hintLevel = useRef(0);
   /** Set in `next()` before fetch — never read a render-time ref copy. */
   const advancingRef = useRef(false);
+  /**
+   * The next spot, requested the moment an answer is graded — while the user
+   * reads their feedback. That reading time used to be pure idle, and then
+   * "Next hand" paid the whole server round trip on the click. With the
+   * prefetch, the click usually swaps a spot that is already here. Resolves to
+   * null on any failure so a stored rejection can never surface as an
+   * unhandled one; loadNext retries with a fresh fetch in that case.
+   */
+  const prefetchRef = useRef<Promise<NextSpotData | null> | null>(null);
+
+  const fetchNextSpot = useCallback(async (): Promise<NextSpotData> => {
+    const response = await fetch("/api/drills/next", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ config: preset.config }),
+    });
+    if (!response.ok) {
+      throw new Error(response.status === 402 ? "lapsed" : "load_failed");
+    }
+    return (await response.json()) as NextSpotData;
+  }, [preset.config]);
+
+  const applySpot = useCallback((data: NextSpotData) => {
+    setResult(null);
+    setAnsweredAction(null);
+    setAttemptId(null);
+    setChatOpen(false);
+    setSpotId(data.spotId);
+    setSpot(data.spot);
+    setLeakFocus(data.leakTag ?? null);
+    hintLevel.current = 0;
+    startedAt.current = nowMs();
+  }, []);
 
   const loadNext = useCallback(async () => {
     // Remember whether we were leaving a graded hand. Clearing the grade
@@ -81,44 +120,18 @@ export function ArenaClient() {
     setError("");
 
     try {
-      const response = await fetch("/api/drills/next", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ config: preset.config }),
-      });
-
-      if (!response.ok) {
-        setError(
-          response.status === 402
-            ? "Your subscription has lapsed."
-            : "Could not load the next hand. Try again.",
-        );
-        if (advancing) {
-          setSpot(null);
-          setSpotId(null);
-          setResult(null);
-          setAnsweredAction(null);
-          setAttemptId(null);
-        }
-        return;
-      }
-
-      const data = (await response.json()) as {
-        spotId: string;
-        spot: ClientSpot;
-        leakTag?: string | null;
-      };
-      setResult(null);
-      setAnsweredAction(null);
-      setAttemptId(null);
-      setChatOpen(false);
-      setSpotId(data.spotId);
-      setSpot(data.spot);
-      setLeakFocus(data.leakTag ?? null);
-      hintLevel.current = 0;
-      startedAt.current = nowMs();
-    } catch {
-      setError("Could not reach the server.");
+      // A prefetched spot swaps in immediately; a failed or absent prefetch
+      // falls back to fetching now.
+      const prefetched = prefetchRef.current === null ? null : await prefetchRef.current;
+      prefetchRef.current = null;
+      const data = prefetched ?? (await fetchNextSpot());
+      applySpot(data);
+    } catch (error) {
+      setError(
+        error instanceof Error && error.message === "lapsed"
+          ? "Your subscription has lapsed."
+          : "Could not load the next hand. Try again.",
+      );
       if (advancing) {
         setSpot(null);
         setSpotId(null);
@@ -130,7 +143,7 @@ export function ArenaClient() {
       advancingRef.current = false;
       setLoading(false);
     }
-  }, [preset.config]);
+  }, [fetchNextSpot, applySpot]);
 
   useEffect(() => {
     capture("drill_started", {
@@ -168,6 +181,14 @@ export function ArenaClient() {
     setAttemptId(graded.attemptId ?? null);
     setAnsweredAction(action);
     setHistory((h) => [...h, { spot, result: graded, action }]);
+
+    // Start fetching the next spot NOW, while the feedback is being read —
+    // unless this answer just completed a fixed-length session, where dealing
+    // another hand would burn a spot nobody will play.
+    const playedAfterThis = history.length + 1;
+    if (preset.length === undefined || playedAfterThis < preset.length) {
+      prefetchRef.current = fetchNextSpot().catch(() => null);
+    }
 
     capture("drill_answered", {
       grade: graded.grade,
@@ -214,6 +235,9 @@ export function ArenaClient() {
   }
 
   function next(): void {
+    // Re-entry guard: the Space shortcut and a slow advance can otherwise
+    // stack a second fetch on top of the first.
+    if (loading || advancingRef.current) return;
     const played = history.length;
     if (preset.length !== undefined && played >= preset.length) {
       setFinished(true);
@@ -343,8 +367,11 @@ export function ArenaClient() {
         </div>
       )}
 
-      {/* Error first: a failed load must never sit behind an eternal skeleton. */}
-      {error !== "" && spot === null ? null : loading || spot === null ? (
+      {/* Error first: a failed load must never sit behind an eternal skeleton.
+          The skeleton renders only when there is NO spot on screen (first
+          load, or a failed advance) — while a slow next-spot request runs, the
+          just-played table stays up instead of collapsing into shimmer. */}
+      {error !== "" && spot === null ? null : spot === null ? (
         /*
          * The skeleton mirrors SpotTable's GEOMETRY, not just its existence.
          *
@@ -420,6 +447,7 @@ export function ArenaClient() {
               result={result}
               ratingDelta={result.ratingDelta ?? 0}
               onNext={next}
+              nextPending={loading}
               showMix={false}
               explanation={
                 spotId === null ? undefined : (

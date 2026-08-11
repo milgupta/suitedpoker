@@ -289,7 +289,11 @@ export async function limit(
     return rule.kind === "calendarDay"
       ? await limitCalendarDay(identifier, rule, cost, nowMs)
       : await limitSliding(identifier, rule, cost, nowMs);
-  } catch {
+  } catch (error) {
+    // Logged, never silent: a closed rule degrading here presents to the user
+    // as a 429 with no cause, and a bare catch is how 7.3 lost a month of
+    // subscription rows.
+    console.warn(`[ratelimit] ${rule.key} degraded (${rule.failMode})`, error);
     // A cost-bearing rule fails CLOSED: an outage is precisely when an
     // unmetered AI endpoint would drain the budget.
     const resetAt =

@@ -3,8 +3,10 @@ import "server-only";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { dailyChallenges } from "@/db/schema";
-import { loadSolutionData } from "@/lib/solution-data";
+import { loadAllSolutionData, loadSolutionData } from "@/lib/solution-data";
 import { generateSpot, type Spot } from "@/poker/generator";
+import type { HandKey } from "@/poker/range";
+import type { HeroPosition } from "@/poker/solutions";
 import { DAILY_DIFFICULTIES, seedForDate } from "@/lib/daily";
 
 /**
@@ -56,6 +58,39 @@ type ChallengeRow = {
   id: string;
   spotRefs: { seed: string; nodeRef: string; handKey: string; difficulty: number }[];
 };
+
+/**
+ * The five spots of an ALREADY-CREATED challenge, regenerated from its stored
+ * refs — never from a fresh buildDailySpots run.
+ *
+ * The distinction is what survives a deploy. buildDailySpots is deterministic
+ * in the date AND the solution data: repairing one EV column changes the
+ * difficulty search, which changes which node the generator picks — and the
+ * old code compared that fresh rebuild against the stored refs and returned
+ * 409 for every answer until midnight. Found live: the day the limp EVs were
+ * repaired, the whole daily 409'd. The stored refs carry the seed, node and
+ * hand; pinning all three regenerates the spot the user was actually shown.
+ *
+ * Regeneration reads the FULL data set: if a node is quarantined mid-day, the
+ * user who already started the challenge is graded against what they saw, not
+ * cut off.
+ */
+export function challengeSpots(challenge: ChallengeRow): Spot[] {
+  const data = loadAllSolutionData();
+  return challenge.spotRefs.map((ref) => {
+    const [heroPos, actionSeq] = ref.nodeRef.split(":");
+    return generateSpot(
+      {
+        type: "preflop",
+        heroPos: heroPos as HeroPosition,
+        actionSeq,
+        forceHandKey: ref.handKey as HandKey,
+      },
+      data,
+      ref.seed,
+    );
+  });
+}
 
 /**
  * A challenge row never changes once created, so a warm instance answers from

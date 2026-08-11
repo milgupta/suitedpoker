@@ -38,12 +38,24 @@ export function Explanation({ spotId, action, grade, fetcher, className }: Expla
   const [text, setText] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
   const started = useRef(false);
+  const abortRef = useRef<AbortController | null>(null);
+
+  // Abort the stream when this hand leaves the screen. Without this, clicking
+  // "Next hand" left the NDJSON stream running to completion — a full
+  // guard-chain + model call on the server, contending with the very
+  // /drills/next request the user was waiting on.
+  useEffect(() => {
+    return () => abortRef.current?.abort();
+  }, []);
 
   const run = useCallback(async () => {
     if (started.current) return;
     started.current = true;
     setPhase("streaming");
     setText("");
+
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     const doFetch = fetcher ?? fetch;
 
@@ -52,6 +64,7 @@ export function Explanation({ spotId, action, grade, fetcher, className }: Expla
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ spotId, action }),
+        signal: controller.signal,
       });
 
       if (!response.ok || response.body === null) {
@@ -94,7 +107,9 @@ export function Explanation({ spotId, action, grade, fetcher, className }: Expla
 
       setPhase((current) => (current === "streaming" ? "done" : current));
     } catch {
-      setPhase("failed");
+      // An abort is the component unmounting, not a failure — and setting
+      // state after unmount would be a leak warning anyway.
+      if (!controller.signal.aborted) setPhase("failed");
     }
   }, [spotId, action, fetcher]);
 

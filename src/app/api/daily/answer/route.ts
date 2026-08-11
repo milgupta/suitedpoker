@@ -1,11 +1,11 @@
-import { NextResponse, after } from "next/server";
+import { NextResponse } from "next/server";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { withEntitlement } from "@/lib/api-guard";
 import { getDb } from "@/db";
 import { dailyResults, dailySpotResults, drillAttempts, profiles } from "@/db/schema";
-import { buildDailySpots, ensureChallenge } from "@/lib/daily-server";
-import { loadSolutionData } from "@/lib/solution-data";
+import { challengeSpots, ensureChallenge } from "@/lib/daily-server";
+import { loadAllSolutionData } from "@/lib/solution-data";
 import { grade as gradePreflop } from "@/poker/grader";
 import { nodeRefOf, type PreflopActionName } from "@/poker/solutions";
 import { localDay } from "@/lib/local-day";
@@ -63,12 +63,13 @@ export const POST = withEntitlement(async (request, auth) => {
   const ref = challenge.spotRefs[spotIndex];
   if (ref === undefined) return NextResponse.json({ error: "no_such_spot" }, { status: 400 });
 
-  const data = loadSolutionData();
-  // Rebuild the WHOLE day, not this spot alone: buildDailySpots threads an
-  // accumulating excludeNodeRefs through the sequence, so regenerating one spot
-  // from its seed with a bare config produces a different node.
-  const spot = buildDailySpots(today)[spotIndex];
-  if (spot === undefined || spot.nodeRef !== ref.nodeRef) {
+  // Regenerated from the STORED ref, so the spot graded is the spot served —
+  // even when the solution data changed since the challenge was built. The
+  // full set is read for the same reason: a mid-day quarantine must not cut
+  // off a user who already started, so they are graded against what they saw.
+  const data = loadAllSolutionData();
+  const spot = challengeSpots(challenge)[spotIndex];
+  if (spot === undefined) {
     return NextResponse.json({ error: "spot_mismatch" }, { status: 409 });
   }
   if (!spot.legalActions.includes(action)) {
@@ -170,37 +171,30 @@ export const POST = withEntitlement(async (request, auth) => {
       timeZone,
     );
 
-    // The response already carries the score and the streak, computed above —
-    // neither UPDATE's result is read. after() runs them once the response has
-    // gone out (Vercel keeps the function alive via waitUntil), so the user is
-    // not kept waiting on two writes they will never see. Failures are logged:
-    // a silently lost streak write is the 7.3 bare-catch lesson again.
-    const finalStreak = streakResult;
-    after(async () => {
-      try {
-        await db
-          .update(dailyResults)
-          .set({
-            score: tally.score,
-            evLossTotal: tally.evLossTotal.toFixed(3),
-            completedAt: new Date(),
-          })
-          .where(eq(dailyResults.id, row.id));
-
-        await db
-          .update(profiles)
-          .set({
-            streakCount: finalStreak.count,
-            longestStreak: finalStreak.longest,
-            lastDailyAt: finalStreak.lastPlayedDay,
-            streakFreezeUsedMonth:
-              finalStreak.freezeUsedMonth === null ? null : `${finalStreak.freezeUsedMonth}-01`,
-          })
-          .where(eq(profiles.id, auth.userId));
-      } catch (error) {
-        console.error("[daily/answer] deferred finish writes failed", error);
-      }
-    });
+    // Inline, not deferred: these two writes happen once per DAY, and the very
+    // next /api/daily/today read (a redirect to the summary, a refresh) must
+    // see completed=true. Deferring them saved ~80ms once a day and made that
+    // read a race — the per-answer writes above are where the latency was.
+    await Promise.all([
+      db
+        .update(dailyResults)
+        .set({
+          score: tally.score,
+          evLossTotal: tally.evLossTotal.toFixed(3),
+          completedAt: new Date(),
+        })
+        .where(eq(dailyResults.id, row.id)),
+      db
+        .update(profiles)
+        .set({
+          streakCount: streakResult.count,
+          longestStreak: streakResult.longest,
+          lastDailyAt: streakResult.lastPlayedDay,
+          streakFreezeUsedMonth:
+            streakResult.freezeUsedMonth === null ? null : `${streakResult.freezeUsedMonth}-01`,
+        })
+        .where(eq(profiles.id, auth.userId)),
+    ]);
   }
 
   return NextResponse.json({
