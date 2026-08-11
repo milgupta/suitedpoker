@@ -7,6 +7,7 @@ import { dailyResults, dailySpotResults, drillAttempts, profiles } from "@/db/sc
 import { challengeSpots, ensureChallenge } from "@/lib/daily-server";
 import { loadAllSolutionData } from "@/lib/solution-data";
 import { grade as gradePreflop } from "@/poker/grader";
+import { capGradeForConfidence } from "@/lib/grade-spot";
 import { nodeRefOf, type PreflopActionName } from "@/poker/solutions";
 import { localDay } from "@/lib/local-day";
 import { completeDaily } from "@/lib/streak";
@@ -79,7 +80,12 @@ export const POST = withEntitlement(async (request, auth) => {
   const node = data.preflop.find((n) => nodeRefOf(n.heroPos, n.actionSeq) === spot.nodeRef);
   if (node === undefined) return NextResponse.json({ error: "node_missing" }, { status: 500 });
 
-  const result = gradePreflop(node, spot.handKey, action as PreflopActionName);
+  // Same confidence cap as the arena: the daily grading the identical node a
+  // level harsher than the arena would be two standards for one strategy.
+  const result = capGradeForConfidence(
+    gradePreflop(node, spot.handKey, action as PreflopActionName),
+    node.confidence,
+  );
 
   // The result row for this user and challenge: upsert-with-returning, one
   // round trip whether or not it already existed. The `set` is a no-op that

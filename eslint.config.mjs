@@ -71,6 +71,9 @@ const eslintConfig = defineConfig([
 
   globalIgnores([
     ".next/**",
+    // Agent worktrees are whole checkouts of this repo; linting them from the
+    // main tree double-lints everything and flakes while an agent mid-edit.
+    ".claude/worktrees/**",
     // Deleting .next in place loses a race with iCloud sync, which keeps
     // recreating "name 2" duplicates inside it mid-delete. The workaround is
     // to mv it aside and rm in the background — so half-deleted trash dirs
