@@ -27,6 +27,8 @@ interface SimState {
   handNumber: number;
   handComplete: boolean;
   sessionComplete: boolean;
+  /** True when the completed hand reached a real showdown. */
+  wentToShowdown?: boolean;
   actionOn: number | null;
   heroSeat: number;
   potBb: number;
@@ -148,7 +150,13 @@ test.describe("table sim", () => {
     const raw = started.raw;
     responses.push(raw);
 
-    // Play three full hands, folding — no showdown, so NOTHING may show.
+    // Play three full hands, folding or checking as hero. The hero folding
+    // does NOT guarantee no showdown any more — the remaining bots play the
+    // hand out among themselves and can legitimately show down (a table where
+    // everyone's cards stayed secret after a real showdown would be the bug).
+    // What must hold, on every single response: nothing before the hand is
+    // complete, nothing when no showdown happened, and a FOLDED seat's cards
+    // never, in any state.
     for (let hand = 0; hand < 3; hand++) {
       let guard = 0;
       while (!state.handComplete) {
@@ -174,11 +182,15 @@ test.describe("table sim", () => {
       if (parsed.state === undefined) continue;
       for (const seat of parsed.state.seats) {
         if (seat.isHero) continue;
-        // These hands ended in folds, so there was no showdown: every villain
-        // card in every response of the entire session must be null.
+        const mayShow =
+          parsed.state.handComplete &&
+          parsed.state.wentToShowdown === true &&
+          seat.status !== "folded";
+        if (mayShow) continue;
         expect(
           seat.holeCards,
-          `response ${index}: seat ${seat.seat} (${seat.status}) leaked cards`,
+          `response ${index}: seat ${seat.seat} (${seat.status}) leaked cards ` +
+            `(complete=${parsed.state.handComplete}, showdown=${String(parsed.state.wentToShowdown)})`,
         ).toBeNull();
       }
     }

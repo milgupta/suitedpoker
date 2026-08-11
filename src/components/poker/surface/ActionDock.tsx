@@ -24,6 +24,13 @@ export interface DockAction {
   /** What a person reads: "Call 2", "Raise to 6". */
   label: string;
   disabled?: boolean;
+  /**
+   * Sim only: tapping this action opens the sizing expander instead of firing
+   * `onAction`, so "Raise" can be a labelled button rather than a bare icon.
+   * Requires `sizing`; when any action carries it, the standalone expander
+   * button is not rendered — two entry points to one panel is clutter.
+   */
+  opensSizing?: boolean;
 }
 
 export type ActionDockProps =
@@ -150,6 +157,7 @@ function ActionsRow({
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const open = expanded && sizing !== undefined;
+  const hasSizingAction = sizing !== undefined && actions.some((a) => a.opensSizing === true);
 
   return (
     <div className={cn(ACTION_DOCK_ROW_CLASS, "w-full", className)} data-action-dock="actions">
@@ -173,13 +181,17 @@ function ActionsRow({
                 className="text-body-md sm:text-body-lg min-w-0 px-2"
                 data-action={action.id}
                 disabled={action.disabled}
-                onClick={() => onAction(action.id)}
+                onClick={() =>
+                  action.opensSizing === true && sizing !== undefined
+                    ? setExpanded(true)
+                    : onAction(action.id)
+                }
               >
                 <span className="truncate">{action.label}</span>
               </Button>
             ))}
           </div>
-          {sizing !== undefined && (
+          {sizing !== undefined && !hasSizingAction && (
             <Button
               variant="action"
               size="action"

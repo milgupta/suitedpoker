@@ -113,7 +113,13 @@ test.describe("session review", () => {
     const review = JSON.parse(raw) as {
       stats: { hands: number; vpip: number; pfr: number };
       summary: { text: string; source: string };
-      replays: Record<string, { seats: { seat: number; cards: string | null }[] }[]>;
+      replays: Record<
+        string,
+        {
+          description: string;
+          seats: { seat: number; position: string; folded: boolean; cards: string | null }[];
+        }[]
+      >;
     };
 
     console.log(
@@ -126,12 +132,24 @@ test.describe("session review", () => {
     expect(review.stats.vpip).toBe(0);
     expect(review.summary.text.length).toBeGreaterThan(40);
 
-    // Mucked cards stay mucked, even in the review payload.
+    // Mucked cards stay mucked, even in the review payload. A check-down that
+    // reaches a REAL showdown legitimately shows the reachers' cards — from
+    // the step their showdown event happened and never earlier, and a folded
+    // seat's cards never appear at all.
     for (const steps of Object.values(review.replays)) {
-      for (const step of steps) {
+      for (const [stepIndex, step] of steps.entries()) {
         for (const seat of step.seats) {
           if (seat.seat === 0) continue; // hero
-          expect(seat.cards, "a villain's cards reached the review").toBeNull();
+          if (seat.cards === null) continue;
+          expect(seat.folded, "a FOLDED villain's cards reached the review").toBe(false);
+          const shownByNow = steps
+            .slice(0, stepIndex + 1)
+            .some((s) => s.description.startsWith(`${seat.position} shows`));
+          expect(
+            shownByNow,
+            `seat ${seat.seat} (${seat.position}) revealed at step ${stepIndex} ` +
+              `("${step.description}") before any showdown event`,
+          ).toBe(true);
         }
       }
     }

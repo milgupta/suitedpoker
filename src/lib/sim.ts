@@ -1,5 +1,5 @@
 import type { BotId } from "@/poker/bots";
-import { PROFILES } from "@/poker/bots";
+import { botNamesFor } from "@/poker/bot-names";
 import type { GameState, HandEvent, LegalAction, SidePot, Street } from "@/poker/gamestate";
 
 /**
@@ -183,6 +183,30 @@ export interface LiveSimState {
    * mid-hand; absent reads as "none recorded yet".
    */
   readonly pendingDecisions?: readonly SimDecision[];
+  /**
+   * Seat-indexed display names for the bots ("Marcus"), seeded from the
+   * session id at creation so a refresh keeps the table's names. Null at the
+   * hero's seat. Optional because live states stored before the field existed
+   * resume mid-session; readers fall back to `botDisplayNames(sessionId, …)`.
+   */
+  readonly botNames?: readonly (string | null)[];
+}
+
+/* ── Bot display names ───────────────────────────────────────────────────── */
+
+/**
+ * Display names by seat, deterministic in the seed. In production the seed is
+ * the session id, so the same session always seats the same names — the whole
+ * point of seeding rather than randomising per render.
+ */
+export function botDisplayNames(
+  seed: string,
+  botBySeat: readonly (BotId | null)[],
+): (string | null)[] {
+  const villains = botBySeat.filter((b) => b !== null).length;
+  const names = botNamesFor(seed, villains);
+  let next = 0;
+  return botBySeat.map((bot) => (bot === null ? null : (names[next++] ?? null)));
 }
 
 /* ── The client view ─────────────────────────────────────────────────────── */
@@ -206,11 +230,25 @@ export interface ClientAction {
   readonly amount?: number;
 }
 
-/** One bot move, for the client to replay with a human-feeling delay. */
+/**
+ * One bot move, for the client to replay with a human-feeling delay.
+ *
+ * The metadata exists so the replay is honest: the server's returned state is
+ * FINAL, and a client that renders it while the moves are still "thinking"
+ * shows a 3-bet's chips before the 3-bet happens. With the engine's own
+ * TO-amount and street on each move, the client can hold the previous
+ * picture and advance it move by move instead.
+ */
 export interface BotMove {
   readonly seat: number;
   readonly botName: string;
   readonly label: string;
+  /** Engine verb: fold / check / call / bet / raise. */
+  readonly action?: string;
+  /** TO-amount in CHIPS for call/bet/raise, null for fold/check. */
+  readonly toChips?: number | null;
+  /** Board cards already dealt when this move was made. */
+  readonly boardLen?: number;
 }
 
 export interface ClientSimState {
@@ -218,6 +256,8 @@ export interface ClientSimState {
   readonly presetId: PresetId;
   readonly handNumber: number;
   readonly totalHands: number;
+  /** Configured depth in bb — the play screen shows the ungraded notice off it. */
+  readonly stackBb: number;
   readonly version: number;
   readonly street: Street | null;
   readonly board: readonly number[];
@@ -228,7 +268,20 @@ export interface ClientSimState {
   readonly seats: readonly ClientSeat[];
   readonly actionOn: number | null;
   readonly heroSeat: number;
+  /** Which seat wears the dealer button this hand. Null between hands. */
+  readonly buttonSeat: number | null;
   readonly legalActions: readonly ClientAction[];
+  /**
+   * True when the completed hand reached a showdown. Public information — the
+   * reveal itself still goes through `mayReveal`, per seat.
+   */
+  readonly wentToShowdown: boolean;
+  /**
+   * Chips paid out by seat, in bb, once the hand is complete (empty before).
+   * Public at settlement: everyone at a table sees who dragged the pot. The
+   * client uses it to name the winner and count the pot across.
+   */
+  readonly payoutsBb: readonly number[];
   readonly handComplete: boolean;
   readonly sessionComplete: boolean;
   readonly lastResult: SimHandRecord | null;
@@ -263,6 +316,11 @@ export function toClientSimState(
 ): ClientSimState {
   const game = live.game;
 
+  // Seeded display names: stored on the live state at creation, derived from
+  // the session id for states stored before the field existed. Both are the
+  // same arithmetic over the same seed, so a resume never renames the table.
+  const names = live.botNames ?? botDisplayNames(sessionId, live.botBySeat);
+
   // The engine speaks integer chips (2 per bb); the client speaks bb.
   const seats: ClientSeat[] =
     game === null
@@ -274,7 +332,7 @@ export function toClientSimState(
           committedBb: p.committedThisStreet / 2,
           status: p.status,
           isHero: p.seat === live.heroSeat,
-          botName: live.botBySeat[p.seat] == null ? null : PROFILES[live.botBySeat[p.seat]!].name,
+          botName: live.botBySeat[p.seat] == null ? null : (names[p.seat] ?? null),
           holeCards:
             p.holeCards !== null && mayReveal(game, p.seat, live.heroSeat)
               ? [...p.holeCards]
@@ -286,6 +344,7 @@ export function toClientSimState(
     presetId: live.presetId,
     handNumber: live.handNumber,
     totalHands: live.totalHands,
+    stackBb: live.stackBb,
     version: live.version,
     street: game?.street ?? null,
     board: game === null ? [] : [...game.board],
@@ -295,6 +354,10 @@ export function toClientSimState(
     seats,
     actionOn: game?.actionOn ?? null,
     heroSeat: live.heroSeat,
+    buttonSeat: game?.button ?? null,
+    wentToShowdown:
+      game !== null && game.complete && game.history.some((e) => e.kind === "showdown"),
+    payoutsBb: game !== null && game.complete ? game.payouts.map((p) => p / 2) : [],
     // Amounts stay in CHIPS on the wire: the client sends actions back in the
     // same unit it received, so nothing on either side multiplies by two in
     // just one direction. Display formatting divides at the last moment.
@@ -331,14 +394,37 @@ export function describeBotAction(botName: string, event: HandEvent): string {
   }
 }
 
+/**
+ * "a flush" / "two pair" — the hand-strength label as it reads mid-sentence.
+ * "High card" is omitted rather than forced into a phrase; "won at showdown
+ * with high card" reads as the app mocking the player.
+ */
+const HAND_PHRASES: Record<string, string> = {
+  Pair: "a pair",
+  "Two pair": "two pair",
+  "Three of a kind": "three of a kind",
+  Straight: "a straight",
+  Flush: "a flush",
+  "Full house": "a full house",
+  "Four of a kind": "four of a kind",
+  "Straight flush": "a straight flush",
+  "Royal flush": "a royal flush",
+};
+
 export function resultLineFor(
   netBb: number,
   wonAtShowdown: boolean,
   foldedPreflop: boolean,
+  winningHandLabel: string | null = null,
 ): string {
   if (foldedPreflop) return "Folded preflop";
-  if (netBb > 0)
-    return wonAtShowdown ? `Won ${netBb.toFixed(1)}bb at showdown` : `Won ${netBb.toFixed(1)}bb`;
+  if (netBb > 0) {
+    if (!wonAtShowdown) return `Won ${netBb.toFixed(1)}bb`;
+    const phrase = winningHandLabel === null ? undefined : HAND_PHRASES[winningHandLabel];
+    return phrase === undefined
+      ? `Won ${netBb.toFixed(1)}bb at showdown`
+      : `Won ${netBb.toFixed(1)}bb with ${phrase}`;
+  }
   if (netBb < 0) return `Lost ${Math.abs(netBb).toFixed(1)}bb`;
   return "Chopped";
 }
