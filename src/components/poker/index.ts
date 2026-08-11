@@ -29,3 +29,24 @@ export { HintButton, type HintButtonProps, type HintLine } from "./HintButton";
 export { HandHistory, historyLines, potByStreet, type HandHistoryProps } from "./HandHistory";
 export { CoachChat } from "./coach-chat";
 export type { CoachChatProps } from "./coach-chat";
+export {
+  ActionDock,
+  ACTION_DOCK_ROW_CLASS,
+  BoardBand,
+  GameSurface,
+  HeroDock,
+  OpponentStrip,
+  clampSize,
+  formatBb,
+  sizePresets,
+  SIZE_STEP_BB,
+  type ActionDockProps,
+  type ActionDockSizing,
+  type BoardBandProps,
+  type DockAction,
+  type GameSurfaceProps,
+  type HeroDockProps,
+  type OpponentSeatView,
+  type OpponentStripProps,
+  type SizePreset,
+} from "./surface";
