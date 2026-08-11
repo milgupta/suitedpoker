@@ -35,7 +35,7 @@ export function AppNav({
   return (
     <header
       className={cn(
-        "glass glass-blur border-border-strong flex h-14 items-center gap-2 rounded-xl border p-2",
+        "glass glass-blur border-border-strong relative flex h-14 items-center gap-2 rounded-xl border p-2",
         "mb-6",
       )}
       data-app-chrome={mode}
@@ -69,8 +69,11 @@ export function AppNav({
         </div>
       ) : (
         <>
+          {/* Absolutely centred on the BAR, not on the space left over — the
+              wordmark is wider than the settings button, so flex centring sat
+              the links visibly right of the screen's midline. */}
           <nav
-            className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 md:flex"
+            className="absolute top-1/2 left-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-0.5 md:flex"
             aria-label="Product"
           >
             {APP_NAV.map((item) => (
@@ -86,7 +89,7 @@ export function AppNav({
         href="/account"
         className={cn(
           "border-border bg-surface-2 text-text-secondary hover:text-text-primary hover:border-border-strong",
-          "tap-target ml-auto flex size-10 shrink-0 items-center justify-center rounded-full border md:ml-0",
+          "tap-target ml-auto flex size-10 shrink-0 items-center justify-center rounded-full border",
         )}
         aria-label="Account and settings"
         data-cta="account"
