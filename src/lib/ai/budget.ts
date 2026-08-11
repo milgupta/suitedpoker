@@ -27,8 +27,15 @@ import { serverEnv } from "@/lib/env.server";
 
 /** The daily ceiling in USD, overridable per environment. */
 export function dailyBudgetUsd(): number {
-  const configured = Number(process.env.AI_DAILY_BUDGET_USD ?? "");
-  return Number.isFinite(configured) && configured > 0 ? configured : 25;
+  const raw = process.env.AI_DAILY_BUDGET_USD;
+  if (raw === undefined || raw.trim() === "") return 25;
+  const configured = Number(raw);
+  // An unparseable value falls to the default, which is still bounded. An
+  // EXPLICIT zero or negative is returned as 0, which `levelFor` reads as
+  // hard — the documented promise. The previous version folded "0" into the
+  // unset case and quietly ran on the $25 default.
+  if (!Number.isFinite(configured)) return 25;
+  return configured > 0 ? configured : 0;
 }
 
 export const SOFT_CAP_FRACTION = 0.8;
@@ -131,6 +138,112 @@ export async function canGenerate(path: AiPath, now: Date = new Date()): Promise
   const state = await budgetState(now);
   await maybeAlert(state);
   return allowsGeneration(state.level, path);
+}
+
+/* ── per-user fair share ─────────────────────────────────────────────────── */
+
+/**
+ * The global breaker degrades by FEATURE because cutting a paying user off
+ * entirely is indefensible — but with only a global counter, one heavy user
+ * spends the whole pool and the time of day you practise decides whether your
+ * coach is live. The fair-share cap bounds one user's slice of the day: past
+ * it, THAT user gets templates on every path while everyone else stays live,
+ * and the global thresholds keep working as the backstop underneath.
+ *
+ * Unset defaults to $0.50/day — at ~$0.00009 per explanation that is
+ * thousands of model calls, so nobody using the product as a product gets
+ * near it. An EXPLICIT zero or negative value is HARD for everyone, never
+ * unlimited: a misconfigured env var must fail toward spending nothing, and
+ * the product stays usable on templates by design.
+ */
+export function userDailyBudgetUsd(): number {
+  const raw = process.env.AI_USER_DAILY_BUDGET_USD;
+  if (raw === undefined || raw.trim() === "") return 0.5;
+  const configured = Number(raw);
+  if (!Number.isFinite(configured)) return 0.5;
+  return configured > 0 ? configured : 0;
+}
+
+/**
+ * UTC like the global counter, deliberately. The fair share is a cost control
+ * the user is never told about — no "resets at midnight" copy anywhere — so it
+ * files under the same day as the bill it protects. `localDay()` remains the
+ * answer for anything a user is promised.
+ */
+function userSpendKey(day: string, userId: string): string {
+  return `ai:spend:${day}:user:${userId}`;
+}
+
+export async function recordUserSpend(
+  userId: string,
+  costUsd: number,
+  now: Date = new Date(),
+): Promise<void> {
+  if (!(costUsd > 0)) return;
+
+  const day = utcDay(now);
+  const micros = Math.round(costUsd * MICROS);
+
+  try {
+    await getRedis().incrBy(userSpendKey(day, userId), micros);
+    await getRedis().expire(userSpendKey(day, userId), 48 * 60 * 60);
+  } catch {
+    // A Redis outage must not fail the request that already cost the money.
+  }
+}
+
+/** Records against the global counter AND the user's slice, in one call. */
+export async function recordSpendFor(
+  userId: string,
+  costUsd: number,
+  now: Date = new Date(),
+): Promise<void> {
+  await recordSpend(costUsd, now);
+  await recordUserSpend(userId, costUsd, now);
+}
+
+export async function userSpentUsd(userId: string, now: Date = new Date()): Promise<number> {
+  try {
+    const raw = await getRedis().get(userSpendKey(utcDay(now), userId));
+    if (raw === null) return 0;
+    const micros = Number(raw);
+    return Number.isFinite(micros) ? micros / MICROS : 0;
+  } catch {
+    return 0;
+  }
+}
+
+export interface UserBudgetState {
+  readonly spentUsd: number;
+  readonly budgetUsd: number;
+  readonly exhausted: boolean;
+}
+
+export async function userBudgetState(
+  userId: string,
+  now: Date = new Date(),
+): Promise<UserBudgetState> {
+  const budgetUsd = userDailyBudgetUsd();
+  const spentUsd = await userSpentUsd(userId, now);
+  return { spentUsd, budgetUsd, exhausted: budgetUsd <= 0 || spentUsd >= budgetUsd };
+}
+
+/**
+ * The gate the coach routes call: the global breaker first (with its alert),
+ * then the caller's own slice. An over-cap user is refused BOTH paths — their
+ * degradation is by user, which is exactly the point: it is the one shape of
+ * degradation that protects every other user instead of sharing the damage.
+ * The responses they get are the same template fallbacks the breaker serves,
+ * marked `source: "template"` on every surface.
+ */
+export async function canGenerateFor(
+  userId: string,
+  path: AiPath,
+  now: Date = new Date(),
+): Promise<boolean> {
+  if (!(await canGenerate(path, now))) return false;
+  const user = await userBudgetState(userId, now);
+  return !user.exhausted;
 }
 
 /* ── alerting ────────────────────────────────────────────────────────────── */
