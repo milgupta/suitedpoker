@@ -251,14 +251,45 @@ describe("the replay", () => {
     }
   });
 
-  it("never includes a villain's hole cards", () => {
-    // Mucked cards stay mucked, even after the session. What showdown revealed
-    // is in the event text, not in the seat data.
+  it("reveals a villain's cards ONLY from their showdown step onward", () => {
+    // Mucked cards stay mucked, even after the session: a seat with no
+    // showdown event never shows. A seat that legitimately reached showdown
+    // unfolded shows from exactly that step — the sim's mayReveal rule,
+    // replayed over the stored events.
+    let sawReveal = false;
+    for (const hand of real) {
+      const steps = replaySteps(hand);
+      for (const step of steps) {
+        for (const seat of step.seats) {
+          if (seat.seat === hand.heroSeat) continue;
+          const shownBy = hand.history.events.findIndex(
+            (e) => e.kind === "showdown" && e.seat === seat.seat,
+          );
+          // Step i renders the state AFTER event i-1.
+          const reached = shownBy !== -1 && step.index >= shownBy + 1;
+          if (reached) {
+            expect(
+              seat.cards,
+              `hand ${hand.record.handNumber} step ${step.index}: showdown seat ${seat.seat} hidden`,
+            ).not.toBeNull();
+            sawReveal = true;
+          } else {
+            expect(
+              seat.cards,
+              `hand ${hand.record.handNumber} step ${step.index}: seat ${seat.seat} leaked`,
+            ).toBeNull();
+          }
+        }
+      }
+    }
+    expect(sawReveal, "10 call-down hands produced no showdown reveal to test").toBe(true);
+  });
+
+  it("marks hero seats and never mislabels one", () => {
     for (const hand of real) {
       for (const step of replaySteps(hand)) {
         for (const seat of step.seats) {
-          if (seat.seat === hand.heroSeat) continue;
-          expect(seat.cards, `hand ${hand.record.handNumber} step ${step.index}`).toBeNull();
+          expect(seat.isHero).toBe(seat.seat === hand.heroSeat);
         }
       }
     }
@@ -270,6 +301,36 @@ describe("the replay", () => {
       const steps = replaySteps(hand);
       const marked = steps.filter((s) => s.heroEvLoss !== null);
       expect(marked.length, `hand ${hand.record.handNumber}`).toBe(1);
+    }
+  });
+
+  it("attaches every stored decision to the exact hero action step", () => {
+    for (const hand of real) {
+      const steps = replaySteps(hand);
+      const attached = steps.filter((s) => s.decision !== null);
+      expect(attached.length, `hand ${hand.record.handNumber}`).toBe(
+        (hand.record.decisions ?? []).length,
+      );
+      // A decision marker may only sit on a hero action step, and its street
+      // must be the street that step is on.
+      for (const step of attached) {
+        const event = hand.history.events[step.index - 1];
+        expect(event?.kind).toBe("action");
+        if (event?.kind === "action") {
+          expect(event.seat).toBe(hand.heroSeat);
+          expect(step.decision!.street).toBe(event.street);
+        }
+      }
+    }
+  });
+
+  it("stores the best action on every graded decision the review lists", () => {
+    const worst = worstDecisions(real, 100);
+    for (const decision of worst) {
+      expect(
+        decision.bestAction,
+        `hand ${decision.handNumber} lists no best action`,
+      ).not.toBeNull();
     }
   });
 });

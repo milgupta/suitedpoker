@@ -77,7 +77,58 @@ export function isSessionLength(value: unknown): value is SessionLength {
   return typeof value === "number" && (SESSION_LENGTHS as readonly number[]).includes(value);
 }
 
+/* ── Stack depth ─────────────────────────────────────────────────────────── */
+
+/**
+ * The solution set is solved (well, authored) at exactly 100bb. Other depths
+ * are PLAY modes: the engine deals and settles them fine, but grading a 40bb
+ * decision against a 100bb chart would be confidently wrong, so off-depth
+ * sessions carry no grades at all and the UI says so in plain words.
+ */
+export const STACK_DEPTHS = [40, 100, 200] as const;
+export type StackDepth = (typeof STACK_DEPTHS)[number];
+
+export const GRADED_STACK_BB = 100;
+
+export function isStackDepth(value: unknown): value is StackDepth {
+  return typeof value === "number" && (STACK_DEPTHS as readonly number[]).includes(value);
+}
+
+export function isGradedDepth(stackBb: number): boolean {
+  return stackBb === GRADED_STACK_BB;
+}
+
+/** The sentence every off-depth surface shows. One copy, imported everywhere. */
+export const UNGRADED_DEPTH_NOTICE = "Ungraded — the strategy set is calibrated at 100bb.";
+
 /* ── The live session ────────────────────────────────────────────────────── */
+
+/**
+ * One hero decision, graded or honestly not.
+ *
+ * `graded: false` is a first-class outcome, never a silent skip: a decision
+ * the strategy set does not model (a multiway pot, a big-blind check, an
+ * overbet no template prices) carries a written `reason` instead of a guess.
+ */
+export interface SimDecision {
+  readonly street: "preflop" | "flop" | "turn" | "river";
+  /**
+   * Index among the hero's action events in the hand history, so the review
+   * replay can attach this decision to the exact step it happened on.
+   */
+  readonly heroActionIndex: number;
+  /** Solution-vocabulary action (`bet_33`), or the engine verb when unmapped. */
+  readonly chosen: string;
+  readonly graded: boolean;
+  readonly evLoss: number | null;
+  readonly grade: string | null;
+  /** The best action, stored at grade time — the review never recomputes it. */
+  readonly best: string | null;
+  /** The node ref or template id that graded it. */
+  readonly nodeRef: string | null;
+  /** Why the decision is not graded, when `graded` is false. */
+  readonly reason: string | null;
+}
 
 export interface SimHandRecord {
   readonly handNumber: number;
@@ -88,6 +139,13 @@ export interface SimHandRecord {
   /** EV lost on hero's first graded decision, when a solution node covered it. */
   readonly heroEvLoss: number | null;
   readonly grade: string | null;
+  /**
+   * Every hero decision this hand that grading looked at, preflop and
+   * postflop. Absent on rows written before postflop grading existed and on
+   * off-depth play-mode sessions — both read as "nothing graded beyond the
+   * legacy preflop fields".
+   */
+  readonly decisions?: readonly SimDecision[];
 }
 
 /**
@@ -119,6 +177,12 @@ export interface LiveSimState {
    * grading a decision the node no longer describes.
    */
   readonly pendingGrade: { evLoss: number; grade: string } | null;
+  /**
+   * Every decision recorded THIS hand, attached to the record at settlement.
+   * Optional because live states stored before this field existed resume
+   * mid-hand; absent reads as "none recorded yet".
+   */
+  readonly pendingDecisions?: readonly SimDecision[];
 }
 
 /* ── The client view ─────────────────────────────────────────────────────── */

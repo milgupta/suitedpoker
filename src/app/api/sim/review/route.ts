@@ -16,6 +16,7 @@ import {
   type StoredHand,
 } from "@/lib/sim-review";
 import { generateSessionSummary } from "@/lib/sim-review-ai";
+import { GRADED_STACK_BB, isGradedDepth, UNGRADED_DEPTH_NOTICE } from "@/lib/sim";
 import type { HandHistory } from "@/poker/gamestate";
 import type { HeroPosition } from "@/poker/solutions";
 
@@ -63,6 +64,11 @@ export const GET = withEntitlement(async (request, auth) => {
     hands.push({ history: stored, heroSeat: stored.heroSeat ?? 0, record: stored.record });
   }
 
+  // Off-depth sessions are play-mode: nothing was graded during play, so the
+  // review states that plainly rather than showing empty grading sections.
+  const stackBb = (session.config as { stackBb?: number } | null)?.stackBb ?? GRADED_STACK_BB;
+  const graded = isGradedDepth(stackBb);
+
   const stats = computeSessionStats(hands);
   const worst = worstDecisions(hands);
   const leaks = detectLeaks(heroAttempts(hands)).slice(0, 3);
@@ -87,6 +93,11 @@ export const GET = withEntitlement(async (request, auth) => {
 
   return NextResponse.json({
     stats,
+    calibration: {
+      stackBb,
+      graded,
+      notice: graded ? null : UNGRADED_DEPTH_NOTICE,
+    },
     worst,
     leaks: leaks.map((leak) => ({
       ...leak,
