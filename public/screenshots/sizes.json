@@ -14,15 +14,15 @@
     },
     {
       "name": "drill",
-      "png": 336399,
-      "webp": 54722,
-      "avif": 31753
+      "png": 320777,
+      "webp": 51696,
+      "avif": 30155
     },
     {
       "name": "feedback-frequency-bar",
-      "png": 153427,
-      "webp": 38780,
-      "avif": 22487
+      "png": 209385,
+      "webp": 77894,
+      "avif": 42332
     },
     {
       "name": "lesson",
@@ -38,14 +38,14 @@
     },
     {
       "name": "table-sim",
-      "png": 350910,
-      "webp": 34402,
-      "avif": 20089
+      "png": 348766,
+      "webp": 33952,
+      "avif": 19760
     }
   ],
   "total": {
-    "png": 2387415,
-    "webp": 614002,
-    "avif": 336838
+    "png": 2425607,
+    "webp": 649640,
+    "avif": 354756
   }
 }

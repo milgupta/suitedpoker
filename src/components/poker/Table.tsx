@@ -171,6 +171,8 @@ export function seatLayout(count: number, heroIndex: number): { left: number; to
  * next to the seat without painting over the board.
  */
 const BET_CHIP_INSET = 0.58;
+/** Closer to centre for the hero, whose larger avatar would clip the chip. */
+const HERO_BET_CHIP_INSET = 0.42;
 
 /** One sentence above the buttons: whose turn, and how much to call. */
 export function heroActionLine(
@@ -252,13 +254,17 @@ export function PokerTable({
             if (pos === undefined || bigBlind <= 0) return null;
             const betBb = player.committedThisStreet / bigBlind;
             if (betBb <= 0) return null;
+            // The hero's avatar is larger and sits between the pill and the
+            // ring centre; at the shared inset the hero's chip clipped
+            // behind it. Same rule as SpotTable.
+            const inset = player.seat === heroSeat ? HERO_BET_CHIP_INSET : BET_CHIP_INSET;
             return (
               <div
                 key={`bet-${player.seat}`}
                 className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2"
                 style={{
-                  left: `${50 + (pos.left - 50) * BET_CHIP_INSET}%`,
-                  top: `${50 + (pos.top - 50) * BET_CHIP_INSET}%`,
+                  left: `${50 + (pos.left - 50) * inset}%`,
+                  top: `${50 + (pos.top - 50) * inset}%`,
                 }}
                 data-bet-chip={player.seat}
               >

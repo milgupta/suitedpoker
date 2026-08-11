@@ -108,13 +108,18 @@ export function SpotTable({
           if (spot === undefined) return null;
           if (seat.committedBb === null) return null;
 
+          // The hero's avatar is larger and sits between the pill and the
+          // ring centre, so the hero's chip pulls further in than the
+          // villains' — at the shared inset it clipped behind the avatar.
+          const inset = seat.isHero ? 0.42 : 0.58;
+
           return (
             <div
               key={`bet-${seat.seat}`}
               className="absolute -translate-x-1/2 -translate-y-1/2"
               style={{
-                left: `${50 + (spot.left - 50) * 0.58}%`,
-                top: `${50 + (spot.top - 50) * 0.58}%`,
+                left: `${50 + (spot.left - 50) * inset}%`,
+                top: `${50 + (spot.top - 50) * inset}%`,
               }}
             >
               <BetChip amount={formatCommittedBb(seat.committedBb)} />
