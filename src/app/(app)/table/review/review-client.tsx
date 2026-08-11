@@ -8,6 +8,7 @@ import { Shimmer } from "@/components/motion";
 import { GradeBadge } from "@/components/ui/grade-badge";
 import { PlayingCard } from "@/components/poker";
 import { cardsFromString } from "@/poker/cards";
+import { actionLabel, actionPhrase } from "@/lib/action-label";
 import { evColor } from "@/lib/ev-color";
 import type { GradedDecision, ReplayStep, SessionStats } from "@/lib/sim-review";
 import { cn } from "@/lib/utils";
@@ -32,6 +33,7 @@ interface LeakRow {
 
 interface ReviewPayload {
   stats: SessionStats;
+  calibration?: { stackBb: number; graded: boolean; notice: string | null };
   worst: GradedDecision[];
   leaks: LeakRow[];
   summary: { text: string; source: string };
@@ -45,7 +47,7 @@ export function ReviewClient() {
 
   const [review, setReview] = useState<ReviewPayload | null>(null);
   const [failed, setFailed] = useState(false);
-  const [openHand, setOpenHand] = useState<number | null>(null);
+  const [openHand, setOpenHand] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (sessionId === null) return;
@@ -115,6 +117,19 @@ export function ReviewClient() {
       <header>
         <h1 className="text-display-md">Session review</h1>
       </header>
+
+      {/* Play-mode sessions carry no grades and the review says so up front,
+          rather than presenting empty grading sections as a clean bill. */}
+      {review.calibration !== undefined && !review.calibration.graded && (
+        <p
+          className="border-border bg-surface-1 text-text-secondary text-body-md rounded-md border px-3 py-2"
+          data-depth-notice
+        >
+          {review.calibration.notice ?? "Ungraded — the strategy set is calibrated at 100bb."} This{" "}
+          {review.calibration.stackBb}bb session was play-mode: results and stats are real, but no
+          decision was graded.
+        </p>
+      )}
 
       {/* 1 · The numbers */}
       <section className="border-border bg-surface-1 grid grid-cols-3 gap-4 rounded-lg border p-4 sm:grid-cols-6">
@@ -192,43 +207,54 @@ export function ReviewClient() {
               Graded vs chart — not vs how the bots at this table play.
             </p>
           </div>
-          {review.worst.map((decision) => (
-            <div key={decision.handNumber} className="border-border bg-surface-1 rounded-lg border">
-              <button
-                type="button"
-                className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
-                aria-expanded={openHand === decision.handNumber}
-                onClick={() =>
-                  setOpenHand((current) =>
-                    current === decision.handNumber ? null : decision.handNumber,
-                  )
-                }
-              >
-                <span className="flex items-center gap-3">
-                  <span className="text-text-tertiary text-caption font-mono">
-                    #{decision.handNumber}
-                  </span>
-                  {decision.grade !== "" && (
-                    <span className="flex items-center gap-1.5">
-                      <GradeBadge grade={decision.grade as GradeName} size="sm" static />
-                      <span className="text-text-tertiary text-caption">vs chart</span>
-                    </span>
-                  )}
-                  <span className="text-body-sm">{decision.resultLine}</span>
-                </span>
-                <span
-                  className="text-body-sm font-mono tabular-nums"
-                  style={{ color: evColor(decision.evLoss) }}
+          {/* One hand can list two decisions now (preflop AND a postflop one),
+              so rows are keyed and expanded by hand + street, never hand alone. */}
+          {review.worst.map((decision) => {
+            const rowId = `${decision.handNumber}:${decision.street ?? "preflop"}`;
+            return (
+              <div key={rowId} className="border-border bg-surface-1 rounded-lg border">
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+                  aria-expanded={openHand === rowId}
+                  onClick={() => setOpenHand((current) => (current === rowId ? null : rowId))}
                 >
-                  −{decision.evLoss.toFixed(2)}bb
-                </span>
-              </button>
+                  <span className="flex min-w-0 flex-col gap-0.5">
+                    <span className="flex items-center gap-3">
+                      <span className="text-text-tertiary text-caption font-mono">
+                        #{decision.handNumber}
+                      </span>
+                      {decision.grade !== "" && (
+                        <span className="flex items-center gap-1.5">
+                          <GradeBadge grade={decision.grade as GradeName} size="sm" static />
+                          <span className="text-text-tertiary text-caption">vs chart</span>
+                        </span>
+                      )}
+                      <span className="text-body-sm">{decision.resultLine}</span>
+                    </span>
+                    <span className="text-text-tertiary text-caption" data-decision-detail>
+                      {capitalize(decision.street ?? "preflop")}: you chose{" "}
+                      {actionPhrase(decision.chosenAction)}
+                      {decision.bestAction !== null &&
+                        decision.bestAction !== decision.chosenAction && (
+                          <> — best is {actionPhrase(decision.bestAction)}</>
+                        )}
+                    </span>
+                  </span>
+                  <span
+                    className="text-body-sm font-mono tabular-nums"
+                    style={{ color: evColor(decision.evLoss) }}
+                  >
+                    −{decision.evLoss.toFixed(2)}bb
+                  </span>
+                </button>
 
-              {openHand === decision.handNumber && (
-                <Replay steps={review.replays[String(decision.handNumber)] ?? []} />
-              )}
-            </div>
-          ))}
+                {openHand === rowId && (
+                  <Replay steps={review.replays[String(decision.handNumber)] ?? []} />
+                )}
+              </div>
+            );
+          })}
         </section>
       )}
 
@@ -239,6 +265,10 @@ export function ReviewClient() {
       </div>
     </div>
   );
+}
+
+function capitalize(word: string): string {
+  return word.charAt(0).toUpperCase() + word.slice(1);
 }
 
 function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
@@ -286,7 +316,7 @@ function Replay({ steps }: { steps: ReplayStep[] }) {
       )}
 
       {(() => {
-        const hero = step.seats.find((s) => s.cards !== null);
+        const hero = step.seats.find((s) => s.isHero);
         if (hero?.cards == null) return null;
         return (
           <div className="flex items-center gap-2" data-replay-hero>
@@ -299,6 +329,21 @@ function Replay({ steps }: { steps: ReplayStep[] }) {
           </div>
         );
       })()}
+
+      {/* Villains whose showdown this replay has reached — mucked cards never
+          appear here because the payload never contains them. */}
+      {step.seats
+        .filter((seat) => !seat.isHero && seat.cards !== null)
+        .map((seat) => (
+          <div key={seat.seat} className="flex items-center gap-2" data-replay-villain={seat.seat}>
+            <span className="text-text-tertiary text-caption">{seat.position} shows</span>
+            <div className="flex gap-1">
+              {cardsFromString(seat.cards as string).map((card, i) => (
+                <PlayingCard key={i} card={card} size="sm" />
+              ))}
+            </div>
+          </div>
+        ))}
 
       <div className="flex flex-wrap gap-2">
         {step.seats.map((seat) => (
@@ -317,7 +362,26 @@ function Replay({ steps }: { steps: ReplayStep[] }) {
         ))}
       </div>
 
-      {step.heroEvLoss !== null && step.heroEvLoss > 0 && (
+      {step.decision !== null && step.decision.graded && (
+        <p className="text-body-sm" data-replay-decision>
+          Best here: {actionLabel(step.decision.best ?? "")}.
+          {step.decision.evLoss !== null && step.decision.evLoss > 0 ? (
+            <span style={{ color: evColor(step.decision.evLoss) }}>
+              {" "}
+              Your {actionPhrase(step.decision.chosen)} gave up {step.decision.evLoss.toFixed(2)}bb.
+            </span>
+          ) : (
+            <span className="text-text-secondary"> You took it.</span>
+          )}
+        </p>
+      )}
+      {step.decision !== null && !step.decision.graded && step.decision.reason !== null && (
+        <p className="text-text-tertiary text-caption" data-replay-ungraded>
+          Not graded — {step.decision.reason.charAt(0).toLowerCase()}
+          {step.decision.reason.slice(1)}
+        </p>
+      )}
+      {step.decision === null && step.heroEvLoss !== null && step.heroEvLoss > 0 && (
         <p className="text-body-sm" style={{ color: evColor(step.heroEvLoss) }}>
           This decision gave up {step.heroEvLoss.toFixed(2)}bb.
         </p>

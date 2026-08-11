@@ -1,6 +1,7 @@
 import type { HandHistory, HandEvent, Street } from "@/poker/gamestate";
 import type { Attempt, Leak } from "@/poker/grader";
 import type { HandClass } from "@/poker/handclass";
+import type { SimDecision } from "@/lib/sim";
 
 /**
  * The review's arithmetic: session stats, replay steps, and the attempts fed
@@ -22,6 +23,8 @@ export interface StoredHand {
     readonly resultLine: string;
     readonly heroEvLoss: number | null;
     readonly grade: string | null;
+    /** Absent on rows written before postflop grading — treated as ungraded. */
+    readonly decisions?: readonly SimDecision[];
   };
 }
 
@@ -37,6 +40,9 @@ export interface SessionStats {
   readonly pfr: number;
   readonly biggestPotWonBb: number;
   readonly biggestPotLostBb: number;
+  /** How many hero decisions were graded, and how many of those postflop. */
+  readonly gradedDecisions: number;
+  readonly postflopGraded: number;
 }
 
 function heroPreflopActions(hand: StoredHand): HandEvent[] {
@@ -67,9 +73,23 @@ export function computeSessionStats(hands: readonly StoredHand[]): SessionStats 
 
   let biggestWon = 0;
   let biggestLost = 0;
+  let gradedDecisions = 0;
+  let postflopGraded = 0;
   for (const hand of hands) {
     if (hand.record.netBb > biggestWon) biggestWon = hand.record.netBb;
     if (hand.record.netBb < biggestLost) biggestLost = hand.record.netBb;
+
+    const decisions = hand.record.decisions;
+    if (decisions !== undefined) {
+      for (const decision of decisions) {
+        if (!decision.graded) continue;
+        gradedDecisions += 1;
+        if (decision.street !== "preflop") postflopGraded += 1;
+      }
+    } else if (hand.record.heroEvLoss !== null) {
+      // Legacy row: the one preflop grade is all it recorded.
+      gradedDecisions += 1;
+    }
   }
 
   return {
@@ -80,6 +100,8 @@ export function computeSessionStats(hands: readonly StoredHand[]): SessionStats 
     pfr: count === 0 ? 0 : Math.round((pfrCount / count) * 100),
     biggestPotWonBb: round1(biggestWon),
     biggestPotLostBb: round1(Math.abs(biggestLost)),
+    gradedDecisions,
+    postflopGraded,
   };
 }
 
@@ -115,9 +137,11 @@ export function heroActionSeq(hand: StoredHand): string {
 
 export interface GradedDecision {
   readonly handNumber: number;
+  readonly street: Street;
   readonly evLoss: number;
   readonly grade: string;
   readonly chosenAction: string;
+  /** Stored at grade time; null only on rows written before it was stored. */
   readonly bestAction: string | null;
   readonly resultLine: string;
 }
@@ -138,16 +162,22 @@ export function heroAttempts(
     );
     if (first === undefined) continue;
 
+    // Rows that stored their decisions carry the REAL best action; the
+    // `not_<chosen>` marker survives only for rows from before it was stored,
+    // where an imperfect verb beats dropping the sample.
+    const storedPreflop = (hand.record.decisions ?? []).find(
+      (d) => d.street === "preflop" && d.graded,
+    );
+
     attempts.push({
       street: "preflop",
       position: hand.history.positions[hand.heroSeat] ?? "BTN",
       actionSeq: heroActionSeq(hand),
       handClass: handClassOf?.(hand) ?? null,
-      chosenAction: first.action === "check" ? "call" : first.action,
-      // The grader recorded the loss; the best action is not stored per hand,
-      // so the verb heuristic in detectLeaks works off chosen vs best. Absent
-      // a stored best, an imperfect marker beats dropping the sample.
-      bestAction: hand.record.heroEvLoss === 0 ? first.action : `not_${first.action}`,
+      chosenAction: storedPreflop?.chosen ?? (first.action === "check" ? "call" : first.action),
+      bestAction:
+        storedPreflop?.best ??
+        (hand.record.heroEvLoss === 0 ? first.action : `not_${first.action}`),
       evLoss: hand.record.heroEvLoss,
     });
   }
@@ -155,26 +185,50 @@ export function heroAttempts(
   return attempts;
 }
 
-/** The five worst graded decisions, worst first. */
+/**
+ * The five worst graded decisions, worst first — preflop AND postflop where
+ * the hand stored its decisions; the legacy preflop-only fields otherwise, so
+ * sessions played before postflop grading still review without crashing.
+ */
 export function worstDecisions(hands: readonly StoredHand[], limit = 5): GradedDecision[] {
-  return hands
-    .filter((h) => h.record.heroEvLoss !== null && h.record.heroEvLoss > 0)
-    .map((h) => {
-      const first = h.history.events.find(
-        (e): e is Extract<HandEvent, { kind: "action" }> =>
-          e.kind === "action" && e.seat === h.heroSeat && e.street === "preflop",
-      );
-      return {
-        handNumber: h.record.handNumber,
-        evLoss: h.record.heroEvLoss ?? 0,
-        grade: h.record.grade ?? "",
-        chosenAction: first?.action ?? "",
-        bestAction: null,
-        resultLine: h.record.resultLine,
-      };
-    })
-    .sort((a, b) => b.evLoss - a.evLoss)
-    .slice(0, limit);
+  const graded: GradedDecision[] = [];
+
+  for (const hand of hands) {
+    const decisions = hand.record.decisions;
+    if (decisions !== undefined) {
+      for (const decision of decisions) {
+        if (!decision.graded || decision.evLoss === null || decision.evLoss <= 0) continue;
+        graded.push({
+          handNumber: hand.record.handNumber,
+          street: decision.street,
+          evLoss: decision.evLoss,
+          grade: decision.grade ?? "",
+          chosenAction: decision.chosen,
+          bestAction: decision.best,
+          resultLine: hand.record.resultLine,
+        });
+      }
+      continue;
+    }
+
+    // Legacy row: only the first preflop decision was ever graded.
+    if (hand.record.heroEvLoss === null || hand.record.heroEvLoss <= 0) continue;
+    const first = hand.history.events.find(
+      (e): e is Extract<HandEvent, { kind: "action" }> =>
+        e.kind === "action" && e.seat === hand.heroSeat && e.street === "preflop",
+    );
+    graded.push({
+      handNumber: hand.record.handNumber,
+      street: "preflop",
+      evLoss: hand.record.heroEvLoss,
+      grade: hand.record.grade ?? "",
+      chosenAction: first?.action ?? "",
+      bestAction: null,
+      resultLine: hand.record.resultLine,
+    });
+  }
+
+  return graded.sort((a, b) => b.evLoss - a.evLoss).slice(0, limit);
 }
 
 /* ── Replay ──────────────────────────────────────────────────────────────── */
@@ -185,7 +239,12 @@ export interface ReplaySeat {
   readonly stackChips: number;
   readonly committedChips: number;
   readonly folded: boolean;
-  /** Card string like "AhKd"; hero always, villains only if history has them. */
+  readonly isHero: boolean;
+  /**
+   * Card string like "AhKd". Hero always; a villain only FROM the step their
+   * showdown event happened — the same rule the live sim's `mayReveal`
+   * encodes. A hand that ended in folds had no showdown, so nothing shows.
+   */
   readonly cards: string | null;
 }
 
@@ -199,6 +258,8 @@ export interface ReplayStep {
   readonly seats: readonly ReplaySeat[];
   /** Hero's EV loss, shown only on the step where the graded decision happened. */
   readonly heroEvLoss: number | null;
+  /** The hero decision taken ON this step, graded or honestly not. */
+  readonly decision: SimDecision | null;
 }
 
 /**
@@ -216,15 +277,28 @@ export function replaySteps(hand: StoredHand): ReplayStep[] {
   const committedTotal = history.positions.map(() => 0);
   const committedStreet = history.positions.map(() => 0);
   const folded = history.positions.map(() => false);
+  // A villain's cards flip AT their showdown event and stay up. mayReveal's
+  // rule, replayed: a showdown event only exists for a seat that reached it
+  // unfolded, so revealing on it can never show a mucked hand.
+  const revealed = history.positions.map(() => false);
 
   let street: Street = "preflop";
   let board = "";
   let pot = 0;
   let heroActed = false;
+  let heroActionCount = 0;
+
+  const decisionByIndex = new Map<number, SimDecision>(
+    (record.decisions ?? []).map((d) => [d.heroActionIndex, d]),
+  );
 
   const seatLabel = (seat: number): string => history.positions[seat] ?? `Seat ${seat}`;
 
-  const snapshot = (description: string, heroEvLoss: number | null): void => {
+  const snapshot = (
+    description: string,
+    heroEvLoss: number | null,
+    decision: SimDecision | null = null,
+  ): void => {
     steps.push({
       index: steps.length,
       description,
@@ -237,9 +311,12 @@ export function replaySteps(hand: StoredHand): ReplayStep[] {
         stackChips: stacks[seat] ?? 0,
         committedChips: committedStreet[seat] ?? 0,
         folded: folded[seat] ?? false,
-        cards: seat === heroSeat ? (history.holeCards[seat] ?? null) : null,
+        isHero: seat === heroSeat,
+        cards:
+          seat === heroSeat || revealed[seat] === true ? (history.holeCards[seat] ?? null) : null,
       })),
       heroEvLoss,
+      decision,
     });
   };
 
@@ -264,13 +341,22 @@ export function replaySteps(hand: StoredHand): ReplayStep[] {
           event.seat === heroSeat && event.street === "preflop" && !heroActed;
         if (event.seat === heroSeat && event.street === "preflop") heroActed = true;
 
+        const decision =
+          event.seat === heroSeat ? (decisionByIndex.get(heroActionCount) ?? null) : null;
+        if (event.seat === heroSeat) heroActionCount += 1;
+
         if (event.action === "fold") {
           folded[event.seat] = true;
-          snapshot(`${seatLabel(event.seat)} folds`, isHeroFirstPreflop ? record.heroEvLoss : null);
+          snapshot(
+            `${seatLabel(event.seat)} folds`,
+            isHeroFirstPreflop ? record.heroEvLoss : null,
+            decision,
+          );
         } else if (event.action === "check") {
           snapshot(
             `${seatLabel(event.seat)} checks`,
             isHeroFirstPreflop ? record.heroEvLoss : null,
+            decision,
           );
         } else {
           // `amount` is the TO-amount for this street; pay the delta.
@@ -285,11 +371,13 @@ export function replaySteps(hand: StoredHand): ReplayStep[] {
           snapshot(
             `${seatLabel(event.seat)} ${verb}`,
             isHeroFirstPreflop ? record.heroEvLoss : null,
+            decision,
           );
         }
         break;
       }
       case "showdown": {
+        revealed[event.seat] = true;
         snapshot(`${seatLabel(event.seat)} shows ${event.hand} (${event.category})`, null);
         break;
       }
