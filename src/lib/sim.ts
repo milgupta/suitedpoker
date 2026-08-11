@@ -80,25 +80,19 @@ export function isSessionLength(value: unknown): value is SessionLength {
 /* ── Stack depth ─────────────────────────────────────────────────────────── */
 
 /**
- * The solution set is solved (well, authored) at exactly 100bb. Other depths
- * are PLAY modes: the engine deals and settles them fine, but grading a 40bb
- * decision against a 100bb chart would be confidently wrong, so off-depth
- * sessions carry no grades at all and the UI says so in plain words.
+ * Sessions always start at 100bb. The strategy set is authored at that depth
+ * only — 40/200 used to be offered as ungraded play modes and were dropped
+ * from setup rather than ship a choice that does nothing useful. The engine
+ * can still be handed another depth in tests; those sessions stay ungraded
+ * via `isGradedDepth`.
  */
-export const STACK_DEPTHS = [40, 100, 200] as const;
-export type StackDepth = (typeof STACK_DEPTHS)[number];
-
 export const GRADED_STACK_BB = 100;
-
-export function isStackDepth(value: unknown): value is StackDepth {
-  return typeof value === "number" && (STACK_DEPTHS as readonly number[]).includes(value);
-}
 
 export function isGradedDepth(stackBb: number): boolean {
   return stackBb === GRADED_STACK_BB;
 }
 
-/** The sentence every off-depth surface shows. One copy, imported everywhere. */
+/** Shown on play/review if a non-100bb session somehow still exists. */
 export const UNGRADED_DEPTH_NOTICE = "Ungraded — the strategy set is calibrated at 100bb.";
 
 /* ── The live session ────────────────────────────────────────────────────── */

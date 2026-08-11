@@ -3,16 +3,11 @@
 import Link from "next/link";
 import { HubCard, HubCardGrid, HubCardMotion, HubFade } from "@/components/app/HubCard";
 import { buildArenaLink } from "@/lib/arena-preset";
+import { ArenaPreview, DailyPreview } from "./practice-previews";
 
 /**
  * Practice hub — one large card per game type, plus opt-in deeper presets.
  */
-
-const HUB = {
-  daily: "/brand/hub/hub-daily.png",
-  arena: "/brand/hub/hub-arena.png",
-  table: "/brand/hub/hub-table.png",
-} as const;
 
 /*
  * Both focus sessions are longer than their pools (13 postflop templates,
@@ -52,7 +47,7 @@ export function PracticeView() {
             title="Daily challenge"
             description="Five hands, one streak. About three minutes."
             cta="Play today's five"
-            imageSrc={HUB.daily}
+            preview={<DailyPreview />}
             dataCta="daily"
             dataQuick="Daily"
           />
@@ -63,7 +58,7 @@ export function PracticeView() {
             title="Arena"
             description="Twenty-hand adaptive sessions. Difficulty follows your rating."
             cta="Open arena"
-            imageSrc={HUB.arena}
+            preview={<ArenaPreview />}
             dataQuick="Arena"
           />
         </HubCardMotion>
@@ -73,7 +68,8 @@ export function PracticeView() {
             title="Table sim"
             description="A five-handed table session. Review the leaks after."
             cta="Sit down"
-            imageSrc={HUB.table}
+            imageSrc="/brand/hub/hub-table-sim.png"
+            imageAlt="Table sim match in progress"
             dataQuick="Table sim"
           />
         </HubCardMotion>

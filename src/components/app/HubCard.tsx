@@ -9,8 +9,9 @@ import { cn } from "@/lib/utils";
 /**
  * Image-led entry card for the home and practice hubs.
  *
- * Art is optional so the layout ships before AI assets land; a soft azure
- * gradient stands in until `/brand/hub/*.png` exists.
+ * Prefer a live `preview` (real PlayingCards, etc.) when the art should match
+ * the product. `imageSrc` is for product screenshots; a soft azure gradient
+ * stands in when neither is set.
  */
 
 export interface HubCardProps {
@@ -20,6 +21,10 @@ export interface HubCardProps {
   cta: string;
   imageSrc?: string;
   imageAlt?: string;
+  /** CSS object-position when `imageSrc` is a tall product screenshot. */
+  imagePosition?: string;
+  /** Live React preview (e.g. real PlayingCards). Wins over `imageSrc`. */
+  preview?: ReactNode;
   /** Featured hero on home — taller art, accent CTA. */
   featured?: boolean;
   /** `data-quick` / `data-cta` for e2e. */
@@ -35,6 +40,8 @@ export function HubCard({
   cta,
   imageSrc,
   imageAlt = "",
+  imagePosition,
+  preview,
   featured = false,
   dataQuick,
   dataCta,
@@ -56,13 +63,18 @@ export function HubCard({
           featured ? "aspect-[16/10] min-h-[10rem]" : "aspect-square sm:aspect-[16/10]",
         )}
       >
-        {imageSrc ? (
+        {preview ? (
+          <div className="absolute inset-0" aria-hidden>
+            {preview}
+          </div>
+        ) : imageSrc ? (
           <Image
             src={imageSrc}
             alt={imageAlt}
             fill
             sizes={featured ? "(max-width: 1024px) 100vw, 66vw" : "(max-width: 640px) 100vw, 33vw"}
             className="object-cover"
+            style={imagePosition ? { objectPosition: imagePosition } : undefined}
             priority={featured}
           />
         ) : (

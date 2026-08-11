@@ -6,15 +6,11 @@ import { getDb } from "@/db";
 import { simSessions } from "@/db/schema";
 import { createLiveSession, heroLegalActions } from "@/lib/sim-server";
 import { saveLive } from "@/lib/sim-store";
-import { isPresetId, isSessionLength, isStackDepth, toClientSimState } from "@/lib/sim";
+import { GRADED_STACK_BB, isPresetId, isSessionLength, toClientSimState } from "@/lib/sim";
 
 const bodySchema = z.object({
   preset: z.string().refine(isPresetId, "unknown preset"),
   hands: z.number().int().refine(isSessionLength, "unknown session length"),
-  // 40 and 200 are PLAY modes: the engine deals and settles them normally,
-  // but nothing is graded — the strategy set is calibrated at 100bb, and the
-  // setup and review screens both say so.
-  stackBb: z.number().int().refine(isStackDepth, "unknown stack depth").optional().default(100),
 });
 
 /**
@@ -49,7 +45,7 @@ export const POST = withEntitlement(async (request, auth) => {
       config: {
         preset: parsed.data.preset,
         hands: parsed.data.hands,
-        stackBb: parsed.data.stackBb,
+        stackBb: GRADED_STACK_BB,
       },
     })
     .returning({ id: simSessions.id });
@@ -61,7 +57,7 @@ export const POST = withEntitlement(async (request, auth) => {
   const live = createLiveSession({
     presetId: parsed.data.preset,
     totalHands: parsed.data.hands,
-    stackBb: parsed.data.stackBb,
+    stackBb: GRADED_STACK_BB,
     seed: row.id,
   });
 

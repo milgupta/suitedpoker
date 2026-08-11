@@ -40,17 +40,6 @@ function cardsArc(): string {
     .join("");
 }
 
-function seats(): string {
-  return [0, 1, 2, 3, 4, 5]
-    .map((i) => {
-      const a = (Math.PI * 2 * i) / 6 - Math.PI / 2;
-      const x = 480 + Math.cos(a) * 300;
-      const y = 300 + Math.sin(a) * 168;
-      return `<circle cx="${x}" cy="${y}" r="14" fill="${SURFACE}" stroke="${ACCENT}" stroke-opacity="0.6" stroke-width="2"/>`;
-    })
-    .join("");
-}
-
 function rangeGrid(): string {
   const size = 28;
   const gap = 4;
@@ -110,23 +99,8 @@ async function main() {
 `,
   );
 
-  await png(
-    "hub-table",
-    960,
-    600,
-    `
-  <defs>
-    <radialGradient id="well" cx="50%" cy="50%" r="45%">
-      <stop offset="0%" stop-color="#12162a"/>
-      <stop offset="100%" stop-color="${CANVAS}"/>
-    </radialGradient>
-  </defs>
-  <ellipse cx="480" cy="300" rx="320" ry="180" fill="url(#well)"/>
-  <ellipse cx="480" cy="300" rx="320" ry="180" fill="none" stroke="${ACCENT}" stroke-width="6" opacity="0.85"/>
-  <ellipse cx="480" cy="300" rx="300" ry="162" fill="none" stroke="${ACCENT}" stroke-width="2" opacity="0.35"/>
-  ${seats()}
-`,
-  );
+  // hub-table.png is a real product screenshot (current table UI), not geometric
+  // art — leave it alone so `generate-hub-art` cannot wipe the capture.
 
   await png(
     "hub-learn",

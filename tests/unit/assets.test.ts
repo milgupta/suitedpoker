@@ -165,6 +165,7 @@ const HUB_ART = [
   "hub-daily.png",
   "hub-arena.png",
   "hub-table.png",
+  "hub-table-sim.png",
   "hub-learn.png",
   "hub-ranges.png",
   "hub-progress.png",

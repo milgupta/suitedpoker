@@ -52,6 +52,7 @@ test-results/
 
 # local UI review captures (regenerable via npm run screenshots:review)
 /tmp/
+.tmp-hub-capture/
 
 # solver pipeline output (large, regenerable)
 tools/solver/out/

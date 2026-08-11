@@ -320,8 +320,9 @@ export function applyHeroAction(
 
   // Grade WHILE the node still describes the decision, and HOLD the results on
   // the session — the hand usually ends several actions later. Off-depth
-  // sessions are play-mode: the 100bb solution set does not describe a 40bb or
-  // 200bb decision, so nothing is graded and nothing pretends to be.
+  // sessions (tests only — setup always starts at 100bb) are play-mode: the
+  // 100bb solution set does not describe a 40bb or 200bb decision, so nothing
+  // is graded and nothing pretends to be.
   const decision = isGradedDepth(live.stackBb) ? heroDecisionFor(live, action) : null;
   const pendingDecisions =
     decision === null

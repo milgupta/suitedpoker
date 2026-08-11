@@ -4,17 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { capture } from "@/lib/analytics-client";
-import {
-  isGradedDepth,
-  PRESET_IDS,
-  PRESETS,
-  SESSION_LENGTHS,
-  STACK_DEPTHS,
-  UNGRADED_DEPTH_NOTICE,
-  type PresetId,
-  type SessionLength,
-  type StackDepth,
-} from "@/lib/sim";
+import { PRESET_IDS, PRESETS, SESSION_LENGTHS, type PresetId, type SessionLength } from "@/lib/sim";
 import { PROFILES } from "@/poker/bots";
 import { cn } from "@/lib/utils";
 
@@ -22,7 +12,6 @@ export function TableSetupClient() {
   const router = useRouter();
   const [preset, setPreset] = useState<PresetId>("cardroom");
   const [hands, setHands] = useState<SessionLength>(25);
-  const [stackBb, setStackBb] = useState<StackDepth>(100);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -35,7 +24,8 @@ export function TableSetupClient() {
       const response = await fetch("/api/sim/start", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ preset, hands, stackBb }),
+        // Stack depth is fixed at 100bb — the only depth the strategy set grades.
+        body: JSON.stringify({ preset, hands }),
       });
 
       if (!response.ok) {
@@ -119,36 +109,6 @@ export function TableSetupClient() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <span className="text-overline text-text-tertiary uppercase">Stack depth</span>
-        <div className="flex gap-2" role="radiogroup" aria-label="Stack depth">
-          {STACK_DEPTHS.map((depth) => (
-            <button
-              key={depth}
-              type="button"
-              role="radio"
-              aria-checked={stackBb === depth}
-              data-depth={depth}
-              onClick={() => setStackBb(depth)}
-              className={cn(
-                "tap-target flex-1 rounded-md border px-3 py-2 text-sm transition-colors",
-                stackBb === depth
-                  ? "border-accent bg-surface-2 text-text-primary"
-                  : "border-border bg-surface-1 text-text-secondary hover:border-border-strong",
-              )}
-            >
-              {depthLabel(depth)}
-            </button>
-          ))}
-        </div>
-        {!isGradedDepth(stackBb) && (
-          <p className="text-text-tertiary text-caption" data-depth-notice>
-            {UNGRADED_DEPTH_NOTICE} You still deal, play and settle as normal — there are just no
-            grades or review verdicts.
-          </p>
-        )}
-      </div>
-
       {error !== "" && (
         <p
           role="alert"
@@ -170,12 +130,6 @@ export function TableSetupClient() {
       </Button>
     </div>
   );
-}
-
-function depthLabel(depth: StackDepth): string {
-  if (depth === 40) return "Short — 40bb";
-  if (depth === 200) return "Deep — 200bb";
-  return "Standard — 100bb";
 }
 
 function summarizeLineup(villains: readonly (keyof typeof PROFILES)[]): string {
