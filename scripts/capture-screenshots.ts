@@ -240,7 +240,8 @@ async function login(page: Page): Promise<void> {
   await page.getByLabel("Email").fill(SEED_EMAIL);
   await page.getByLabel("Password", { exact: true }).fill(SEED_PASSWORD);
   await page.getByRole("button", { name: "Log in" }).click();
-  await page.waitForURL(/\/(dashboard|onboarding|paywall)/, { timeout: 30_000 });
+  // /practice is the post-login landing since the UX p0 pass.
+  await page.waitForURL(/\/(practice|dashboard|onboarding|paywall)/, { timeout: 30_000 });
 }
 
 async function main(): Promise<void> {
