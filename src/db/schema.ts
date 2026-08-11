@@ -232,6 +232,13 @@ export const drillAttempts = pgTable(
     /** The question as asked, so a replay shows the same four candidates. */
     questionPayload: jsonb("question_payload"),
     hintsUsed: integer("hints_used").notNull().default(0),
+    /**
+     * The user's rating after this attempt was graded. Written by the answer
+     * route; the progress sparkline is drawn from these — it was a synthetic
+     * flat line before this column existed. Null for attempts that predate it
+     * and for daily attempts (the daily does not move the rating).
+     */
+    ratingAfter: integer("rating_after"),
     createdAt: createdAt(),
   },
   (t) => [

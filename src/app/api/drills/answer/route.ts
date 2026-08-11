@@ -160,17 +160,27 @@ export const POST = withEntitlement(async (request, auth) => {
       newRating = before.rating + ratingDelta;
       crossedTier = tieredUp(before.rating, newRating);
 
-      // The response carries the new rating computed above; the write is not
-      // read again on this request, so it runs after the response goes out.
-      // The next /drills/next reads it seconds later at the earliest.
+      // The response carries the new rating computed above; the writes are not
+      // read again on this request, so they run after the response goes out.
+      // The next /drills/next reads them seconds later at the earliest.
       const ratingToWrite = newRating;
       const rdToWrite = Math.round(updated.rd);
+      const attemptToStamp = attemptId;
       after(async () => {
         try {
-          await db
-            .update(profiles)
-            .set({ rating: ratingToWrite, ratingDeviation: rdToWrite })
-            .where(eq(profiles.id, auth.userId));
+          await Promise.all([
+            db
+              .update(profiles)
+              .set({ rating: ratingToWrite, ratingDeviation: rdToWrite })
+              .where(eq(profiles.id, auth.userId)),
+            // The rating history the progress sparkline is drawn from.
+            attemptToStamp === null
+              ? Promise.resolve()
+              : db
+                  .update(drillAttempts)
+                  .set({ ratingAfter: ratingToWrite })
+                  .where(eq(drillAttempts.id, attemptToStamp)),
+          ]);
         } catch (error) {
           console.error("[drills/answer] deferred rating write failed", error);
         }
