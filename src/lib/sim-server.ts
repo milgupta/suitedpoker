@@ -14,6 +14,7 @@ import {
   toHandHistory,
   type Action,
   type GameState,
+  type HandEvent,
   type HandHistory,
 } from "@/poker/gamestate";
 import { grade as gradePreflop, gradePostflop } from "@/poker/grader";
@@ -273,7 +274,10 @@ export function runBots(
 
     const event = [...game.history]
       .reverse()
-      .find((e) => e.kind === "action" && e.seat === seat && e.street === before.street);
+      .find(
+        (e): e is Extract<HandEvent, { kind: "action" }> =>
+          e.kind === "action" && e.seat === seat && e.street === before.street,
+      );
     if (event !== undefined) {
       // Sessions stored before names existed have no botNames; the archetype
       // name is a fallback for their remaining hands, never the normal path.
@@ -282,6 +286,9 @@ export function runBots(
         seat,
         botName: name,
         label: describeBotAction(name, event),
+        action: event.action,
+        toChips: event.amount > 0 ? event.amount : null,
+        boardLen: before.board.length,
       });
     }
   }

@@ -230,11 +230,25 @@ export interface ClientAction {
   readonly amount?: number;
 }
 
-/** One bot move, for the client to replay with a human-feeling delay. */
+/**
+ * One bot move, for the client to replay with a human-feeling delay.
+ *
+ * The metadata exists so the replay is honest: the server's returned state is
+ * FINAL, and a client that renders it while the moves are still "thinking"
+ * shows a 3-bet's chips before the 3-bet happens. With the engine's own
+ * TO-amount and street on each move, the client can hold the previous
+ * picture and advance it move by move instead.
+ */
 export interface BotMove {
   readonly seat: number;
   readonly botName: string;
   readonly label: string;
+  /** Engine verb: fold / check / call / bet / raise. */
+  readonly action?: string;
+  /** TO-amount in CHIPS for call/bet/raise, null for fold/check. */
+  readonly toChips?: number | null;
+  /** Board cards already dealt when this move was made. */
+  readonly boardLen?: number;
 }
 
 export interface ClientSimState {

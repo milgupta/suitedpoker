@@ -45,6 +45,94 @@ const SHOWDOWN_POT_MS = 1400;
 
 type Phase = "loading" | "playing" | "error";
 
+/**
+ * What the table LOOKS like mid-animation.
+ *
+ * The server's response is final the moment it arrives — rendering it while
+ * the bots are still "thinking" shows a 3-bet's chips before the 3-bet
+ * happens. So while moves play, the client renders this model instead: the
+ * previous picture plus the hero's own action, advanced one move at a time
+ * using the engine's own TO-amounts. Presentation only — nothing here is ever
+ * sent anywhere.
+ */
+interface DisplaySeatModel {
+  committedBb: number;
+  stackBb: number;
+  folded: boolean;
+}
+
+interface AnimModel {
+  seats: Record<number, DisplaySeatModel>;
+  boardLen: number;
+  /** Pot excluding live street bets, in bb — what the bare number shows. */
+  sweptPotBb: number;
+}
+
+function buildBaseModel(
+  prev: ClientSimState,
+  heroAction: { type: string; amount?: number } | undefined,
+): AnimModel {
+  const seats: Record<number, DisplaySeatModel> = {};
+  let committedSum = 0;
+  for (const seat of prev.seats) {
+    seats[seat.seat] = {
+      committedBb: seat.committedBb,
+      stackBb: seat.stackBb,
+      folded: seat.status === "folded",
+    };
+    committedSum += seat.committedBb;
+  }
+
+  const model: AnimModel = {
+    seats,
+    boardLen: prev.board.length,
+    sweptPotBb: Math.max(0, Math.round((prev.potBb - committedSum) * 10) / 10),
+  };
+
+  // The hero's own action shows immediately — it is the one move that needs
+  // no thinking delay, and holding it back would make the tap feel dropped.
+  const hero = seats[prev.heroSeat];
+  if (hero !== undefined && heroAction !== undefined) {
+    if (heroAction.type === "fold") hero.folded = true;
+    if (heroAction.amount !== undefined && heroAction.amount > 0) {
+      const toBb = heroAction.amount / 2;
+      hero.stackBb = Math.round((hero.stackBb - (toBb - hero.committedBb)) * 10) / 10;
+      hero.committedBb = toBb;
+    }
+  }
+
+  return model;
+}
+
+/** Advances the model by one played move, sweeping the street if it closed. */
+function applyMoveToModel(model: AnimModel, move: BotMove): AnimModel {
+  const seats = Object.fromEntries(
+    Object.entries(model.seats).map(([k, v]) => [k, { ...v }]),
+  ) as Record<number, DisplaySeatModel>;
+  let { boardLen, sweptPotBb } = model;
+
+  if (move.boardLen !== undefined && move.boardLen > boardLen) {
+    for (const seat of Object.values(seats)) {
+      sweptPotBb += seat.committedBb;
+      seat.committedBb = 0;
+    }
+    sweptPotBb = Math.round(sweptPotBb * 10) / 10;
+    boardLen = move.boardLen;
+  }
+
+  const actor = seats[move.seat];
+  if (actor !== undefined) {
+    if (move.action === "fold") actor.folded = true;
+    if (move.toChips !== undefined && move.toChips !== null) {
+      const toBb = move.toChips / 2;
+      actor.stackBb = Math.round((actor.stackBb - (toBb - actor.committedBb)) * 10) / 10;
+      actor.committedBb = toBb;
+    }
+  }
+
+  return { seats, boardLen, sweptPotBb };
+}
+
 export function TablePlayClient() {
   const params = useSearchParams();
   const sessionId = params.get("session");
@@ -59,6 +147,7 @@ export function TablePlayClient() {
   const [animating, setAnimating] = useState(false);
   const [actingSeat, setActingSeat] = useState<number | null>(null);
   const [shownMoves, setShownMoves] = useState<BotMove[]>([]);
+  const [animModel, setAnimModel] = useState<AnimModel | null>(null);
   const moveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 0 = villains revealed · 1 = winning five highlighted · 2 = pot moved.
@@ -67,7 +156,7 @@ export function TablePlayClient() {
   const submitting = useRef(false);
 
   const playMoves = useCallback(
-    (moves: BotMove[]) => {
+    (moves: BotMove[], base: AnimModel | null) => {
       if (moveTimer.current !== null) clearTimeout(moveTimer.current);
       // Every server response starts a fresh presentation: the showdown story
       // restarts from its first beat once the new moves finish playing.
@@ -76,15 +165,18 @@ export function TablePlayClient() {
       if (moves.length === 0 || reduced) {
         setShownMoves(moves);
         setActingSeat(null);
+        setAnimModel(null);
         setAnimating(false);
         return;
       }
       setAnimating(true);
+      setAnimModel(base);
       let index = 0;
       const step = () => {
         const move = moves[index];
         if (move === undefined) {
           setActingSeat(null);
+          setAnimModel(null);
           setAnimating(false);
           return;
         }
@@ -93,6 +185,7 @@ export function TablePlayClient() {
           () => {
             index += 1;
             setShownMoves(moves.slice(0, index));
+            setAnimModel((current) => (current === null ? null : applyMoveToModel(current, move)));
             step();
           },
           BOT_MOVE_MIN_MS + Math.random() * BOT_MOVE_JITTER_MS,
@@ -170,8 +263,11 @@ export function TablePlayClient() {
 
       // A 409 carries the current state; adopting it is the recovery.
       if (body.state !== undefined) {
+        const prev = state;
+        const moves = body.botMoves ?? [];
+        const heroAction = (payload as { action?: { type: string; amount?: number } }).action;
         setState(body.state);
-        playMoves(body.botMoves ?? []);
+        playMoves(moves, moves.length > 0 ? buildBaseModel(prev, heroAction) : null);
       }
     } catch {
       // A dropped request leaves the old state; the next tap retries.
@@ -230,6 +326,7 @@ export function TablePlayClient() {
           state={state}
           animating={animating}
           actingSeat={actingSeat}
+          animModel={animModel}
           shownMoves={shownMoves}
           showdownStage={showdownStage}
           onAction={(action) => void post("/api/sim/action", { action })}
@@ -253,6 +350,7 @@ interface SurfaceProps {
   state: ClientSimState;
   animating: boolean;
   actingSeat: number | null;
+  animModel: AnimModel | null;
   shownMoves: BotMove[];
   showdownStage: number;
   onAction: (action: { type: string; amount?: number }) => void;
@@ -263,15 +361,24 @@ function Surface({
   state,
   animating,
   actingSeat,
+  animModel,
   shownMoves,
   showdownStage,
   onAction,
   onNext,
 }: SurfaceProps) {
+  // While bot moves play, the table renders the held-back model rather than
+  // the (already final) server state, so a raise's chips appear when the
+  // raise does. `model === null` outside animation, and everything falls
+  // through to the live state.
+  const model = animating ? animModel : null;
+
   const hero = state.seats.find((s) => s.isHero);
   const heroCards = (hero?.holeCards ?? []) as readonly Card[];
-  const heroFolded = hero?.status === "folded";
-  const board = state.board as readonly Card[];
+  const heroModel = hero === undefined ? undefined : model?.seats[hero.seat];
+  const heroFolded = heroModel !== undefined ? heroModel.folded : hero?.status === "folded";
+  const fullBoard = state.board as readonly Card[];
+  const board = model === null ? fullBoard : fullBoard.slice(0, model.boardLen);
 
   // The showdown is presented only once the bot moves have finished playing —
   // revealing a villain's cards while their last action is still "thinking"
@@ -309,11 +416,14 @@ function Surface({
   // sit as badges under the seats and sweep in when the street closes.
   const committedSum = state.seats.reduce((sum, seat) => sum + seat.committedBb, 0);
   const potMoved = settled && showdownStage >= 2;
-  const displayPot = state.handComplete
-    ? potMoved
-      ? 0
-      : state.potBb
-    : Math.max(0, Math.round((state.potBb - committedSum) * 10) / 10);
+  const displayPot =
+    model !== null
+      ? model.sweptPotBb
+      : state.handComplete
+        ? potMoved
+          ? 0
+          : state.potBb
+        : Math.max(0, Math.round((state.potBb - committedSum) * 10) / 10);
 
   // A winner's stack holds at its pre-pot value until the pot moves to it.
   const stackFor = (seat: number, stackBb: number): number =>
@@ -323,22 +433,28 @@ function Surface({
 
   const opponents: OpponentSeatView[] = state.seats
     .filter((seat) => !seat.isHero)
-    .map((seat) => ({
-      name: seat.botName ?? seat.position,
-      position: seat.position,
-      stackBb: stackFor(seat.seat, seat.stackBb),
-      isDealer: seat.seat === state.buttonSeat,
-      folded: seat.status === "folded",
-      isActing: animating
-        ? seat.seat === actingSeat
-        : !state.handComplete && state.actionOn === seat.seat,
-      betBb: !state.handComplete && seat.committedBb > 0 ? seat.committedBb : null,
-      revealed:
-        settled && seat.holeCards !== null && seat.holeCards.length === 2
-          ? (seat.holeCards as readonly Card[])
-          : null,
-      isWinner: settled && winners.has(seat.seat),
-    }));
+    .map((seat) => {
+      const seatModel = model?.seats[seat.seat];
+      const committedBb = seatModel !== undefined ? seatModel.committedBb : seat.committedBb;
+      const showBet =
+        seatModel !== undefined ? committedBb > 0 : !state.handComplete && committedBb > 0;
+      return {
+        name: seat.botName ?? seat.position,
+        position: seat.position,
+        stackBb: seatModel !== undefined ? seatModel.stackBb : stackFor(seat.seat, seat.stackBb),
+        isDealer: seat.seat === state.buttonSeat,
+        folded: seatModel !== undefined ? seatModel.folded : seat.status === "folded",
+        isActing: animating
+          ? seat.seat === actingSeat
+          : !state.handComplete && state.actionOn === seat.seat,
+        betBb: showBet ? committedBb : null,
+        revealed:
+          settled && seat.holeCards !== null && seat.holeCards.length === 2
+            ? (seat.holeCards as readonly Card[])
+            : null,
+        isWinner: settled && winners.has(seat.seat),
+      };
+    });
 
   const heroStrength =
     heroCards.length === 2 ? handStrength(heroCards, board) : { label: "", bestFive: [] };
@@ -401,11 +517,21 @@ function Surface({
             folded={heroFolded}
             strengthLabel={heroStrength.label}
             bestFive={heroStrength.bestFive}
-            stackBb={hero === undefined ? 0 : stackFor(hero.seat, hero.stackBb)}
+            stackBb={
+              heroModel !== undefined
+                ? heroModel.stackBb
+                : hero === undefined
+                  ? 0
+                  : stackFor(hero.seat, hero.stackBb)
+            }
             betBb={
-              !state.handComplete && hero !== undefined && hero.committedBb > 0
-                ? hero.committedBb
-                : null
+              heroModel !== undefined
+                ? heroModel.committedBb > 0
+                  ? heroModel.committedBb
+                  : null
+                : !state.handComplete && hero !== undefined && hero.committedBb > 0
+                  ? hero.committedBb
+                  : null
             }
             toAct={heroToAct}
           />
