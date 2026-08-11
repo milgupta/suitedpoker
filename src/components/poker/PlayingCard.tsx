@@ -140,7 +140,10 @@ export function PlayingCard({
           : size === "xl"
             ? "var(--shadow-card-hero)"
             : "var(--shadow-card)",
-        opacity: placeholder ? 0.25 : 1,
+        // Visible scenery: at 0.25 the empty board read as a hole in the page
+        // rather than five waiting slots. Half opacity keeps a dealt face
+        // unmistakably brighter while the table's shape stays apparent.
+        opacity: placeholder ? 0.55 : 1,
       }}
       role="img"
       aria-label={label}
