@@ -24,16 +24,95 @@ Turns the 2.8 scenario matrix into solved postflop data. Three parts: **run**,
 >   cap against a 0.3% target.
 > - ⏱ **273 seconds** for those 31 iterations.
 >
-> ### The three things that must be true before a batch is worth running
+> ### What the tuning pass established (2026-08-10, same solver commit)
 >
-> **1. The solve settings need rework.** 15.75% after 31 iterations is nowhere
-> near the 0.3% target, and raising `DEFAULT_MAX_ITERATIONS` alone is unlikely
-> to close a fifty-fold gap. Investigate the bet tree width, the accuracy
-> target, and the abstraction before spending compute. **A batch run at today's
-> settings would produce 230 unconverged solves and burn the hardware budget
-> proving it.**
+> **ONE SOLVE HAS NOW CONVERGED, MEASURED.** `srp-btn-vs-bb-flop-pfr--AcKdTh`
+> (BTN c-bet vs BB defence, single-raised pot, flop Ac Kd Th, pot 5.5bb, stacks
+> 97.25bb) reached **0.4861% of pot against a 0.5% target at iteration 201,
+> in 3,099s wall** — 15.4s/iteration on 10 threads of an Apple M3 Pro (arm64
+> image, no emulation), inside a Docker VM capped at 7.75GiB. Tree build was
+> ~6s; the wall time is CFR plus a best-response evaluation every 10
+> iterations. The dump round-tripped through `parseSolverOutput` (455 combos,
+> plausible non-round frequencies), re-proving the parse path on a full-size
+> output. Run it yourself with:
 >
-> **2. EVs must be computed HERE, in a second pass.** TexasSolver's console
+> ```bash
+> npx tsx tools/solver/tune.ts --sizes=0.66 --raise=1.0 \
+>   --accuracy=0.5 --iterations=400 --threads=10
+> ```
+>
+> **The config that converged** (everything else as `buildSolverInput` emits):
+> one bet size per street (66% pot) plus all-in, raise size 100% of pot,
+> `set_allin_threshold 0.67`, isomorphism on, accuracy 0.5% of pot, iteration
+> cap 400.
+>
+> The measured trajectory, for calibrating future changes — a clean geometric
+> decay, roughly ×0.91 per 10 iterations late-phase:
+>
+> | iter | 0 | 11 | 41 | 101 | 141 | 191 | 201 |
+> |---|---|---|---|---|---|---|---|
+> | % of pot | 310.7 | 66.5 | 12.9 | 2.09 | 1.03 | 0.53 | **0.486** |
+>
+> Extrapolating that decay, the scenario files' current 0.3% target needs
+> ~255 iterations (~65 min here) — reachable, just ~25% dearer. 0.5% is the
+> better trade for data that is immediately bucketed into ~12 hand classes.
+>
+> **What the smoke run's 15.75% actually was: not a stall.** The trajectory
+> above passes ~21% at iteration 31, which is where the smoke run's
+> 40-iteration cap stopped it. The diagnosis in the earlier note — that
+> raising the cap "is unlikely to close a fifty-fold gap" — was WRONG:
+> the cap alone was the whole problem. Convergence needs ~200 iterations,
+> the smoke cap allowed 40, and `DEFAULT_MAX_ITERATIONS` was 200 — which
+> this measured solve would have missed by exactly one iteration. The
+> default is now 600 (a safety net, not a budget; the accuracy stop is
+> what should end a solve).
+>
+> **The FULL batch tree has never run one iteration on this machine.** Two
+> sizes per street + raise + all-in (the `DEFAULT_BET_TREE` in
+> `src/content/solver/matrix.ts`) was OOM-killed (exit 137) during iteration 0
+> in the 7.75GiB Docker VM. It may fit on the 32GB target box — nobody has
+> shown that. The 1-size tree above is the only configuration proven end to
+> end, and for a beginner product whose output is bucketed to ~12 rows per
+> spot, it is arguably the right tree, not a compromise.
+>
+> **Two configuration bugs found by reading the generated input against the
+> solver's own sample:**
+>
+> - **`raiseSizes: [2.5]` emits `set_bet_sizes …,raise,250` — a 2.5×-POT
+>   raise.** TexasSolver raise sizes are percent of pot (its sample input uses
+>   `60`), so the matrix has been asking for absurd raises at every node. The
+>   converged run used `raise,100` (pot-size). Fixing `DEFAULT_BET_TREE` is a
+>   `src/content/solver/matrix.ts` change — outside this directory — and it
+>   changes every input hash, correctly forcing re-solves.
+> - **Rake is recorded but never applied.** `buildSolverInput` hashes
+>   `job.rake` and emits no rake command — because the console solver HAS no
+>   rake command (verified against the binary's command strings: `set_accuracy`
+>   … `set_use_isomorphism`, nothing rake-shaped). Every solve is rake-free,
+>   while the schema refuses a zero rake on the grounds that rake-free solves
+>   overstate how wide to play. Decide before the batch: accept and document
+>   the caveat on `/methodology`, or find a solver that models rake. Do NOT
+>   quietly leave the schema implying something the solver never did.
+>
+> ### Batch cost, extrapolated from the ONE measured solve
+>
+> All numbers assume the validated 1-size tree at 0.5% — the only measured
+> configuration — and are extrapolations, not measurements:
+>
+> - Flop solve: **0.86h** (measured, once). Turn solves (100 of 230) have a
+>   4-card board and one fewer street of subtrees; **assume ~half**, unmeasured.
+> - Batch: 130 flop × 0.86h + 100 turn × 0.43h ≈ **155 machine-hours** at
+>   M3-Pro-ish pace.
+> - On one rented 32-core box (~$0.50/hr, 64GB so three concurrent 10-thread
+>   solves fit — this solve peaked under ~7GB): wall ≈ 155h ÷ 3, padded for
+>   cloud cores being slower than M3 cores, call it **~3 days and $35–50**.
+>   Two boxes halve the wall time for the same dollars; the solves share
+>   nothing.
+> - Disk: the raw dump was **74MB per solve** at `set_dump_rounds 2`, so the
+>   working directory wants ~20GB, not the ~5GB estimated below.
+>
+> ### The two things that must still be true before a batch is worth running
+>
+> **1. EVs must be computed HERE, in a second pass.** TexasSolver's console
 > `dump_result` emits strategy only — there is no EV flag, and the GUI computes
 > EVs client-side rather than exporting them. So the options are down to one:
 > walk the solved strategy tree and compute the EV of each action ourselves.
@@ -44,19 +123,25 @@ Turns the 2.8 scenario matrix into solved postflop data. Three parts: **run**,
 > and numbers nobody computed, stamped `solver-verified`, is the precise failure
 > the provenance system exists to prevent.
 >
-> **3. It is a rented-hardware job measured in days.** 273s bought 31
-> iterations, so a converged 230-solve batch is on the order of 100+ hours on
-> one machine — and that is the optimistic reading, since convergence will need
-> far more than the 200-iteration cap. Plan for parallel machines and a multi-day
-> window, not an afternoon.
+> **2. The matrix must be moved onto the validated settings.** The converged
+> configuration lives only in a `tune.ts` command line so far. Before a batch:
+> in `src/content/solver/matrix.ts` (outside this directory), set
+> `DEFAULT_BET_TREE` to one size per street + all-in with `raiseSizes: [1.0]`,
+> and `ACCURACY_TARGET_PCT_POT` to 0.5 — or keep 0.3 and pay the ~25% premium,
+> but decide it rather than inherit it. Settle the rake question from the
+> tuning-pass note above at the same time. Every input hash changes, which is
+> the resume machinery working, not breaking.
 >
 > ### The order to resume in
 >
-> 1. Fix the settings until ONE solve converges to target. Measure it.
-> 2. Extrapolate the real batch cost from that converged solve, not from the
->    smoke number above.
+> 1. ~~Fix the settings until ONE solve converges to target. Measure it.~~
+>    **DONE 2026-08-10** — 0.486% at iteration 201, 3,099s, config above.
+> 2. Move the validated settings into the matrix (item 2 above) and decide the
+>    rake caveat.
 > 3. Build and test the EV pass.
-> 4. Rent the hardware and run the batch.
+> 4. Rent the hardware and run the batch — budget from the extrapolation above,
+>    and re-check tree memory on the target box FIRST with one solve: the
+>    2-size tree OOMed a 7.75GiB VM and has never been sized anywhere else.
 > 5. Only then does `/methodology` change — and it changes because
 >    `provenanceHeadline()` reads the data, not because anyone edits the copy.
 >
@@ -95,7 +180,13 @@ npx tsx tools/solver/run-batch.ts --dry-run
 # 3. ONE solve, loose target, minutes not hours. Do this first, always.
 npx tsx tools/solver/run-batch.ts --smoke
 
-# 4. The full batch, resumable.
+# 4. ONE solve with overridden settings, stdout streamed to a log so the
+#    convergence CURVE is visible while it runs. This is how the validated
+#    configuration was found; results land in out/tune/, never out/solves/.
+npx tsx tools/solver/tune.ts --sizes=0.66 --raise=1.0 --accuracy=0.5 \
+  --iterations=400 --threads=10
+
+# 5. The full batch, resumable.
 npx tsx tools/solver/run-batch.ts --resume
 ```
 
@@ -106,9 +197,9 @@ Everything lands in `tools/solver/out/` — `solves/` (one JSON per solve),
 
 | | |
 |---|---|
-| RAM | 32GB. A single flop solve with two bet sizes fits comfortably; the turn nodes are the memory-hungry ones. |
+| RAM | 32GB. **The two-size flop tree OOMed a 7.75GiB Docker VM at iteration 0 (exit 137)** — "fits comfortably" was a guess, so size ONE solve on the target box before committing to the batch. The validated one-size tree peaked under ~7GB. |
 | Cores | 8+. `set_thread_num` is 8 in the generated input; raise it with the box. |
-| Disk | ~5GB for a full batch of 230 solves plus working files. |
+| Disk | ~20GB working space: one dump at `set_dump_rounds 2` measured **74MB**, × 230 solves, before the parsed results and templates. |
 | OS | Anything that runs Docker. |
 
 Any cloud provider works. This is embarrassingly parallel across solves — if
@@ -184,9 +275,17 @@ from it, so a missing API key or a model having a bad day degrades to something
 ## Cost planning
 
 `--dry-run` prints the plan. The matrix is **46 scenarios × 5 boards = 230
-solves**. Multiply the smoke solve's wall time by 230 for a first estimate,
-then add margin: the smoke run uses one bet size and a 2% accuracy target,
-while the real batch uses two sizes and 0.3%, which is materially more work per
-solve.
+solves** — 130 flop and 100 turn.
 
-Turn nodes cost more than flop nodes. The matrix is 130 flop and 100 turn.
+The one MEASURED data point (2026-08-10, deferral note above): a flop solve on
+the validated one-size tree converged at **0.486% of pot in 3,099s** on 10
+threads of an M3 Pro. From that, the extrapolation in the deferral note:
+~155 machine-hours for the batch, roughly **3 days and $35–50 on one rented
+32-core box** running three solves in parallel. Do NOT multiply the old
+273s smoke number by anything — that run was capped at 40 iterations and
+proves only that the path executes.
+
+A turn solve starts one street later and should cost materially less than a
+flop solve; that ratio is assumed (½), not measured. The first hour of a real
+batch will say whether the estimate holds — check it before leaving the box
+to run.
