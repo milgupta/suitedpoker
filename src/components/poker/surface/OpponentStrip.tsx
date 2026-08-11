@@ -21,7 +21,12 @@ import { formatBb } from "./sizing";
  */
 
 export interface OpponentSeatView {
-  name: string;
+  /**
+   * The sim's bot name. ABSENT in drills — §6.1's names are for the sim's
+   * characters; a drill's villains are a solved strategy and are labeled by
+   * position only, so the name line is simply not rendered.
+   */
+  name?: string;
   /** UTG / MP / CO / BTN / SB / BB. Always shown — a trainer never hides positions. */
   position: string;
   stackBb: number;
@@ -88,14 +93,19 @@ function OpponentSeatColumn({
       }
     >
       <span className="relative">
-        <SeatAvatar seed={`${seat.position}:${seat.name}`} folded={folded} />
+        <SeatAvatar
+          seed={seat.name === undefined ? seat.position : `${seat.position}:${seat.name}`}
+          folded={folded}
+        />
         {seat.isDealer === true && <DealerBadge />}
       </span>
 
       <span className="flex w-full min-w-0 flex-col items-center">
-        <span className="text-text-secondary text-caption w-full truncate text-center font-medium">
-          {seat.name}
-        </span>
+        {seat.name !== undefined && (
+          <span className="text-text-secondary text-caption w-full truncate text-center font-medium">
+            {seat.name}
+          </span>
+        )}
         <span className="flex items-center gap-1">
           <span className="text-text-tertiary text-overline font-mono uppercase">
             {seat.position}
@@ -145,7 +155,7 @@ export function OpponentStrip({ seats, handName = null, className }: OpponentStr
     >
       {seats.map((seat) => (
         <OpponentSeatColumn
-          key={`${seat.position}:${seat.name}`}
+          key={seat.name === undefined ? seat.position : `${seat.position}:${seat.name}`}
           seat={seat}
           handName={handName}
           reduced={reduced}

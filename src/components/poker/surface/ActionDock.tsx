@@ -24,6 +24,11 @@ export interface DockAction {
   /** What a person reads: "Call 2", "Raise to 6". */
   label: string;
   disabled?: boolean;
+  /**
+   * Accent outline on this button — the drills mark the chart's most-played
+   * action with it after grading. Interface blue, never the grade green.
+   */
+  highlight?: boolean;
 }
 
 export type ActionDockProps =
@@ -173,6 +178,14 @@ function ActionsRow({
                 className="text-body-md sm:text-body-lg min-w-0 px-2"
                 data-action={action.id}
                 disabled={action.disabled}
+                style={
+                  action.highlight === true
+                    ? {
+                        borderColor: "var(--color-accent)",
+                        boxShadow: "0 0 16px var(--color-accent-glow)",
+                      }
+                    : undefined
+                }
                 onClick={() => onAction(action.id)}
               >
                 <span className="truncate">{action.label}</span>

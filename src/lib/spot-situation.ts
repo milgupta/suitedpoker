@@ -1,8 +1,8 @@
 /**
- * Plain-English situation copy for drill tables.
+ * Plain-English situation copy for drill surfaces.
  *
- * A SpotTable without a situation line asks the player to reconstruct the hand
- * from pot size and seat opacity. Beginners cannot do that quickly — and the
+ * A drill surface without a situation line asks the player to reconstruct the
+ * hand from pot size and seat opacity. Beginners cannot do that quickly — and the
  * demo hand is the worst place to discover it. Pure so every phrase is unit-
  * tested and compliance-scannable.
  */

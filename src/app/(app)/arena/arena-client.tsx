@@ -10,21 +10,19 @@ import { Shimmer } from "@/components/motion";
 import { AnimatedNumber } from "@/components/motion";
 import {
   CoachChat,
+  DrillSurface,
   Explanation,
   Feedback,
   FrequencyCapsules,
   HintButton,
-  SpotTable,
 } from "@/components/poker";
 import type { HintLine } from "@/components/poker";
 import type { HintLevel } from "@/lib/hints";
 import { parseArenaPreset, type ArenaPreset } from "@/lib/arena-preset";
 import { capture } from "@/lib/analytics-client";
-import { cn } from "@/lib/utils";
 import { GRADES } from "@/lib/grade";
 import { actionLabel } from "@/lib/action-label";
-import { missingActionTip, TRAINER_ACTIONS_CAPTION } from "@/lib/spot-situation";
-import { actionGridClass, capsuleSegments } from "@/lib/action-grid";
+import { capsuleSegments } from "@/lib/action-grid";
 import { evColor } from "@/lib/ev-color";
 
 interface Answered {
@@ -309,8 +307,6 @@ export function ArenaClient() {
    */
   const segments =
     result === null || spot === null ? [] : capsuleSegments(spot.legalActions, result);
-  const actionGapTip =
-    result !== null && spot !== null ? missingActionTip(spot.legalActions) : null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -386,116 +382,98 @@ export function ArenaClient() {
           just-played table stays up instead of collapsing into shimmer. */}
       {error !== "" && spot === null ? null : spot === null ? (
         /*
-         * The skeleton mirrors SpotTable's GEOMETRY, not just its existence.
+         * The skeleton mirrors DrillSurface's GEOMETRY, not just its
+         * existence: situation line, opponents strip, board band (five slots
+         * plus the pot number), history line, hero dock, caption, action row.
          *
-         * It was an `h-64` block that became a ~700px table the instant the
-         * spot arrived, which is a 0.07 CLS on the screen this product is most
-         * used on — the one number the 9.1 sweep exists to hold at zero. A
-         * loading state whose size is unrelated to what replaces it is not a
-         * loading state, it is a guaranteed reflow.
+         * A previous version was an `h-64` block that became a ~700px table
+         * the instant the spot arrived — a 0.07 CLS on the screen this product
+         * is most used on. A loading state whose size is unrelated to what
+         * replaces it is not a loading state, it is a guaranteed reflow.
          */
         <div className="flex flex-col items-center gap-4">
-          <Shimmer className="h-10 w-full max-w-md" />
-          <Shimmer className="aspect-square w-full max-w-[min(100%,52dvh)] sm:aspect-[5/4] sm:max-w-[min(100%,calc(55dvh*1.25))]" />
-          <Shimmer className="h-[134px] w-[202px]" />
-          <Shimmer className="h-4 w-64" />
-          <Shimmer className="h-12 w-full max-w-md" />
+          <Shimmer className="h-6 w-full max-w-md" />
+          <Shimmer className="h-[88px] w-full" />
+          <Shimmer className="h-[105px] w-full sm:h-[133px]" />
+          <Shimmer className="h-5 w-64" />
+          <Shimmer className="h-[164px] w-full" />
+          <Shimmer className="h-8 w-full max-w-md" />
           <Shimmer className="h-14 w-full" />
         </div>
       ) : (
-        <>
-          <SpotView spot={spot} />
-
-          {/* Frequency capsules sit directly above the buttons and are hidden
-              until the answer is in — revealing them earlier would give away
-              the strategy before the decision. */}
-          {result !== null && (
-            <FrequencyCapsules segments={segments} topAction={result.topAction} revealed />
-          )}
-
-          <div className={cn("grid gap-2.5", actionGridClass(spot.legalActions.length))}>
-            <p className="text-text-tertiary text-caption col-span-full text-center text-balance">
-              {TRAINER_ACTIONS_CAPTION}
-            </p>
-            {spot.legalActions.map((action) => (
-              <Button
-                key={action}
-                data-action={action}
-                variant="action"
-                size="action"
+        /*
+         * `Card` is a branded NUMBER, so it survives JSON as a number and
+         * needs no parsing — DrillSurface renders the cards as they arrive. A
+         * previous version stringified each one and fed it back through
+         * `cardsFromString`, which crashed the whole arena into its error
+         * boundary.
+         */
+        <DrillSurface
+          spot={spot}
+          onAction={(action) => void answer(action)}
+          answered={result !== null}
+          topAction={result?.topAction ?? null}
+          /* Frequency capsules sit directly above the buttons and appear only
+             once the answer is in — revealing them earlier would give away
+             the strategy before the decision. */
+          capsules={
+            result === null ? undefined : (
+              <FrequencyCapsules segments={segments} topAction={result.topAction} revealed />
+            )
+          }
+          belowActions={
+            result === null && spotId !== null ? (
+              <HintButton
+                key={spotId}
+                onRequest={requestHint}
+                hintsRemaining={hintsRemaining}
                 disabled={result !== null}
-                onClick={() => void answer(action)}
-                className="w-full"
-                style={
-                  result !== null && action === result.topAction
-                    ? {
-                        borderColor: "var(--color-accent)",
-                        boxShadow: "0 0 16px var(--color-accent-glow)",
-                      }
-                    : undefined
-                }
-              >
-                {actionLabel(action)}
-              </Button>
-            ))}
-          </div>
-
-          {actionGapTip !== null && (
-            <p className="text-text-tertiary text-caption text-center" data-missing-action-tip>
-              {actionGapTip}
-            </p>
-          )}
-
-          {result === null && spotId !== null && (
-            <HintButton
-              key={spotId}
-              onRequest={requestHint}
-              hintsRemaining={hintsRemaining}
-              disabled={result !== null}
-            />
-          )}
-
-          {result !== null && (
-            <Feedback
-              result={result}
-              ratingDelta={result.ratingDelta ?? 0}
-              onNext={next}
-              nextPending={loading}
-              source={result.source}
-              showMix={false}
-              explanation={
-                spotId === null ? undefined : (
-                  <Explanation
-                    key={spotId}
-                    spotId={spotId}
-                    action={answeredAction ?? ""}
-                    grade={result.grade}
-                  />
-                )
-              }
-              chat={
-                attemptId === null || spotId === null ? undefined : (
-                  <>
-                    <Button
-                      variant="ghost"
-                      className="w-full"
-                      onClick={() => setChatOpen(true)}
-                      data-testid="open-chat"
-                    >
-                      Ask about this hand
-                    </Button>
-                    <CoachChat
-                      attemptId={attemptId}
+              />
+            ) : undefined
+          }
+          feedback={
+            result === null ? undefined : (
+              <Feedback
+                result={result}
+                ratingDelta={result.ratingDelta ?? 0}
+                onNext={next}
+                nextPending={loading}
+                source={result.source}
+                showMix={false}
+                explanation={
+                  spotId === null ? undefined : (
+                    <Explanation
+                      key={spotId}
                       spotId={spotId}
-                      open={chatOpen}
-                      onOpenChange={setChatOpen}
+                      action={answeredAction ?? ""}
+                      grade={result.grade}
                     />
-                  </>
-                )
-              }
-            />
-          )}
-        </>
+                  )
+                }
+                chat={
+                  attemptId === null || spotId === null ? undefined : (
+                    <>
+                      <Button
+                        variant="ghost"
+                        className="w-full"
+                        onClick={() => setChatOpen(true)}
+                        data-testid="open-chat"
+                      >
+                        Ask about this hand
+                      </Button>
+                      <CoachChat
+                        attemptId={attemptId}
+                        spotId={spotId}
+                        open={chatOpen}
+                        onOpenChange={setChatOpen}
+                      />
+                    </>
+                  )
+                }
+              />
+            )
+          }
+        />
       )}
     </div>
   );
@@ -534,30 +512,6 @@ function leakFocusLabel(tag: string): string {
     tilt_control: "tilt spots",
   };
   return labels[tag] ?? tag.replace(/_/g, " ");
-}
-
-function SpotView({ spot }: { spot: ClientSpot }) {
-  /**
-   * `Card` is a branded NUMBER, so it survives JSON as a number and needs no
-   * parsing. A previous version stringified each card and fed the result back
-   * through `cardsFromString`, which turned card 36 into the token "36" and
-   * threw "not a card" — crashing the whole arena into its error boundary.
-   *
-   * The spot is drawn as a TABLE. It used to be a box of text with the action
-   * history as one prose line; see the note at the top of SpotTable for why
-   * that was the wrong presentation of a poker hand.
-   */
-  return (
-    <SpotTable
-      seats={spot.seats}
-      heroPos={spot.heroPos}
-      heroCards={spot.heroCards}
-      board={spot.board}
-      potBb={spot.potBb}
-      effStackBb={spot.effStackBb}
-      actionHistory={spot.actionHistory}
-    />
-  );
 }
 
 function SessionSummary({
