@@ -17,7 +17,7 @@ import { handStrength } from "@/poker/hand-strength";
  * Every meaningful game-surface state, as SCRIPTED PROPS.
  *
  * The surface components are deliberately presentational — they hold no game
- * state and cannot compute legality — so unlike /styleguide/table there is no
+ * state and cannot compute legality — so there is no
  * engine to drive them from without rebuilding a screen's whole client here.
  * The trade is explicit: these states show every prop combination the
  * components accept, and the engine-driven integration arrives when the

@@ -20,7 +20,7 @@ export default function SurfaceStyleguidePage() {
           Three horizontal bands on the canvas — no oval, no felt, no ring. These are SCRIPTED PROP
           states, not engine-driven ones: the surface components are presentational and hold no game
           state, so every state below is exactly a set of props. The engine-driven table lives on
-          /styleguide/table until the screens migrate.
+          the sim and drills, which run it against the live engine.
         </p>
       </header>
 
