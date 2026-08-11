@@ -16,12 +16,18 @@ import { MemoryRedis, __setRedisForTests } from "../../src/lib/redis";
 import {
   allowsGeneration,
   budgetState,
+  canGenerateFor,
   currentSpendUsd,
+  dailyBudgetUsd,
   HARD_CAP_FRACTION,
   levelFor,
   maybeAlert,
   recordSpend,
+  recordSpendFor,
   SOFT_CAP_FRACTION,
+  userBudgetState,
+  userDailyBudgetUsd,
+  userSpentUsd,
   utcDay,
   __resetBudgetForTests,
   type BudgetLevel,
@@ -41,6 +47,7 @@ beforeEach(() => {
 afterEach(() => {
   __setRedisForTests(null);
   delete process.env.AI_DAILY_BUDGET_USD;
+  delete process.env.AI_USER_DAILY_BUDGET_USD;
   delete process.env.ALERT_WEBHOOK_URL;
 });
 
@@ -171,6 +178,103 @@ describe("alerting", () => {
   });
 });
 
+describe("the per-user fair share", () => {
+  /**
+   * The global counter alone means one heavy user spends everyone's budget and
+   * the time of day you practise decides whether your coach is live. The fair
+   * share bounds one user's slice; past it, THAT user gets templates while
+   * everyone else stays live, and the global thresholds remain the backstop.
+   */
+
+  it("defaults to $0.50 and treats an unparseable value as the default", () => {
+    expect(userDailyBudgetUsd()).toBe(0.5);
+
+    process.env.AI_USER_DAILY_BUDGET_USD = "not-a-number";
+    expect(userDailyBudgetUsd()).toBe(0.5);
+
+    process.env.AI_USER_DAILY_BUDGET_USD = "2.5";
+    expect(userDailyBudgetUsd()).toBe(2.5);
+  });
+
+  it("caps one user without touching anyone else", async () => {
+    await recordSpendFor("heavy-user", 0.6);
+
+    // The heavy user is refused BOTH paths — their degradation is by user,
+    // which is the one shape of degradation that protects everyone else.
+    expect(await canGenerateFor("heavy-user", "cheap")).toBe(false);
+    expect(await canGenerateFor("heavy-user", "expensive")).toBe(false);
+
+    // Everyone else is untouched, on both paths.
+    expect(await canGenerateFor("light-user", "cheap")).toBe(true);
+    expect(await canGenerateFor("light-user", "expensive")).toBe(true);
+
+    // And the global breaker has not moved: $0.60 of $25 is normal.
+    expect((await budgetState()).level).toBe("normal");
+  });
+
+  it("closes at exactly the cap, not past it", async () => {
+    await recordSpendFor("edge-user", 0.5);
+    expect((await userBudgetState("edge-user")).exhausted).toBe(true);
+  });
+
+  it("records against the global counter and the user's slice in one call", async () => {
+    // Micro-dollars per user too: 1,000 explanations at $0.00009 must not
+    // round to zero while the pool drains.
+    for (let i = 0; i < 1_000; i++) await recordSpendFor("counting-user", 0.00009);
+    expect(await userSpentUsd("counting-user")).toBeCloseTo(0.09, 4);
+    expect(await currentSpendUsd()).toBeCloseTo(0.09, 4);
+  });
+
+  it("keeps each user's day separate", async () => {
+    const yesterday = new Date("2026-08-06T12:00:00Z");
+    const today = new Date("2026-08-07T12:00:00Z");
+    await recordSpendFor("day-user", 0.6, yesterday);
+
+    expect(await userSpentUsd("day-user", yesterday)).toBeCloseTo(0.6, 6);
+    expect(await userSpentUsd("day-user", today)).toBe(0);
+    expect(await canGenerateFor("day-user", "expensive", today)).toBe(true);
+  });
+
+  it("keeps the global breaker as the backstop for under-cap users", async () => {
+    process.env.AI_USER_DAILY_BUDGET_USD = "10";
+    await recordSpend(BUDGET);
+
+    // A user who has spent nothing is still stopped by the global hard cap.
+    expect(await userSpentUsd("innocent-user")).toBe(0);
+    expect(await canGenerateFor("innocent-user", "cheap")).toBe(false);
+    expect(await canGenerateFor("innocent-user", "expensive")).toBe(false);
+  });
+
+  it("still degrades by feature at the global soft cap for under-cap users", async () => {
+    await recordSpend(BUDGET * 0.85);
+
+    expect(await canGenerateFor("under-cap-user", "cheap")).toBe(false);
+    expect(await canGenerateFor("under-cap-user", "expensive")).toBe(true);
+  });
+
+  it("treats a zero or negative user budget as hard-closed, never unlimited", async () => {
+    for (const value of ["0", "-1"]) {
+      process.env.AI_USER_DAILY_BUDGET_USD = value;
+      expect(userDailyBudgetUsd()).toBe(0);
+      // A user with NO spend is still closed: 0 >= 0. Fails toward spending
+      // nothing, and the product stays usable on templates by design.
+      expect((await userBudgetState("fresh-user")).exhausted).toBe(true);
+      expect(await canGenerateFor("fresh-user", "expensive")).toBe(false);
+    }
+  });
+
+  it("treats an EXPLICIT zero global budget as hard, not as the default", async () => {
+    // The 4.5 notes always promised this; the old parse folded "0" into the
+    // unset case and quietly ran on the $25 default.
+    process.env.AI_DAILY_BUDGET_USD = "0";
+    expect(dailyBudgetUsd()).toBe(0);
+    expect((await budgetState()).level).toBe("hard");
+
+    delete process.env.AI_DAILY_BUDGET_USD;
+    expect(dailyBudgetUsd()).toBe(25);
+  });
+});
+
 describe("a Redis outage", () => {
   it("does not throw from any budget call", async () => {
     __setRedisForTests({
@@ -186,6 +290,11 @@ describe("a Redis outage", () => {
     await expect(recordSpend(1)).resolves.toBeDefined();
     await expect(currentSpendUsd()).resolves.toBe(0);
     await expect(budgetState()).resolves.toBeDefined();
+    await expect(recordSpendFor("outage-user", 1)).resolves.toBeUndefined();
+    await expect(userSpentUsd("outage-user")).resolves.toBe(0);
+    // Fails open, like the global counter: an outage costs bounded dollars,
+    // failing closed would cost every user their coach.
+    await expect(canGenerateFor("outage-user", "expensive")).resolves.toBe(true);
   });
 });
 
