@@ -47,7 +47,7 @@ export function ReviewClient() {
 
   const [review, setReview] = useState<ReviewPayload | null>(null);
   const [failed, setFailed] = useState(false);
-  const [openHand, setOpenHand] = useState<number | null>(null);
+  const [openHand, setOpenHand] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (sessionId === null) return;
@@ -207,53 +207,54 @@ export function ReviewClient() {
               Graded vs chart — not vs how the bots at this table play.
             </p>
           </div>
-          {review.worst.map((decision) => (
-            <div key={decision.handNumber} className="border-border bg-surface-1 rounded-lg border">
-              <button
-                type="button"
-                className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
-                aria-expanded={openHand === decision.handNumber}
-                onClick={() =>
-                  setOpenHand((current) =>
-                    current === decision.handNumber ? null : decision.handNumber,
-                  )
-                }
-              >
-                <span className="flex min-w-0 flex-col gap-0.5">
-                  <span className="flex items-center gap-3">
-                    <span className="text-text-tertiary text-caption font-mono">
-                      #{decision.handNumber}
-                    </span>
-                    {decision.grade !== "" && (
-                      <span className="flex items-center gap-1.5">
-                        <GradeBadge grade={decision.grade as GradeName} size="sm" static />
-                        <span className="text-text-tertiary text-caption">vs chart</span>
-                      </span>
-                    )}
-                    <span className="text-body-sm">{decision.resultLine}</span>
-                  </span>
-                  <span className="text-text-tertiary text-caption" data-decision-detail>
-                    {capitalize(decision.street ?? "preflop")}: you chose{" "}
-                    {actionPhrase(decision.chosenAction)}
-                    {decision.bestAction !== null &&
-                      decision.bestAction !== decision.chosenAction && (
-                        <> — best is {actionPhrase(decision.bestAction)}</>
-                      )}
-                  </span>
-                </span>
-                <span
-                  className="text-body-sm font-mono tabular-nums"
-                  style={{ color: evColor(decision.evLoss) }}
+          {/* One hand can list two decisions now (preflop AND a postflop one),
+              so rows are keyed and expanded by hand + street, never hand alone. */}
+          {review.worst.map((decision) => {
+            const rowId = `${decision.handNumber}:${decision.street ?? "preflop"}`;
+            return (
+              <div key={rowId} className="border-border bg-surface-1 rounded-lg border">
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+                  aria-expanded={openHand === rowId}
+                  onClick={() => setOpenHand((current) => (current === rowId ? null : rowId))}
                 >
-                  −{decision.evLoss.toFixed(2)}bb
-                </span>
-              </button>
+                  <span className="flex min-w-0 flex-col gap-0.5">
+                    <span className="flex items-center gap-3">
+                      <span className="text-text-tertiary text-caption font-mono">
+                        #{decision.handNumber}
+                      </span>
+                      {decision.grade !== "" && (
+                        <span className="flex items-center gap-1.5">
+                          <GradeBadge grade={decision.grade as GradeName} size="sm" static />
+                          <span className="text-text-tertiary text-caption">vs chart</span>
+                        </span>
+                      )}
+                      <span className="text-body-sm">{decision.resultLine}</span>
+                    </span>
+                    <span className="text-text-tertiary text-caption" data-decision-detail>
+                      {capitalize(decision.street ?? "preflop")}: you chose{" "}
+                      {actionPhrase(decision.chosenAction)}
+                      {decision.bestAction !== null &&
+                        decision.bestAction !== decision.chosenAction && (
+                          <> — best is {actionPhrase(decision.bestAction)}</>
+                        )}
+                    </span>
+                  </span>
+                  <span
+                    className="text-body-sm font-mono tabular-nums"
+                    style={{ color: evColor(decision.evLoss) }}
+                  >
+                    −{decision.evLoss.toFixed(2)}bb
+                  </span>
+                </button>
 
-              {openHand === decision.handNumber && (
-                <Replay steps={review.replays[String(decision.handNumber)] ?? []} />
-              )}
-            </div>
-          ))}
+                {openHand === rowId && (
+                  <Replay steps={review.replays[String(decision.handNumber)] ?? []} />
+                )}
+              </div>
+            );
+          })}
         </section>
       )}
 
