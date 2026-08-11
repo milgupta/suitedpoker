@@ -57,6 +57,7 @@ function isNotASize(value: string): boolean {
     value.startsWith("suit-") ||
     value.startsWith("on-") ||
     value.startsWith("canvas") ||
+    value.startsWith("star") ||
     value.startsWith("card-") ||
     value.startsWith("border") ||
     value.startsWith("[") ||

@@ -370,3 +370,49 @@ describe("hands that must not be misplayed", () => {
     }
   });
 });
+
+describe("the open-limp option", () => {
+  // The RFI nodes offer Call so the action bar matches live poker, but the
+  // chart never limps: the option exists to be graded, not recommended. The
+  // first version of its EV column used `min(fold, raise) - penalty`, which
+  // told a beginner that folding aces beats limping them.
+  const rfi = data.preflop.filter((node) => node.actionSeq === "rfi");
+
+  it("exists on every opening node and is never in the strategy mix", () => {
+    expect(rfi.length).toBe(5);
+    for (const node of rfi) {
+      expect(node.actions).toContain("call");
+      for (const key of HAND_KEYS) {
+        expect(node.strategy[key]?.["call"] ?? 0, `${node.ref} limps ${key}`).toBe(0);
+      }
+    }
+  });
+
+  it("is never the best action", () => {
+    for (const node of rfi) {
+      for (const key of HAND_KEYS) {
+        const ev = node.ev[key] ?? {};
+        const call = ev["call"] ?? 0;
+        const best = Math.max(ev["fold"] ?? 0, ev["raise"] ?? 0);
+        expect(call, `${node.ref} ${key}: limp is best`).toBeLessThan(best);
+      }
+    }
+  });
+
+  it("beats folding a premium and loses to folding trash", () => {
+    for (const node of rfi) {
+      for (const premium of ["AA", "KK"]) {
+        const ev = node.ev[premium] ?? {};
+        expect(ev["call"] ?? 0, `${node.ref}: folding ${premium} beats limping it`).toBeGreaterThan(
+          ev["fold"] ?? 0,
+        );
+      }
+      for (const trash of ["72o", "83o"]) {
+        const ev = node.ev[trash] ?? {};
+        expect(ev["call"] ?? 0, `${node.ref}: limping ${trash} beats folding it`).toBeLessThan(
+          ev["fold"] ?? 0,
+        );
+      }
+    }
+  });
+});

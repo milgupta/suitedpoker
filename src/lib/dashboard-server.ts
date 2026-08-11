@@ -15,6 +15,8 @@ import {
   evLostPer100,
   goalLine,
   greeting,
+  lastSessionDelta,
+  leakContext,
   MIN_HANDS_FOR_LEAKS,
   pfrOf,
   sparkline,
@@ -124,6 +126,7 @@ export async function loadDashboard(userId: string, now = new Date()): Promise<D
         chosenAction: drillAttempts.chosenAction,
         nodeRef: drillAttempts.nodeRef,
         timeMs: drillAttempts.timeMs,
+        ratingAfter: drillAttempts.ratingAfter,
         createdAt: drillAttempts.createdAt,
       })
       .from(drillAttempts)
@@ -141,6 +144,8 @@ export async function loadDashboard(userId: string, now = new Date()): Promise<D
       bestAction:
         (r.evLoss === null ? 0 : Number(r.evLoss)) === 0 ? (r.chosenAction ?? "") : "other",
       timeMs: r.timeMs ?? 0,
+      nodeRef: r.nodeRef,
+      ratingAfter: r.ratingAfter,
       createdAt: r.createdAt ?? now,
     }));
   } catch {
@@ -168,33 +173,47 @@ export async function loadDashboard(userId: string, now = new Date()): Promise<D
   const path = await loadPath(userId);
   const next = nextLesson(path.modules);
 
-  // Leaks, from the same detector the session review uses.
+  // Leaks, from the same detector the session review uses — bucketed on the
+  // seat and sequence each attempt was ACTUALLY played in. This used to pass
+  // "BTN"/"rfi" for every row, so a big-blind overfolder was told they
+  // overfold on the button and sent to button drills.
   const leaks: Leak[] =
     rows.length >= MIN_HANDS_FOR_LEAKS
       ? detectLeaks(
-          rows.map((r) => ({
-            street: r.street,
-            position: "BTN",
-            actionSeq: "rfi",
-            handClass: null,
-            chosenAction: r.chosenAction,
-            bestAction: r.bestAction,
-            evLoss: r.evLoss,
-          })),
+          rows.map((r) => {
+            const context = leakContext(r.nodeRef);
+            return {
+              street: r.street,
+              position: context.position,
+              actionSeq: context.actionSeq,
+              handClass: null,
+              chosenAction: r.chosenAction,
+              bestAction: r.bestAction,
+              evLoss: r.evLoss,
+            };
+          }),
         ).slice(0, 3)
       : [];
 
   const week = weekOverWeek(rows, now);
 
+  // Rating history for the sparkline: real points, oldest first. Attempts
+  // that predate the rating_after column (and daily attempts, which do not
+  // move the rating) simply contribute no point.
+  const ratingPoints = rows
+    .filter((r) => r.ratingAfter != null)
+    .map((r) => ({ at: r.createdAt, rating: r.ratingAfter! }))
+    .sort((a, b) => a.at.getTime() - b.at.getTime());
+
   return {
-    greeting: greeting(now),
+    greeting: greeting(now, profile?.timezone ?? undefined),
     displayName: profile?.displayName ?? null,
     goal: goalLine(answers.goal),
 
     rating: profile?.rating ?? null,
     tier: tierFor(profile?.rating ?? 0).name,
-    ratingSparkline: sparkline([], profile?.rating ?? 0, now),
-    lastSessionDelta: 0,
+    ratingSparkline: sparkline(ratingPoints, profile?.rating ?? 0, now),
+    lastSessionDelta: lastSessionDelta(ratingPoints),
 
     streak: profile?.streakCount ?? 0,
     dailyDoneToday: dailyToday !== null,
@@ -210,14 +229,20 @@ export async function loadDashboard(userId: string, now = new Date()): Promise<D
       key: leak.key,
       description: describeLeak(leak),
       severity: leak.severity,
+      // The drill link targets the leak's ACTUAL family — a postflop leak
+      // opens postflop practice on that street, a preflop one opens the exact
+      // seat and sequence.
       href: buildArenaLink({
-        config: {
-          type: "preflop",
-          heroPos: leak.position as HeroPosition,
-          actionSeq: leak.actionSeq,
-        },
+        config:
+          leak.actionSeq === "postflop"
+            ? { type: "postflop", street: leak.street === "preflop" ? undefined : leak.street }
+            : {
+                type: "preflop",
+                heroPos: leak.position as HeroPosition,
+                actionSeq: leak.actionSeq,
+              },
         length: 10,
-        label: `Fixing: ${leak.position}`,
+        label: `Fixing: ${leak.actionSeq === "postflop" ? "postflop play" : leak.position}`,
         returnTo: "/progress",
       }),
     })),

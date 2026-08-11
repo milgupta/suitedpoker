@@ -67,6 +67,18 @@ export function identify(userId: string, traits: Partial<UserTraits>): void {
   posthog.identify(userId, traits);
 }
 
+/**
+ * Pause/resume rrweb session recording. The table screens re-render an
+ * animated table per hand, and recording those mutations costs real CPU on
+ * mid-tier phones — the provider pauses recording there and resumes elsewhere.
+ * Idempotent: PostHog treats repeat calls as no-ops.
+ */
+export function setSessionRecording(enabled: boolean): void {
+  if (!ready()) return;
+  if (enabled) posthog.startSessionRecording();
+  else posthog.stopSessionRecording();
+}
+
 export function resetAnalytics(): void {
   if (!ready()) return;
   // On logout, or the next user on a shared device inherits the last one's

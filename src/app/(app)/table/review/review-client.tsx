@@ -49,6 +49,7 @@ export function ReviewClient() {
 
   const load = useCallback(async () => {
     if (sessionId === null) return;
+    setFailed(false);
     try {
       const response = await fetch(`/api/sim/review?sessionId=${sessionId}`);
       if (!response.ok) {
@@ -61,19 +62,40 @@ export function ReviewClient() {
     }
   }, [sessionId]);
 
+  const retry = useCallback(() => {
+    setReview(null);
+    void load();
+  }, [load]);
+
   useEffect(() => {
     void Promise.resolve().then(load);
   }, [load]);
 
   if (sessionId === null || failed) {
     return (
-      <p className="text-text-secondary text-body-lg">
-        Could not load the review.{" "}
-        <Link className="text-accent-bright underline" href="/table">
-          Back to the tables
-        </Link>
-        .
-      </p>
+      <div className="flex flex-col items-start gap-4 py-8" role="alert" data-review-error>
+        <h1 className="text-heading-lg">
+          {sessionId === null ? "No session to review" : "Your session is saved"}
+        </h1>
+        <p className="text-text-secondary text-body-md max-w-[46ch]">
+          {sessionId === null
+            ? "Open a finished table session from Practice to see its review."
+            : "Detailed review did not load. Your hands are still on the server — retry, or come back from the tables."}
+        </p>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          {sessionId !== null && (
+            <Button variant="primary" onClick={() => void retry()}>
+              Retry review
+            </Button>
+          )}
+          <Button variant="secondary" asChild>
+            <Link href="/table">Back to the tables</Link>
+          </Button>
+          <Button variant="ghost" asChild>
+            <Link href="/practice">Back to Practice</Link>
+          </Button>
+        </div>
+      </div>
     );
   }
 
@@ -98,14 +120,26 @@ export function ReviewClient() {
       <section className="border-border bg-surface-1 grid grid-cols-3 gap-4 rounded-lg border p-4 sm:grid-cols-6">
         <Stat label="Hands" value={String(stats.hands)} />
         <Stat label="Net bb" value={stats.netBb.toFixed(1)} />
-        <Stat label="bb/100" value={stats.bb100.toFixed(1)} />
+        {/* bb/100 over a short session is pure variance — a good player
+            running bad reads "−180" and concludes the grader is broken. Below
+            50 hands the figure is withheld, not dressed up. */}
+        <Stat
+          label="bb/100"
+          value={stats.hands >= 50 ? stats.bb100.toFixed(1) : "—"}
+          hint={stats.hands >= 50 ? undefined : "Needs 50+ hands to mean anything"}
+        />
         <Stat
           label="VPIP"
           value={`${stats.vpip}%`}
           hint="How often you voluntarily put money in preflop"
         />
         <Stat label="PFR" value={`${stats.pfr}%`} hint="How often you raised preflop" />
-        <Stat label="Biggest pot" value={`+${stats.biggestPotWonBb.toFixed(1)}`} />
+        {/* Both directions. Wins-only quietly flattered the session. */}
+        <Stat
+          label="Biggest pot"
+          value={`+${stats.biggestPotWonBb.toFixed(1)} / −${stats.biggestPotLostBb.toFixed(1)}`}
+          hint="Largest pot won / largest pot lost"
+        />
       </section>
 
       {/* 2 · The coach's read */}

@@ -37,7 +37,14 @@ const PATIENCE_MS = 20_000;
 
 type Phase = "checking" | "ready" | "slow";
 
-export function WelcomeClient({ hasSession }: { hasSession: boolean }) {
+export function WelcomeClient({
+  hasSession,
+  continueHref = "/practice",
+}: {
+  hasSession: boolean;
+  /** Quiz unfinished → /onboarding; otherwise the paid home. */
+  continueHref?: "/onboarding" | "/practice";
+}) {
   const router = useRouter();
   const reduced = useReducedMotion() ?? false;
   const [phase, setPhase] = useState<Phase>(hasSession ? "checking" : "ready");
@@ -116,11 +123,11 @@ export function WelcomeClient({ hasSession }: { hasSession: boolean }) {
 
   // Prefetched during the wait so the first paid screen is instant.
   useEffect(() => {
-    router.prefetch("/onboarding");
-    router.prefetch("/practice");
-  }, [router]);
+    router.prefetch(continueHref);
+  }, [router, continueHref]);
 
   const waiting = phase === "checking";
+  const finishingQuiz = continueHref === "/onboarding";
 
   return (
     <div className="mx-auto flex min-h-[70dvh] max-w-md flex-col items-center justify-center text-center">
@@ -143,7 +150,9 @@ export function WelcomeClient({ hasSession }: { hasSession: boolean }) {
             ? "Your payment went through. This takes a couple of seconds."
             : phase === "slow"
               ? "Payment received. Your account is still finishing up — go ahead, it will catch up."
-              : "Everything is unlocked. Time to find out where your game actually leaks."}
+              : finishingQuiz
+                ? "Everything is unlocked. A few questions so we can aim the first session."
+                : "Everything is unlocked. Your first session is ready."}
         </p>
 
         <Button
@@ -151,10 +160,10 @@ export function WelcomeClient({ hasSession }: { hasSession: boolean }) {
           size="lg"
           className="mt-8 w-full"
           disabled={waiting}
-          onClick={() => router.push("/onboarding")}
+          onClick={() => router.push(continueHref)}
           data-testid="welcome-continue"
         >
-          {waiting ? "One moment…" : "Start"}
+          {waiting ? "One moment…" : finishingQuiz ? "Continue" : "Start practicing"}
         </Button>
 
         <p className="text-text-tertiary text-body-sm mt-4">

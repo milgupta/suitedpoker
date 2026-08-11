@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Wordmark } from "@/components/Wordmark";
-import { NAV } from "@/content/landing";
+import { HERO, NAV } from "@/content/landing";
 
 /**
  * The public header, shared by every marketing surface.
@@ -16,7 +16,7 @@ import { NAV } from "@/content/landing";
  * Below `sm` the links collapse and the two actions remain, which is the whole
  * job on a phone.
  */
-export function SiteHeader({ cta = "Get started" }: { cta?: string }) {
+export function SiteHeader({ cta = HERO.cta }: { cta?: string }) {
   return (
     <header className="border-border/70 bg-canvas/80 glass-blur sticky top-0 z-50 border-b">
       <div className="mx-auto flex h-16 max-w-(--container-app) items-center gap-6 px-4 sm:px-6">

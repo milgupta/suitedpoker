@@ -10,6 +10,7 @@ import { methodologyFacts } from "@/lib/methodology-server";
 import { provenanceHeadline } from "@/lib/methodology";
 import { PLANS } from "@/lib/stripe/plans";
 import { FAQ, FEATURES, FINAL_CTA, HERO, HERO_PROOF, MIX, PROBLEM, STEPS } from "@/content/landing";
+import { TestimonialCarousel } from "@/components/marketing/TestimonialCarousel";
 
 /**
  * THE LANDING PAGE.
@@ -229,6 +230,9 @@ export default function Home() {
             </ol>
           </div>
         </section>
+
+        {/* After the loop is clear, social proof — not in the first viewport. */}
+        <TestimonialCarousel />
 
         {/* ── What you get ─────────────────────────────────────────────────── */}
         <section className="border-border border-t">

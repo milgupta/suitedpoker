@@ -52,6 +52,15 @@ export class FakeUpstashClient {
     return Promise.resolve(this.store.delete(key) ? 1 : 0);
   }
 
+  mget<T>(...keys: string[]): Promise<(T | null)[]> {
+    return Promise.resolve(
+      keys.map((key) => {
+        const raw = this.live(key)?.value;
+        return raw === undefined ? null : (raw as unknown as T);
+      }),
+    );
+  }
+
   incrby(key: string, amount: number): Promise<number> {
     const current = this.live(key);
     const next = Number(current?.value ?? "0") + amount;
@@ -66,8 +75,41 @@ export class FakeUpstashClient {
     return Promise.resolve(1);
   }
 
-  /** The adapter only touches these five methods. */
+  /**
+   * The REST pipeline, modelled as the adapter uses it: queued commands, one
+   * `exec`. Sequential application is faithful — Upstash pipelines are not
+   * transactions.
+   */
+  pipeline(): FakePipeline {
+    return new FakePipeline(this);
+  }
+
+  /** The adapter only touches these methods. */
   asRedis(): Redis {
     return this as unknown as Redis;
+  }
+}
+
+class FakePipeline {
+  private readonly queue: (() => Promise<unknown>)[] = [];
+
+  constructor(private readonly client: FakeUpstashClient) {}
+
+  incrby(key: string, amount: number): FakePipeline {
+    this.queue.push(() => this.client.incrby(key, amount));
+    return this;
+  }
+
+  expire(key: string, ttlSeconds: number): FakePipeline {
+    this.queue.push(() => this.client.expire(key, ttlSeconds));
+    return this;
+  }
+
+  async exec<T>(): Promise<T> {
+    const results: unknown[] = [];
+    for (const command of this.queue) {
+      results.push(await command());
+    }
+    return results as T;
   }
 }

@@ -336,30 +336,46 @@ export function archetypeFrequencies(
   // Preflop every seat but the big blind has a call available, so keying off
   // "is call legal" made openWidth dead code and every archetype came out
   // defending-wide and opening-never.
-  const width = facingBet ? profile.defendWidth : profile.openWidth;
-  const inWidth = strengthPercentile(handKey) >= 1 - width;
-  const archetypePlay = inWidth ? 1 : 0;
+  const baseWidth = facingBet ? profile.defendWidth : profile.openWidth;
+  /**
+   * Missing tree (no node): a hard cut at defendWidth made mid-strength hands
+   * pure folds, so a hero raise got folded by five seats every time. Widen and
+   * soften the edge so continue rates have real variance.
+   */
+  const width =
+    node === null && facingBet
+      ? Math.min(0.7, Math.max(baseWidth * 1.65, profile.vpipTarget))
+      : baseWidth;
+
+  const percentile = strengthPercentile(handKey);
+  const cut = 1 - width;
+  let archetypePlay = 0;
+  if (percentile >= cut) {
+    archetypePlay = 1;
+  } else if (node === null && facingBet && percentile >= cut - 0.14) {
+    // Soft band below the cut — sometimes continue, never a cliff.
+    archetypePlay = (percentile - (cut - 0.14)) / 0.14;
+  }
+
   const archetypeAggressionShare = profile.raiseShare;
 
   if (node === null) {
-    // No modelled node for this line — a limped pot, a four-way flop, anything
-    // the 43-node set does not cover. Falling through to a fold here was the
-    // first calibration bug: it dropped every bot's VPIP by roughly ten points
-    // and made the archetypes indistinguishable.
+    // No modelled node for this line — a limped pot, a four-way pot, or a
+    // pairing the set does not cover. Soft play above replaces the old
+    // binary fold cliff.
     const aggressive = archetypePlay * archetypeAggressionShare;
-    return { fold: 1 - archetypePlay, call: archetypePlay - aggressive, raise: aggressive };
+    const callShare = Math.max(0, archetypePlay - aggressive);
+    return { fold: 1 - archetypePlay, call: callShare, raise: aggressive };
   }
 
+  const hardInWidth = percentile >= 1 - baseWidth ? 1 : 0;
   const base: Record<string, number> = {};
   for (const action of node.actions) base[action] = frequencyOf(node, handKey, action);
 
   const solutionPlay = 1 - (base.fold ?? 0);
   const play = Math.max(
     0,
-    Math.min(
-      1,
-      solutionPlay * profile.solutionWeight + archetypePlay * (1 - profile.solutionWeight),
-    ),
+    Math.min(1, solutionPlay * profile.solutionWeight + hardInWidth * (1 - profile.solutionWeight)),
   );
 
   const aggressive = node.actions.filter((a) => a !== "fold" && a !== "call");
@@ -487,13 +503,16 @@ export function classStrength(handClass: HandClass): number {
  * dry ace-high flop. Street must still match exactly (a river template says
  * nothing about a flop), but position and board texture are similarity, not
  * identity: a template for the right texture from the neighbouring seat beats
- * no template at all. Ties break by id so the choice is deterministic.
+ * no template at all. Action vocabulary counts too — a facing-bet decision
+ * needs a template that has fold/call in it, not a stab chart. Ties break by
+ * id so the choice is deterministic.
  */
 export function pickPostflopTemplate(
   templates: readonly PostflopTemplate[] | undefined,
   street: "flop" | "turn" | "river",
   heroPos: Position,
   boardTags: readonly BoardTag[],
+  facingBet: boolean,
 ): PostflopTemplate | undefined {
   if (templates === undefined || templates.length === 0) return undefined;
 
@@ -502,6 +521,10 @@ export function pickPostflopTemplate(
   for (const template of templates) {
     if (template.street !== street) continue;
     let score = template.heroPos === heroPos ? 4 : 0;
+    const vocabularyFits = facingBet
+      ? template.actions.includes("fold") || template.actions.includes("call")
+      : template.actions.some((a) => a.startsWith("bet_") || a === "check");
+    if (vocabularyFits) score += 3;
     for (const tag of template.boardTags) {
       // A tag the board does not carry is a claim the template makes about a
       // different board, so it counts against, not merely for nothing.
@@ -546,6 +569,8 @@ function decidePostflop(
   const handClass = classifyHand(hero.holeCards, state.board as readonly Card[]);
   const strength = classStrength(handClass);
   const boardTags = boardTexture(state.board as readonly Card[]);
+  const facingBet = legal.some((a) => a.type === "call");
+  const opponents = state.players.filter((p) => p.seat !== seat && p.status !== "folded").length;
 
   // A matching template is ground truth; the archetype only bends it.
   const template = pickPostflopTemplate(
@@ -553,24 +578,26 @@ function decidePostflop(
     streetName(state.board.length),
     hero.position,
     boardTags,
+    facingBet,
   );
   const entry = template === undefined ? undefined : getPostflopStrategy(template, handClass);
-  const templateBet = entry
-    ? Object.entries(entry.strategy)
-        .filter(([action]) => action.startsWith("bet_") || action.startsWith("raise"))
-        .reduce((sum, [, f]) => sum + f, 0)
-    : null;
-
-  const facingBet = legal.some((a) => a.type === "call");
-  const opponents = state.players.filter((p) => p.seat !== seat && p.status !== "folded").length;
 
   if (!facingBet) {
+    const templateBet = entry
+      ? Object.entries(entry.strategy)
+          .filter(([action]) => action.startsWith("bet_") || action.startsWith("raise"))
+          .reduce((sum, [, f]) => sum + f, 0)
+      : null;
     const base = templateBet ?? strength;
     // Bluffs shrink with the field: firing air into three callers is not a
-    // style, it is a leak no archetype is meant to model.
+    // style, it is a leak no archetype is meant to model. The noise term keeps
+    // two identical spots from always betting or always checking.
     const bluffTerm =
       (profile.bluffFrequency * (1 - base)) / (1 + 0.5 * Math.max(0, opponents - 1));
-    const betProbability = profile.valueAggression * base + bluffTerm;
+    const betProbability = Math.max(
+      0,
+      Math.min(1, profile.valueAggression * base + bluffTerm + (rng() - 0.5) * 0.12),
+    );
     if (rng() < betProbability) {
       const fraction = (strength > 0.6 ? 0.66 : 0.4) * profile.betSizeMult + (rng() - 0.5) * 0.16;
       const bet = aggressiveAction(legal, state.pot, Math.max(0.25, fraction));
@@ -579,24 +606,43 @@ function decidePostflop(
     return passiveFallback(legal);
   }
 
-  // Facing a bet: the price decides, through the archetype's tolerance for
-  // aggression. A third-pot stab and a pot-sized barrel are different
-  // questions and must get different answers.
+  // Facing a bet: the template's fold/continue mix when we have one, and the
+  // price either way. A third-pot stab and a pot-sized barrel are different
+  // questions and must get different answers, template or not.
   const call = legal.find((a) => a.type === "call");
   const toCall = call?.amount !== undefined ? call.amount - hero.committedThisStreet : 0;
-  const continueProbability = postflopContinueProbability(
-    strength,
-    potOddsOf(toCall, state.pot),
-    profile,
-  );
+  const priced = postflopContinueProbability(strength, potOddsOf(toCall, state.pot), profile);
+
+  let continueProbability: number;
+  if (entry !== undefined) {
+    const foldF = entry.strategy.fold ?? 0;
+    const templateContinue = Math.max(0, Math.min(1, 1 - foldF));
+    // Stations trust the call side; nits lean toward the fold side — and the
+    // priced half is what stops a template authored for one sizing answering
+    // a 3x overbet the same way.
+    const fear = profile.foldToAggression;
+    continueProbability = 0.55 * templateContinue * (1.15 - fear * 0.55) + 0.45 * priced;
+  } else {
+    continueProbability = priced;
+  }
+  continueProbability = Math.max(0, Math.min(1, continueProbability + (rng() - 0.5) * 0.16));
+
   if (rng() >= continueProbability) {
     return legal.some((a) => a.type === "fold") ? { type: "fold" } : passiveFallback(legal);
   }
 
-  // The bluff term carries real weight here: it is what separates the maniac's
-  // aggression factor from the regular's. At 0.08 both bots measured the same.
-  const raiseProbability =
-    profile.valueAggression * strength * 0.45 + profile.bluffFrequency * 0.26;
+  // Raise frequency from the template when present, else archetype aggression.
+  // The bluff term carries real weight in the fallback: it is what separates
+  // the maniac's aggression factor from the regular's.
+  let raiseProbability: number;
+  if (entry !== undefined) {
+    const raiseF = Object.entries(entry.strategy)
+      .filter(([action]) => action.startsWith("raise") || action === "allin")
+      .reduce((sum, [, f]) => sum + f, 0);
+    raiseProbability = raiseF * (0.55 + profile.valueAggression * 0.45);
+  } else {
+    raiseProbability = profile.valueAggression * strength * 0.45 + profile.bluffFrequency * 0.26;
+  }
   if (rng() < raiseProbability) {
     const fraction = 0.8 * profile.betSizeMult + (rng() - 0.5) * 0.16;
     const raise = aggressiveAction(legal, state.pot, Math.max(0.4, fraction));

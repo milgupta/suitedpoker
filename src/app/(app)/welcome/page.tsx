@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
+import { eq } from "drizzle-orm";
 import { createClient } from "@/lib/supabase/server";
+import { getDb } from "@/db";
+import { profiles } from "@/db/schema";
+import { continueAfterWelcome, type Answers } from "@/lib/onboarding";
 import { WelcomeClient } from "./welcome-client";
 
 export const metadata: Metadata = { title: "Welcome", robots: { index: false, follow: false } };
@@ -18,5 +22,21 @@ export default async function WelcomePage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  return <WelcomeClient hasSession={user !== null} />;
+  let continueHref: "/onboarding" | "/practice" = "/practice";
+  if (user !== null) {
+    try {
+      const [row] = await getDb()
+        .select({ onboarding: profiles.onboarding })
+        .from(profiles)
+        .where(eq(profiles.id, user.id))
+        .limit(1);
+      continueHref = continueAfterWelcome((row?.onboarding ?? {}) as Answers);
+    } catch {
+      // A DB miss must not strand them on Start → nowhere. Practice is gated;
+      // if entitlement is not ready yet they will wait on this page instead.
+      continueHref = "/practice";
+    }
+  }
+
+  return <WelcomeClient hasSession={user !== null} continueHref={continueHref} />;
 }

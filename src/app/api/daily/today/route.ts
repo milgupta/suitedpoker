@@ -3,8 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { withEntitlement } from "@/lib/api-guard";
 import { getDb } from "@/db";
 import { dailyResults, dailySpotResults, profiles } from "@/db/schema";
-import { buildDailySpots } from "@/lib/daily-server";
-import { ensureChallenge } from "@/lib/daily-server";
+import { challengeSpots, ensureChallenge } from "@/lib/daily-server";
 import { toClientSpot } from "@/poker/generator";
 import { localDay } from "@/lib/local-day";
 import { currentStreak } from "@/lib/streak";
@@ -35,10 +34,10 @@ export const GET = withEntitlement(async (_request, auth) => {
 
   const challenge = await ensureChallenge(today);
 
-  // Rebuilt as a whole sequence, exactly as it was generated: buildDailySpots
-  // threads an accumulating excludeNodeRefs through the five, so regenerating
-  // one spot from its seed alone would produce a different node.
-  const spots = buildDailySpots(today).map(toClientSpot);
+  // From the STORED refs, never a fresh rebuild — a solution-data deploy
+  // changes what buildDailySpots produces mid-day, and the challenge must not
+  // change underneath users who already started it.
+  const spots = challengeSpots(challenge).map(toClientSpot);
 
   // Which spots this user has already answered — one attempt each, so this is
   // also the "resume in progress" state.

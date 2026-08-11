@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { createClient } from "@/lib/supabase/server";
 import { getDb } from "@/db";
 import { profiles } from "@/db/schema";
+import { APP_HOME } from "@/lib/app-chrome";
 import { LEAK_BB100, LEAK_HEADLINE } from "@/lib/diagnosis";
+import { hasActiveSubscription } from "@/lib/entitlement";
 import { SignOutButton } from "../sign-out-button";
 import { TrackView } from "@/components/track-view";
 import { PaywallClient } from "./paywall-client";
@@ -19,18 +22,34 @@ export const metadata: Metadata = { title: "Subscribe", robots: { index: false, 
  * Exempt from the entitlement gate for the obvious reason. The diagnosis scrim
  * is a slot: 7.2 builds the diagnosis and passes it in, and until then the page
  * opens on the benefits rather than on an empty blurred box.
+ *
+ * Already-subscribed visitors are sent home. Without that, a paid user who
+ * re-enters the onboarding funnel (or bookmarks this URL) sees a second
+ * checkout for a plan they already have.
  */
 export default async function PaywallPage() {
   // The loss framing, from their own diagnosis. bb/100 only — a dollar figure
   // attached to a poker result is a compliance boundary, not copy.
   let leakBb100: number | null = null;
   let leakLabel: string | null = null;
-  try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user !== null) {
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user !== null) {
+    // Entitlement check stays OUTSIDE any catch — redirect() throws, and a
+    // bare catch would swallow it and leave a subscriber on the paywall.
+    let entitled = false;
+    try {
+      entitled = await hasActiveSubscription(user.id);
+    } catch {
+      // Fail open to checkout rather than soft-locking a paying path.
+    }
+    if (entitled) redirect(APP_HOME);
+
+    try {
       const [row] = await getDb()
         .select({ leak: profiles.primaryLeakKey })
         .from(profiles)
@@ -40,9 +59,9 @@ export default async function PaywallPage() {
         leakBb100 = LEAK_BB100[row.leak] ?? null;
         leakLabel = LEAK_HEADLINE[row.leak]?.toLowerCase() ?? null;
       }
+    } catch {
+      // No diagnosis is no reason to hide the paywall.
     }
-  } catch {
-    // No diagnosis is no reason to hide the paywall.
   }
 
   return (

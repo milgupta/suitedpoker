@@ -14,7 +14,10 @@ import {
   goalLine,
   greeting,
   isCorrect,
+  lastSessionDelta,
+  leakContext,
   MIN_HANDS_FOR_LEAKS,
+  MIN_HANDS_FOR_STATS,
   pfrOf,
   sparkline,
   streetAccuracy,
@@ -239,6 +242,7 @@ describe("every dashboard stat is defined for the user", () => {
 describe("the empty state", () => {
   it("waits for a real sample before naming leaks", () => {
     expect(MIN_HANDS_FOR_LEAKS).toBe(50);
+    expect(MIN_HANDS_FOR_STATS).toBe(20);
   });
 
   it("computes without throwing on a brand-new user", () => {
@@ -251,5 +255,83 @@ describe("the empty state", () => {
       weekOverWeek([], NOW);
       sparkline([], 0, NOW);
     }).not.toThrow();
+  });
+});
+
+describe("leak context from the stored node reference", () => {
+  it("derives the real seat and sequence for preflop attempts", () => {
+    expect(leakContext("BB:vs_rfi_BTN")).toEqual({ position: "BB", actionSeq: "vs_rfi_BTN" });
+    expect(leakContext("UTG:rfi")).toEqual({ position: "UTG", actionSeq: "rfi" });
+    expect(leakContext("SB:vs_3bet_BB")).toEqual({ position: "SB", actionSeq: "vs_3bet_BB" });
+  });
+
+  it("marks postflop template attempts as postflop, never a guessed seat", () => {
+    expect(leakContext("srp-btn-cbet-ace-high-dry")).toEqual({
+      position: "postflop",
+      actionSeq: "postflop",
+    });
+  });
+
+  it("a big-blind overfolder produces a BIG-BLIND leak, not a button one", async () => {
+    // The regression this whole path exists to prevent: dashboard-server used
+    // to hardcode BTN/rfi for every attempt, so a BB leak was labelled BTN.
+    const { detectLeaks } = await import("../../src/poker/grader");
+    const attempts = Array.from({ length: 12 }, () => {
+      const context = leakContext("BB:vs_rfi_BTN");
+      return {
+        street: "preflop" as const,
+        position: context.position,
+        actionSeq: context.actionSeq,
+        handClass: null,
+        chosenAction: "fold",
+        bestAction: "call",
+        evLoss: 1.4,
+      };
+    });
+    const leaks = detectLeaks(attempts);
+    expect(leaks.length).toBeGreaterThan(0);
+    expect(leaks[0]!.position).toBe("BB");
+    expect(leaks[0]!.key).toContain("_bb_");
+    expect(leaks[0]!.key).not.toContain("btn_rfi");
+  });
+});
+
+describe("last session delta", () => {
+  const pt = (iso: string, rating: number) => ({ at: new Date(iso), rating });
+
+  it("is zero with fewer than two rated points", () => {
+    expect(lastSessionDelta([])).toBe(0);
+    expect(lastSessionDelta([pt("2026-08-10T10:00:00Z", 900)])).toBe(0);
+  });
+
+  it("measures the latest day against the previous day's close", () => {
+    const points = [
+      pt("2026-08-08T20:00:00Z", 880),
+      pt("2026-08-09T09:00:00Z", 900),
+      pt("2026-08-09T10:00:00Z", 915),
+      pt("2026-08-10T09:00:00Z", 905),
+      pt("2026-08-10T11:00:00Z", 940),
+    ];
+    // 940 (last close) minus 915 (previous day close).
+    expect(lastSessionDelta(points)).toBe(25);
+  });
+
+  it("uses the day's own first point when there is no earlier day", () => {
+    const points = [pt("2026-08-10T09:00:00Z", 900), pt("2026-08-10T11:00:00Z", 936)];
+    expect(lastSessionDelta(points)).toBe(36);
+  });
+});
+
+describe("the greeting in the user's timezone", () => {
+  // 22:00 UTC is morning in Sydney and evening in London.
+  const at = new Date("2026-08-10T22:00:00Z");
+
+  it("greets by the user's clock, not the server's", () => {
+    expect(greeting(at, "Australia/Sydney")).toBe("Morning");
+    expect(greeting(at, "Europe/London")).toBe("Evening");
+  });
+
+  it("falls back to the server clock on an invalid zone", () => {
+    expect(() => greeting(at, "Not/AZone")).not.toThrow();
   });
 });

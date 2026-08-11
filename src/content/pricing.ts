@@ -7,15 +7,23 @@
  * clicking anything.
  */
 
-/** What the subscription contains. One tier, so this is a list and not a matrix. */
+/**
+ * What the subscription contains. One tier, so this is a list and not a matrix.
+ *
+ * Every line here is held against the product, not the roadmap: "the
+ * leaderboard" was listed while no leaderboard existed in the UI, "every spot
+ * in the solution set" while 11 of 43 nodes are deliberately quarantined, and
+ * "every range" while postflop ranges are not browsable. A claim goes back on
+ * this list the day the feature ships, never the day it is planned.
+ */
 export const INCLUDED: readonly string[] = [
-  "Unlimited drills across every spot in the solution set",
+  "Unlimited drills across the served solution set",
   "The full strategy after every decision — frequencies and the cost of each action",
   "Plain-English explanations, and a coach you can ask follow-up questions",
   "The guided curriculum, from preflop fundamentals to board texture and sizing",
   "Full-hand sessions against distinct opponent types, with a post-session review",
-  "The daily challenge, streaks and the leaderboard",
-  "Every range in the set, browsable cell by cell",
+  "The daily challenge and streaks",
+  "Every preflop range in the set, browsable cell by cell",
   "Leak detection that builds your practice around what you actually get wrong",
 ];
 

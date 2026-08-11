@@ -24,6 +24,17 @@ export interface FeedbackProps {
   /** Overrides "Next hand" — the demo hand's one CTA leads to the diagnosis. */
   nextLabel?: string;
   /**
+   * True while the next hand is still in flight. With prefetch this is rare —
+   * but when it happens the button must say so rather than swallow clicks.
+   */
+  nextPending?: boolean;
+  /**
+   * Where the numbers behind this grade came from. /methodology promises the
+   * label is "visible in the product rather than buried here" — and the panel
+   * that grades you against the numbers is where it belongs.
+   */
+  source?: { provenance: string; evConfidence: string } | null;
+  /**
    * The AI explanation slot. Passed in rather than fetched here so this stays a
    * presentational component — the styleguide renders it with nothing, and the
    * arena renders it with a live stream.
@@ -116,6 +127,8 @@ export function Feedback({
   onNext,
   chat,
   nextLabel,
+  nextPending = false,
+  source,
   explanation,
   showMix = true,
   className,
@@ -243,10 +256,29 @@ export function Feedback({
       {/* 6. Ask about this hand (4.4). Never between the user and "next". */}
       {chat}
 
+      {/* 6b. Data provenance — the honest label on the numbers above. */}
+      {source != null && (
+        <p className="text-text-tertiary text-caption text-center" data-source-quality>
+          {source.provenance === "solver-verified"
+            ? "Solver-verified strategy"
+            : "Authored chart, not solver-verified"}
+          {" · EV confidence: "}
+          {source.evConfidence}
+        </p>
+      )}
+
       {/* 7. Next */}
-      <Button variant="primary" size="lg" className="w-full" onClick={onNext}>
-        {nextLabel ?? "Next hand"}
-        {nextLabel === undefined && <span className="text-caption opacity-60">Space</span>}
+      <Button
+        variant="primary"
+        size="lg"
+        className="w-full"
+        onClick={onNext}
+        disabled={nextPending}
+      >
+        {nextPending ? "Dealing…" : (nextLabel ?? "Next hand")}
+        {nextLabel === undefined && !nextPending && (
+          <span className="text-caption opacity-60">Space</span>
+        )}
       </Button>
     </motion.section>
   );

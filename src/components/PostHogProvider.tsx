@@ -2,7 +2,15 @@
 
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, type ReactNode } from "react";
-import { capturePageview, initAnalytics } from "@/lib/analytics-client";
+import { capturePageview, initAnalytics, setSessionRecording } from "@/lib/analytics-client";
+
+/**
+ * Screens where rrweb session recording is paused: each renders a poker table
+ * with an infinite pulse animation and a full re-render per hand, and
+ * recording every DOM mutation of that costs real CPU on the mid-tier phones
+ * most users play on. Event capture (the funnel) is unaffected.
+ */
+const RECORDING_PAUSED_PREFIXES = ["/arena", "/daily", "/table"];
 
 /**
  * Initialises PostHog once and captures a pageview per App Router navigation.
@@ -26,6 +34,7 @@ function PageviewTracker() {
     lastUrl.current = url;
 
     capturePageview(`${window.location.origin}${url}`);
+    setSessionRecording(!RECORDING_PAUSED_PREFIXES.some((p) => pathname.startsWith(p)));
   }, [pathname, searchParams]);
 
   return null;

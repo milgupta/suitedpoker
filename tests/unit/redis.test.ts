@@ -107,6 +107,23 @@ describe.each(IMPLEMENTATIONS)("cache helpers on $name", ({ make }) => {
     clock.advance(31);
     expect(await withCache("rt2", 30, fn)).toEqual({ n: 2 });
   });
+
+  it("mget preserves order and returns null for misses", async () => {
+    const port = make(clock);
+    await port.set("a", "1");
+    await port.set("c", "3");
+    expect(await port.mget(["a", "missing", "c"])).toEqual(["1", null, "3"]);
+    expect(await port.mget([])).toEqual([]);
+  });
+
+  it("incrByWithExpire increments and sets the TTL in one call", async () => {
+    const port = make(clock);
+    expect(await port.incrByWithExpire("counter", 2, 30)).toBe(2);
+    expect(await port.incrByWithExpire("counter", 3, 30)).toBe(5);
+    clock.advance(31);
+    // The TTL applied — the key is gone, so the next increment starts over.
+    expect(await port.get("counter")).toBeNull();
+  });
 });
 
 describe("cache TTL against the wall clock", () => {
@@ -138,6 +155,8 @@ describe("degradation", () => {
     del: () => Promise.reject(new Error("redis down")),
     incrBy: () => Promise.reject(new Error("redis down")),
     expire: () => Promise.reject(new Error("redis down")),
+    mget: () => Promise.reject(new Error("redis down")),
+    incrByWithExpire: () => Promise.reject(new Error("redis down")),
   };
 
   it("never throws out of the cache helpers when Redis is down", async () => {

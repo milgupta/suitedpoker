@@ -64,7 +64,7 @@ export function PracticeView() {
           <HubCard
             href="/table"
             title="Table sim"
-            description="A full six-max session. Review the leaks after."
+            description="A five-handed table session. Review the leaks after."
             cta="Sit down"
             imageSrc={HUB.table}
             dataQuick="Table sim"

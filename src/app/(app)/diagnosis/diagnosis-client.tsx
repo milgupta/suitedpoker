@@ -14,23 +14,31 @@ import { demoHandDetail, demoHandHeadline, type DemoHandRecord } from "@/lib/dem
 /**
  * The diagnosis, staged.
  *
- * ~2.5 seconds of reveal, then everything stays. Each block springs in on a
+ * ~1.4 seconds of reveal, then everything stays. Each block springs in on a
  * stagger so it reads as a report being WRITTEN, not a page loading — the
  * difference between the two is whether the user feels analysed or stalled.
  *
  * Reduced motion collapses the whole sequence to "everything visible now".
  */
 
-const STAGE_MS = [0, 400, 900, 1400, 1900] as const;
-export const REVEAL_TOTAL_MS = 2400;
+const STAGE_MS = [0, 400, 900] as const;
+export const REVEAL_TOTAL_MS = 1400;
 
 export interface DiagnosisClientProps {
   diagnosis: Diagnosis;
   /** 7.2b's hand. Null for anyone who reached here without playing one. */
   demoHand?: DemoHandRecord | null;
+  /** Unpaid → paywall; already subscribed → practice. */
+  nextHref?: "/paywall" | "/practice";
+  nextLabel?: string;
 }
 
-export function DiagnosisClient({ diagnosis, demoHand = null }: DiagnosisClientProps) {
+export function DiagnosisClient({
+  diagnosis,
+  demoHand = null,
+  nextHref = "/paywall",
+  nextLabel = "See my plan →",
+}: DiagnosisClientProps) {
   const reduced = useReducedMotion() ?? false;
   const [analyzing, setAnalyzing] = useState(!reduced);
 
@@ -82,15 +90,12 @@ export function DiagnosisClient({ diagnosis, demoHand = null }: DiagnosisClientP
         )}
       </div>
 
-      {/* 1 · The leak */}
       {/*
-        THE HAND COMES FIRST, and it is the whole argument of this screen.
-        "You folded AJo from the button" is evidence about something the user
-        just did; "you may be too passive" is a horoscope derived from a
-        questionnaire. The quiz result follows underneath as context.
-
-        Degrades to the questionnaire-only version when no hand exists — a user
-        who dropped out and resumed still gets a coherent screen.
+        THE HAND COMES FIRST when one exists — evidence from something the
+        user just did, not a horoscope from the questionnaire. Rating and
+        path follow. Leak headline and dollar cost used to live here; they
+        were cut because a questionnaire-derived $ figure reads as fabricated
+        to the audience that would catch it.
       */}
       {demoHand !== null && (
         <motion.section {...stage(0)} className="flex flex-col gap-1" data-demo-hand>
@@ -104,38 +109,8 @@ export function DiagnosisClient({ diagnosis, demoHand = null }: DiagnosisClientP
         </motion.section>
       )}
 
-      <motion.section {...stage(0)} className="flex flex-col gap-1">
-        <h2 className="text-overline text-text-tertiary uppercase">Primary leak</h2>
-        <p className="text-display-md" data-leak-headline>
-          {diagnosis.headline}
-        </p>
-        {diagnosis.goalLine !== null && (
-          <p className="text-text-secondary text-body-md mt-1">{diagnosis.goalLine}</p>
-        )}
-      </motion.section>
-
-      {/* 2 · The cost */}
-      <motion.section {...stage(1)} className="flex flex-col gap-1">
-        <h2 className="text-overline text-text-tertiary uppercase">What it costs you</h2>
-        {diagnosis.cost.annualUsd !== null ? (
-          <p className="text-display-lg font-mono tabular-nums" data-cost>
-            ~${diagnosis.cost.annualUsd.toLocaleString()}
-            <span className="text-text-secondary text-body-lg font-sans"> / year, estimated</span>
-          </p>
-        ) : (
-          // The play-money case. A dollar figure here would be fabricated, and
-          // a poker player who catches one fabricated number discounts every
-          // real one on the page.
-          <p className="text-display-lg font-mono tabular-nums" data-cost>
-            ~{diagnosis.cost.annualBb.toLocaleString()}
-            <span className="text-text-secondary text-body-lg font-sans"> big blinds / year</span>
-          </p>
-        )}
-        <CostTooltip formula={diagnosis.cost.formula} />
-      </motion.section>
-
-      {/* 3 · Where you stand */}
-      <motion.section {...stage(2)} className="flex flex-col gap-2">
+      {/* Where you stand — rating from the quiz, not a dollar estimate. */}
+      <motion.section {...stage(0)} className="flex flex-col gap-2">
         <h2 className="text-overline text-text-tertiary uppercase">Where you stand</h2>
         <p className="text-body-lg">
           Rating <span className="font-mono font-semibold tabular-nums">{diagnosis.rating}</span>
@@ -145,8 +120,7 @@ export function DiagnosisClient({ diagnosis, demoHand = null }: DiagnosisClientP
         <PositionBar position={diagnosis.position} label={diagnosis.standing} reduced={reduced} />
       </motion.section>
 
-      {/* 4 · The path */}
-      <motion.section {...stage(3)} className="flex flex-col gap-2">
+      <motion.section {...stage(1)} className="flex flex-col gap-2">
         <h2 className="text-overline text-text-tertiary uppercase">Your path</h2>
         <p className="text-body-lg" data-path>
           {diagnosis.lessons} lessons · about {diagnosis.weeks} week
@@ -175,41 +149,11 @@ export function DiagnosisClient({ diagnosis, demoHand = null }: DiagnosisClientP
         </div>
       </motion.section>
 
-      {/* 5 · The CTA */}
-      <motion.div {...stage(4)}>
+      <motion.div {...stage(2)}>
         <Button variant="accent" size="lg" className="w-full" asChild>
-          <Link href="/paywall">See my plan →</Link>
+          <Link href={nextHref}>{nextLabel}</Link>
         </Button>
       </motion.div>
-    </div>
-  );
-}
-
-/**
- * The honest tooltip. If a poker player taps this and finds the number
- * fabricated, they are gone permanently — so it shows the actual arithmetic
- * the page used, not a paraphrase of it.
- */
-function CostTooltip({ formula }: { formula: string }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div>
-      <button
-        type="button"
-        className="tap-target text-text-tertiary text-caption hover:text-text-secondary underline decoration-dotted underline-offset-4"
-        aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
-      >
-        how we estimate this
-      </button>
-      {open && (
-        <p
-          className="text-text-secondary text-caption bg-surface-1 border-border mt-2 rounded-md border px-3 py-2 font-mono"
-          data-formula
-        >
-          {formula}
-        </p>
-      )}
     </div>
   );
 }

@@ -35,7 +35,16 @@ import type { PlanId } from "@/lib/stripe/plans";
 
 type Step = "reason" | "offer" | "confirm" | "done";
 
-export function CancelClient({ plan, periodEnd }: { plan: PlanId; periodEnd: string | null }) {
+export function CancelClient({
+  plan,
+  periodEnd,
+  planUnknown = false,
+}: {
+  plan: PlanId;
+  periodEnd: string | null;
+  /** Price id did not resolve — cancel still works; save offers that need a plan stay conservative. */
+  planUnknown?: boolean;
+}) {
   const router = useRouter();
   const reduced = useReducedMotion() ?? false;
 
@@ -45,11 +54,13 @@ export function CancelClient({ plan, periodEnd }: { plan: PlanId; periodEnd: str
   const [error, setError] = useState<string | null>(null);
   const [endsAt, setEndsAt] = useState<string | null>(periodEnd);
 
-  const offer = reason === null ? null : offerFor(reason, plan);
+  // Unknown price id: never invent a "switch to annual" offer.
+  const planForOffers: PlanId | null = planUnknown ? null : plan;
+  const offer = reason === null ? null : offerFor(reason, planForOffers);
 
   function chooseReason() {
     if (reason === null) return;
-    const next = offerFor(reason, plan);
+    const next = offerFor(reason, planForOffers);
 
     if (next.id === "none") {
       setStep("confirm");

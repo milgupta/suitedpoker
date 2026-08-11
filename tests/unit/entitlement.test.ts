@@ -146,12 +146,16 @@ describe("the entitlement cache", () => {
     vi.resetModules();
   });
 
-  it("caches a verdict for 60 seconds and invalidateEntitlement busts it", async () => {
+  it("caches a verdict for five minutes and invalidateEntitlement busts it", async () => {
     const { redisModule, entitlementModule } = await freshModules();
     const redis = new redisModule.MemoryRedis();
     redisModule.__setRedisForTests(redis);
 
-    expect(entitlementModule.ENTITLEMENT_TTL_SECONDS).toBe(60);
+    // Five minutes, not more: the webhook busts this on every subscription
+    // change, so the TTL only bounds out-of-band expiry. It must stay well
+    // inside the 3-day past-due grace window.
+    expect(entitlementModule.ENTITLEMENT_TTL_SECONDS).toBe(300);
+    expect(entitlementModule.ENTITLEMENT_TTL_SECONDS).toBeLessThan(86_400);
 
     // The DB is unreachable here, so drive the cache directly — the point is
     // that the key is read, honoured, and can be cleared on demand.

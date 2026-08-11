@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Suspense } from "react";
 import { AuthShell } from "../auth-shell";
-import { GoogleButton } from "../google-button";
-import { SignupForm } from "./signup-form";
+import { SignupFromStart } from "./signup-from-start";
 
 export const metadata: Metadata = {
   title: "Create your account",
@@ -13,24 +11,17 @@ export const metadata: Metadata = {
 
 export default function SignupPage() {
   return (
-    <AuthShell
-      title="Create your account"
-      lead="Ten minutes a day. Real spots, graded on what they cost you."
-      footer={
-        <>
-          Already have an account?{" "}
-          <Link href="/login" className="text-accent-bright hover:underline">
-            Log in
-          </Link>
-        </>
+    <Suspense
+      fallback={
+        <AuthShell
+          title="Create your account"
+          lead="Ten minutes a day. Real spots, graded on what they cost you."
+        >
+          <div className="bg-surface-2 h-40 animate-pulse rounded-lg" aria-hidden />
+        </AuthShell>
       }
     >
-      <div className="flex flex-col gap-6">
-        <Suspense fallback={null}>
-          <GoogleButton next="/onboarding" />
-        </Suspense>
-        <SignupForm />
-      </div>
-    </AuthShell>
+      <SignupFromStart />
+    </Suspense>
   );
 }

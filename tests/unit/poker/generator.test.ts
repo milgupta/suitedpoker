@@ -177,6 +177,39 @@ describe("no solution data reaches the client", () => {
     );
   });
 
+  it("enriches seats with fold, waiting, and blind chips on the server", () => {
+    const spot = generateSpot(
+      { type: "preflop", heroPos: "MP", actionSeq: "rfi" },
+      data,
+      "seat-enrich",
+    );
+    const utg = spot.seats.find((s) => s.position === "UTG");
+    const sb = spot.seats.find((s) => s.position === "SB");
+    const bb = spot.seats.find((s) => s.position === "BB");
+    const hero = spot.seats.find((s) => s.isHero);
+
+    expect(utg?.folded).toBe(true);
+    expect(utg?.toAct).toBe(false);
+    expect(utg?.committedBb).toBeNull();
+
+    expect(sb?.folded).toBe(false);
+    expect(sb?.toAct).toBe(true);
+    expect(sb?.committedBb).toBe(0.5);
+
+    expect(bb?.committedBb).toBe(1);
+    expect(hero?.folded).toBe(false);
+    expect(hero?.toAct).toBe(false);
+
+    const client = toClientSpot(spot);
+    const clientSb = client.seats.find((s) => s.position === "SB");
+    expect(clientSb).toMatchObject({
+      folded: false,
+      toAct: true,
+      committedBb: 0.5,
+      action: null,
+    });
+  });
+
   it("keeps the client spot type free of forbidden keys at compile time", () => {
     // If ClientSpot ever gains one of these, src/poker/generator.ts stops
     // compiling. This test documents the guarantee; tsc enforces it.

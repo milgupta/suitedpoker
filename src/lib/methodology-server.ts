@@ -1,6 +1,6 @@
 import "server-only";
 
-import { loadSolutionData } from "@/lib/solution-data";
+import { loadAllSolutionData } from "@/lib/solution-data";
 import type { MethodologyFacts } from "@/lib/methodology";
 
 /**
@@ -11,7 +11,10 @@ import type { MethodologyFacts } from "@/lib/methodology";
  * wrong, and this is the page whose whole value is being checkable.
  */
 export function methodologyFacts(): MethodologyFacts {
-  const data = loadSolutionData();
+  // The WHOLE corpus, quarantine ignored — node-status.ts documents that
+  // /methodology counts honestly while serving is narrowed. This briefly read
+  // the served set and under-reported the page whose value is being checkable.
+  const data = loadAllSolutionData();
 
   const all = [...data.preflop, ...data.postflop];
   const solverVerified = all.filter((n) => n.provenance === "solver-verified").length;
