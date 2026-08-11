@@ -494,6 +494,71 @@ as broken.
 
 ---
 
+## 6. The game surface — three bands, no table
+
+Adopted 2026-08-10, replacing the ring. Every screen that presents a hand —
+the sim, the arena, the daily, the demo hand — uses the same tableless layout:
+three horizontal bands on the canvas. There is no oval, no felt, no ring, at
+any viewport size. The reference is a minimal mobile poker app Milan supplied
+on video; the reasoning is that bands scale to the desktop this product is
+70% used on, where an oval only ever letterboxes.
+
+### 6.1 Opponents strip (top)
+
+- Each seat: avatar, **bot name** (from the fixed 50-name list, seeded per
+  session, unique per table), a small **position tag** (UTG/MP/CO/BTN/SB/BB —
+  the reference omits positions; a trainer never may), and the stack in bb.
+- The dealer wears a small "D" badge on the avatar. Folded seats dim to 40%.
+- The seat currently acting gets a subtle opacity pulse. **Never a timer** —
+  not for bots (they "think" for 0.5–1s), not for the hero, not as an option.
+
+### 6.2 Board band (center)
+
+- **Five card slots, always present.** Undealt slots render as patterned card
+  backs; cards reveal in place. Zero layout shift is by construction, not by
+  skeleton-matching.
+- The pot is a bare number, right-aligned under the slots. No "POT" label.
+- Street bets are small neutral **badges** under each seat (and by the hero
+  dock). They are interface chrome: never amber (grade ramp), never the grade
+  green. When a street closes they clear and the pot number counts up.
+
+### 6.3 Hero dock (bottom)
+
+- Two large fanned cards, left. Folded hero cards become dim outlines.
+- Right: the **hand-strength card** — the current made-hand label in lesson
+  vocabulary ("Pair", "Flush draw"), with the best five cards ghosted small
+  beneath it. No emoji. Computed only from what the hero can see.
+- Hero to act = accent glow on the dock. Blue: it is interface state, and the
+  green ring the reference uses would read as a grade.
+
+### 6.4 Action bar
+
+- Buttons carry their amounts: "Check", "Call 2", "Raise to 6".
+- **Sim only:** an expander swaps the row in place (no modal, no sheet) for
+  amount + slider + presets [Min] [⅓ Pot] [½ Pot] [¾ Pot] [Pot] [All-in],
+  with confirm and cancel. Bounds come from the engine's legal min/max.
+- **Drills:** fixed labeled buttons only. Graded actions must stay exactly
+  the chart's actions; a slider would make the grade ambiguous.
+- Out of turn or folded: one full-width quiet pill, "Waiting for the next
+  hand". Never an empty gap where buttons were.
+
+### 6.5 Showdown
+
+- Villain hole cards appear as mini cards under their avatars — only at a
+  showdown they reached unfolded (`mayReveal` stays the single rule).
+- The **winning five** cards stay at full brightness; every non-contributing
+  card (board and hands) dims. A chip names the hand ("Flush") by the winner.
+- The pot number counts across to the winner's stack.
+
+### 6.6 What survives from the ring era
+
+The deck (white faces, two-colour, SVG pips, corner index), the grade ramp
+and its exclusivity, `evColor()`, the feedback panel and capsules, the
+44px/tap-target rules, and reduced-motion variants all carry over unchanged.
+The ring components themselves are deleted once nothing references them.
+
+---
+
 ## Settled in 0.2
 
 - **Typeface** — Inter, self-hosted. TWK Lausanne dropped, see §2.
