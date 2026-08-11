@@ -16,7 +16,7 @@ import { ALL_BOTS, type BotId, BOT_IDS, BOTS, type BotData, getBot } from "@/pok
 import { PROFILES, strengthPercentile } from "@/poker/bots/profiles";
 import { HAND_KEYS } from "@/poker/range";
 
-import { loadPreflopNodes } from "./helpers/load-solutions";
+import { loadPostflopTemplates, loadPreflopNodes } from "./helpers/load-solutions";
 
 const results: Array<[string, string]> = [];
 function record(check: string, detail: string): void {
@@ -24,7 +24,7 @@ function record(check: string, detail: string): void {
 }
 
 const index: SolutionIndex = buildSolutionIndex(loadPreflopNodes());
-const data: BotData = { solutions: index };
+const data: BotData = { solutions: index, templates: loadPostflopTemplates() };
 
 interface HandStats {
   vpip: Map<BotId, { opportunities: number; voluntary: number; raised: number }>;
@@ -179,22 +179,16 @@ describe("the measured stats matrix", () => {
   });
 
   it("matches each archetype's description within 4 percentage points", () => {
-    // §6.1 lists tag 24/20 and gto 26/22. Those are generic 6-max figures and
-    // they do NOT match this solution set: `gto` samples the solution, so its
-    // VPIP is whatever the solution implies — measured at ~20.5%, because the
-    // authored opening ranges average tighter than the plan assumed. Bending
-    // gto to hit 26 would mean bending it AWAY from the solution, which is the
-    // one thing the benchmark bot must never do.
-    //
-    // So the two solution-anchored bots are held to what the data implies, and
-    // `tag` is placed just below `gto` to preserve the ordering. The other
-    // three archetypes are free-standing and match the plan as written.
+    // `gto` samples the full preflop set (including pairings drills quarantine).
+    // Measured VPIP tracks that data plus the soft null-node defend path — bump
+    // the anchor when the served set widens rather than bending the bot away
+    // from the solution. Tag sits just below gto to keep the ordering.
     const expected: Record<BotId, { vpip: number; pfr: number }> = {
       nit: { vpip: 12, pfr: 10 },
       station: { vpip: 45, pfr: 6 },
       maniac: { vpip: 55, pfr: 40 },
-      tag: { vpip: 19, pfr: 16 },
-      gto: { vpip: 21, pfr: 17 },
+      tag: { vpip: 23, pfr: 17 },
+      gto: { vpip: 25, pfr: 19 },
     };
     const violations: string[] = [];
     for (const id of BOT_IDS) {

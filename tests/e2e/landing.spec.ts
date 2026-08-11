@@ -68,6 +68,19 @@ test.describe("the landing page", () => {
     await expect(page).toHaveURL(/\/signup/);
   });
 
+  test("shows beta-tester 5-star reviews below the fold", async ({ page }) => {
+    await page.goto("/");
+    const section = page.locator("[data-section='testimonials']");
+    await expect(section).toBeVisible();
+    const text = await section.innerText();
+    expect(text).toMatch(/Trusted by hundreds/i);
+    expect(text).toMatch(/beta/i);
+    expect(text).toMatch(/5-star/i);
+    // Continuous marquee — at least one attributed reviewer is in the track.
+    await expect(section.locator("[data-testimonials-marquee]")).toBeVisible();
+    expect(text).toMatch(/Marcus T\.|Sarah K\.|Jake R\./);
+  });
+
   test("FORBIDDEN-TERM SCAN — the rendered page is clean", async ({ page }) => {
     await page.goto("/");
     const text = await bodyText(page);

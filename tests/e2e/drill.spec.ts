@@ -113,6 +113,10 @@ test.describe("drill loop", () => {
       "position",
       "stackBb",
       "isHero",
+      "folded",
+      "toAct",
+      "action",
+      "committedBb",
     ]);
 
     const keys = new Set<string>();

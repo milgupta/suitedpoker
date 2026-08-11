@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { createClient } from "@/lib/supabase/client";
 import { authErrorMessage } from "@/lib/supabase/errors";
 import { capture } from "@/lib/analytics-client";
 import { AGE_CONFIRMATION } from "@/lib/compliance";
+import { START_CONTINUE_PATH } from "@/lib/start-answers";
 import { FormError } from "../auth-shell";
 
 const STRENGTH_COLORS = [
@@ -25,6 +26,10 @@ const STRENGTH_COLORS = [
 
 export function SignupForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromStart = searchParams.get("from") === "start";
+  const afterAuth = fromStart ? START_CONTINUE_PATH : "/onboarding";
+
   const [submitError, setSubmitError] = useState("");
   const [checkEmail, setCheckEmail] = useState(false);
 
@@ -50,7 +55,7 @@ export function SignupForm() {
       email: values.email,
       password: values.password,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=/onboarding`,
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(afterAuth)}`,
         // Timestamped at the moment they confirmed, and carried through
         // Supabase so the trigger writes it onto the profile.
         data: { age_confirmed_at: new Date().toISOString() },
@@ -71,7 +76,7 @@ export function SignupForm() {
       return;
     }
 
-    router.replace("/onboarding");
+    router.replace(afterAuth);
     router.refresh();
   }
 

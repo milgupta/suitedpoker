@@ -48,6 +48,7 @@ describe("the landing showcase", () => {
     ).toBeGreaterThan(1);
 
     // And no action is so dominant that the mix is a rounding error.
+    // 0.8 is allowed — that is the 80/20 the hero panel is built to show.
     expect(Math.max(...played)).toBeLessThanOrEqual(0.8);
   });
 

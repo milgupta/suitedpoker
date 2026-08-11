@@ -15,6 +15,7 @@ import {
   greeting,
   isCorrect,
   MIN_HANDS_FOR_LEAKS,
+  MIN_HANDS_FOR_STATS,
   pfrOf,
   sparkline,
   streetAccuracy,
@@ -239,6 +240,7 @@ describe("every dashboard stat is defined for the user", () => {
 describe("the empty state", () => {
   it("waits for a real sample before naming leaks", () => {
     expect(MIN_HANDS_FOR_LEAKS).toBe(50);
+    expect(MIN_HANDS_FOR_STATS).toBe(20);
   });
 
   it("computes without throwing on a brand-new user", () => {

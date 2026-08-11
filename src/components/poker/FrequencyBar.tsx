@@ -77,7 +77,7 @@ export function FrequencyBar({ segments, chosenAction, className }: FrequencyBar
               onClick={() =>
                 setRevealed((current) => (current === segment.action ? null : segment.action))
               }
-              className="relative flex h-full items-center justify-center overflow-hidden"
+              className="border-canvas/40 relative flex h-full items-center justify-center overflow-hidden border-r last:border-r-0"
               style={{
                 background: evColor(segment.evLoss),
                 outline: isChosen ? "2px solid var(--color-text-primary)" : undefined,

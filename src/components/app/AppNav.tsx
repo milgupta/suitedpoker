@@ -30,6 +30,7 @@ export function AppNav({
   pathname: string;
 }) {
   const compact = mode === "compact";
+  const sessionLabel = compactSessionLabel(pathname);
 
   return (
     <header
@@ -48,13 +49,23 @@ export function AppNav({
       </Link>
 
       {compact ? (
-        <div className="flex flex-1 justify-center">
+        <div className="flex flex-1 items-center justify-center gap-2">
           <Link
             href={APP_HOME}
             className="text-text-secondary hover:text-text-primary tap-target rounded-full px-3 py-2 text-sm"
           >
             Practice
           </Link>
+          {sessionLabel !== null && (
+            <>
+              <span className="text-text-tertiary text-caption" aria-hidden>
+                /
+              </span>
+              <span className="text-text-primary text-sm font-medium" aria-current="page">
+                {sessionLabel}
+              </span>
+            </>
+          )}
         </div>
       ) : (
         <>
@@ -84,6 +95,15 @@ export function AppNav({
       </Link>
     </header>
   );
+}
+
+/** Where the player is inside a compact (immersive) session. */
+function compactSessionLabel(pathname: string): string | null {
+  if (pathname === "/arena" || pathname.startsWith("/arena/")) return "Arena";
+  if (pathname === "/daily" || pathname.startsWith("/daily/")) return "Daily";
+  if (pathname === "/table/play" || pathname.startsWith("/table/play/")) return "Table";
+  if (/^\/learn\/[^/]+\/[^/]+/.test(pathname)) return "Lesson";
+  return null;
 }
 
 function NavLink({

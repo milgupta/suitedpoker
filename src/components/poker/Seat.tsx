@@ -2,7 +2,7 @@
 
 import { motion, useReducedMotion } from "motion/react";
 import type { Player } from "@/poker/gamestate";
-import { DURATION, SPRING } from "@/lib/motion";
+import { DURATION } from "@/lib/motion";
 import { PlayingCard } from "./PlayingCard";
 import { SeatAvatar } from "./SeatAvatar";
 import { cn } from "@/lib/utils";
@@ -15,6 +15,12 @@ export interface SeatProps {
   bigBlind: number;
   /** Show the hole cards face up. Hero only, or at showdown. */
   revealCards?: boolean;
+  /**
+   * When false, skip the hole-card row entirely. Used for the hero on the sim
+   * table — large cards sit below the ring, and a second pair on the seat
+   * reads as a bug.
+   */
+  showHoleCards?: boolean;
   /** Optional archetype under the seat (Station, Nit, TAG) — sim tables only. */
   tag?: string | null;
   className?: string;
@@ -33,17 +39,25 @@ export function Seat({
   isActive = false,
   bigBlind,
   revealCards = false,
+  showHoleCards = true,
   tag = null,
   className,
 }: SeatProps) {
   const reduced = useReducedMotion() ?? false;
   const folded = player.status === "folded";
   const stackBb = bigBlind > 0 ? player.stack / bigBlind : 0;
-  const betBb = bigBlind > 0 ? player.committedThisStreet / bigBlind : 0;
+  // Archetype only on the actor — tagging every seat widens side pills until
+  // they overlap on narrow heights.
+  const tagLabel = tag !== null && isActive ? tag : null;
 
   return (
     <div
-      className={cn("flex flex-col items-center gap-1.5", className)}
+      className={cn(
+        "flex flex-col items-center gap-1",
+        // Inactive seats compress so the actor and decision dock win the space.
+        !isActive && !isHero && "scale-[0.92]",
+        className,
+      )}
       data-seat={player.seat}
       data-position={player.position}
       data-folded={folded ? "true" : "false"}
@@ -54,22 +68,24 @@ export function Seat({
       <SeatAvatar seed={player.position} sizeClass="size-[26px]" isHero={isHero} folded={folded} />
 
       {/* Hole cards sit above the pill, so the pill stays the anchor point. */}
-      <div className={cn("flex gap-1", folded && "opacity-0")} aria-hidden={folded}>
-        {player.holeCards !== null &&
-          player.holeCards.map((card, i) => (
-            <PlayingCard
-              key={i}
-              card={card}
-              faceDown={!revealCards}
-              size="sm"
-              index={i}
-              dealCount={2}
-            />
-          ))}
-      </div>
+      {showHoleCards && (
+        <div className={cn("flex gap-1", folded && "opacity-0")} aria-hidden={folded}>
+          {player.holeCards !== null &&
+            player.holeCards.map((card, i) => (
+              <PlayingCard
+                key={i}
+                card={card}
+                faceDown={!revealCards}
+                size="sm"
+                index={i}
+                dealCount={2}
+              />
+            ))}
+        </div>
+      )}
 
       <motion.div
-        className="border-border bg-surface-1 flex items-center gap-2 rounded-full border px-2.5 py-1"
+        className="border-border bg-surface-1 flex max-w-[9.5rem] items-center gap-1.5 rounded-full border px-2 py-1"
         style={{
           // The hero is marked with the grade-best border because it is the
           // only seat whose decisions are being judged.
@@ -93,9 +109,9 @@ export function Seat({
             : { duration: DURATION.fast }
         }
       >
-        <span className="text-overline text-text-tertiary font-mono uppercase">
+        <span className="text-overline text-text-tertiary truncate font-mono uppercase">
           {player.position}
-          {tag ? ` · ${tag}` : ""}
+          {tagLabel ? ` · ${tagLabel}` : ""}
         </span>
         <span className="text-body-sm font-mono font-semibold tabular-nums">
           {stackBb.toFixed(stackBb < 10 ? 1 : 0)}
@@ -105,18 +121,6 @@ export function Seat({
           <span className="text-overline text-grade-inaccuracy uppercase">All in</span>
         )}
       </motion.div>
-
-      {/* Chips committed this street, animating toward the pot. */}
-      {betBb > 0 && (
-        <motion.span
-          className="border-border-strong bg-surface-2 text-body-md rounded-full border px-2.5 py-1 font-mono font-semibold tabular-nums"
-          initial={reduced ? false : { opacity: 0, scale: 0.7 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={SPRING.snappy}
-        >
-          {betBb.toFixed(betBb < 10 ? 1 : 0)}BB
-        </motion.span>
-      )}
     </div>
   );
 }

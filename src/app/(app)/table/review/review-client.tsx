@@ -49,6 +49,7 @@ export function ReviewClient() {
 
   const load = useCallback(async () => {
     if (sessionId === null) return;
+    setFailed(false);
     try {
       const response = await fetch(`/api/sim/review?sessionId=${sessionId}`);
       if (!response.ok) {
@@ -61,19 +62,40 @@ export function ReviewClient() {
     }
   }, [sessionId]);
 
+  const retry = useCallback(() => {
+    setReview(null);
+    void load();
+  }, [load]);
+
   useEffect(() => {
     void Promise.resolve().then(load);
   }, [load]);
 
   if (sessionId === null || failed) {
     return (
-      <p className="text-text-secondary text-body-lg">
-        Could not load the review.{" "}
-        <Link className="text-accent-bright underline" href="/table">
-          Back to the tables
-        </Link>
-        .
-      </p>
+      <div className="flex flex-col items-start gap-4 py-8" role="alert" data-review-error>
+        <h1 className="text-heading-lg">
+          {sessionId === null ? "No session to review" : "Your session is saved"}
+        </h1>
+        <p className="text-text-secondary text-body-md max-w-[46ch]">
+          {sessionId === null
+            ? "Open a finished table session from Practice to see its review."
+            : "Detailed review did not load. Your hands are still on the server — retry, or come back from the tables."}
+        </p>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          {sessionId !== null && (
+            <Button variant="primary" onClick={() => void retry()}>
+              Retry review
+            </Button>
+          )}
+          <Button variant="secondary" asChild>
+            <Link href="/table">Back to the tables</Link>
+          </Button>
+          <Button variant="ghost" asChild>
+            <Link href="/practice">Back to Practice</Link>
+          </Button>
+        </div>
+      </div>
     );
   }
 

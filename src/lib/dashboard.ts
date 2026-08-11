@@ -153,6 +153,13 @@ export function sparkline(
 /** Enough data to say something true about someone's game. */
 export const MIN_HANDS_FOR_LEAKS = 50;
 
+/**
+ * Below this, accuracy / VPIP / PFR / bb/100 are early estimates — real enough
+ * to show with a sample-size caption, not mature enough to look like a report.
+ * Leaks stay gated separately at {@link MIN_HANDS_FOR_LEAKS}.
+ */
+export const MIN_HANDS_FOR_STATS = 20;
+
 export function greeting(now: Date): string {
   const hour = now.getHours();
   if (hour < 12) return "Morning";

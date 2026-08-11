@@ -76,6 +76,13 @@
   --color-on-accent: #ffffff;
 
   /*
+   * Star ratings ONLY — never use for grading. The grade ramp's amber is
+   * `--grade-inaccuracy` and must stay reserved for EV loss; borrowing it for
+   * decorative stars would make a 5-star review look like a mild mistake.
+   */
+  --color-star: #f0c43a; /* ~8.5 on canvas — rating glyphs */
+
+  /*
    * ── 1. Grade ramp ─────────────────────────────────────────────────────────
    * Green through red. Nothing decorative may borrow these — a screen stays
    * readable precisely because blue and this ramp never overlap.
@@ -417,13 +424,19 @@
   }
 
   /* 8. Tabular numerals on every number that changes. Mono is only ever used
-   * for figures here, so binding it at the family level is the safe default. */
+   * for figures here, so binding it at the family level is the safe default.
+   *
+   * Geist Mono ships a slashed zero by default (coding convention). Plain
+   * zeros read cleaner in a product UI — ss09 is Geist's "non-slashed zero"
+   * stylistic set.
+   */
   code,
   kbd,
   samp,
   pre,
   .font-mono {
     font-variant-numeric: tabular-nums;
+    font-feature-settings: "ss09" 1;
   }
 
   ::selection {

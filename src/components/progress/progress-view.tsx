@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { RingGauge } from "@/components/ui/ring-gauge";
 import { StatTile } from "@/components/ui/stat-tile";
 import { evColor } from "@/lib/ev-color";
-import { MIN_HANDS_FOR_LEAKS } from "@/lib/dashboard";
+import { MIN_HANDS_FOR_LEAKS, MIN_HANDS_FOR_STATS } from "@/lib/dashboard";
 import type { DashboardData } from "@/lib/dashboard-server";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +23,8 @@ export interface ProgressViewProps {
 
 export function ProgressView({ data }: ProgressViewProps) {
   const hasData = data.totalHands > 0;
+  const statsAreEarly = data.totalHands > 0 && data.totalHands < MIN_HANDS_FOR_STATS;
+  const handsToReliable = Math.max(0, MIN_HANDS_FOR_STATS - data.totalHands);
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 pb-16" data-progress>
@@ -37,6 +39,38 @@ export function ProgressView({ data }: ProgressViewProps) {
         <StartHere />
       ) : (
         <>
+          {statsAreEarly && (
+            <section
+              className="border-border bg-surface-1 flex flex-col gap-3 rounded-lg border p-5"
+              data-section="sample-gate"
+            >
+              <h2 className="text-heading-lg">Building a reliable picture</h2>
+              <p className="text-text-secondary text-body-md">
+                {handsToReliable} more decision{handsToReliable === 1 ? "" : "s"} until these
+                numbers stop being early estimates. You&rsquo;re at {data.totalHands} of{" "}
+                {MIN_HANDS_FOR_STATS}.
+              </p>
+              <div
+                className="bg-surface-2 h-2 overflow-hidden rounded-full"
+                role="progressbar"
+                aria-valuenow={data.totalHands}
+                aria-valuemin={0}
+                aria-valuemax={MIN_HANDS_FOR_STATS}
+                aria-label="Hands toward a reliable report"
+              >
+                <div
+                  className="bg-accent h-full rounded-full"
+                  style={{
+                    width: `${Math.min(100, (data.totalHands / MIN_HANDS_FOR_STATS) * 100)}%`,
+                  }}
+                />
+              </div>
+              <Button variant="accent" size="lg" className="w-full" asChild>
+                <Link href="/arena">Continue in Arena</Link>
+              </Button>
+            </section>
+          )}
+
           <section className="flex flex-col gap-3" data-section="rating">
             <div className="flex items-center justify-between">
               <h2 className="text-overline text-text-tertiary uppercase">Rating</h2>
@@ -79,8 +113,19 @@ export function ProgressView({ data }: ProgressViewProps) {
             )}
           </section>
 
-          <section className="flex flex-col gap-3" data-section="numbers">
-            <h2 className="text-heading-lg">Your numbers</h2>
+          <section
+            className="flex flex-col gap-3"
+            data-section="numbers"
+            data-early={statsAreEarly ? "true" : "false"}
+          >
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h2 className="text-heading-lg">Your numbers</h2>
+              {statsAreEarly && (
+                <span className="text-text-tertiary text-caption">
+                  Early estimate · {data.totalHands} hands
+                </span>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <StatTile label="Accuracy" value={data.accuracy * 100} suffix="%" stat="accuracy" />
               <StatTile label="VPIP" value={data.vpip * 100} suffix="%" stat="vpip" />

@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createRng } from "@/poker/cards";
-import { getBot, preflopNodeFor, type BotId } from "@/poker/bots";
+import { getBot, preflopNodeFor, type BotData, type BotId } from "@/poker/bots";
 import { PROFILES } from "@/poker/bots";
 import {
   advanceUntilAction,
@@ -18,8 +18,8 @@ import {
 } from "@/poker/gamestate";
 import { grade as gradePreflop } from "@/poker/grader";
 import { handToKey } from "@/poker/range";
-import { buildSolutionIndex, type SolutionIndex, type PreflopActionName } from "@/poker/solutions";
-import { loadSolutionData } from "@/lib/solution-data";
+import { buildSolutionIndex, type PreflopActionName, type SolutionIndex } from "@/poker/solutions";
+import { loadAllSolutionData, loadSolutionData } from "@/lib/solution-data";
 import {
   describeBotAction,
   PRESETS,
@@ -51,13 +51,38 @@ export function chipsToBb(chips: number): number {
   return chips / CHIPS_PER_BB;
 }
 
-let cachedIndex: SolutionIndex | null = null;
+/**
+ * Servable preflop only — what we grade the hero against. Quarantined nodes
+ * must not become ground truth for a paying user's score.
+ */
+let cachedGradeIndex: SolutionIndex | null = null;
 
-function solutionIndex(): SolutionIndex {
-  if (cachedIndex === null) {
-    cachedIndex = buildSolutionIndex(loadSolutionData().preflop);
+function gradeIndex(): SolutionIndex {
+  if (cachedGradeIndex === null) {
+    cachedGradeIndex = buildSolutionIndex(loadSolutionData().preflop);
   }
-  return cachedIndex;
+  return cachedGradeIndex;
+}
+
+/**
+ * Bots get the FULL preflop set (quarantine included) plus postflop templates.
+ *
+ * Quarantined vs_3bet files are imperfect copies, but they are still a real
+ * mix — without them every missing pairing falls through to a hard percentile
+ * cut and the table folds everything to a raise. Templates are what make
+ * postflop continue rates look like poker instead of a strength coin-flip.
+ */
+let cachedBotData: BotData | null = null;
+
+function botData(): BotData {
+  if (cachedBotData === null) {
+    const all = loadAllSolutionData();
+    cachedBotData = {
+      solutions: buildSolutionIndex(all.preflop),
+      templates: all.postflop,
+    };
+  }
+  return cachedBotData;
 }
 
 /* ── Session lifecycle ───────────────────────────────────────────────────── */
@@ -176,7 +201,7 @@ export function runBots(
   if (game === null) return { live, moves };
 
   const rng = createRng(seed);
-  const data = { solutions: solutionIndex() };
+  const data = botData();
 
   let guard = 0;
   while (!game.complete && game.actionOn !== null && game.actionOn !== live.heroSeat) {
@@ -281,7 +306,7 @@ function heroPreflopGrade(live: LiveSimState, action: Action): GradeInfo | null 
   const alreadyActed = game.history.some((e) => e.kind === "action" && e.seat === live.heroSeat);
   if (alreadyActed) return null;
 
-  const node = preflopNodeFor(game, live.heroSeat, solutionIndex());
+  const node = preflopNodeFor(game, live.heroSeat, gradeIndex());
   if (node === null) return null;
 
   const hero = game.players[live.heroSeat];

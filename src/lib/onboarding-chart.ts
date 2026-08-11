@@ -22,11 +22,27 @@
 export interface ChartSeries {
   readonly id: "trained" | "untrained";
   readonly label: string;
+  /** Short end-of-curve label drawn next to the last point. */
+  readonly endLabel: string;
   /** bb/100 at each x. Index is the x position; values are the y. */
   readonly points: readonly number[];
 }
 
-/** The y-axis window, in bb/100. Symmetric so break-even sits mid-chart. */
+export interface ChartAnnotation {
+  /** Index into the untrained series points. */
+  readonly atIndex: number;
+  readonly label: string;
+}
+
+/** Plot padding inside the SVG viewBox — room for axis + end labels. */
+export const CHART_PAD = {
+  top: 16,
+  right: 78,
+  bottom: 28,
+  left: 4,
+} as const;
+
+/** The y-axis window, in bb/100. Symmetric-ish so break-even sits mid-chart. */
 export const Y_MIN = -8;
 export const Y_MAX = 4;
 
@@ -43,19 +59,39 @@ export const CHART_SERIES: readonly ChartSeries[] = [
   {
     id: "trained",
     label: "Studying your leaks",
-    points: [-6.0, -4.6, -3.1, -1.7, -0.6, 0.3, 0.9, 1.4],
+    endLabel: "your work",
+    points: [-6.0, -4.8, -3.5, -2.2, -1.0, 0.1, 0.9, 1.6],
   },
   {
     id: "untrained",
     label: "Playing the same way",
-    points: [-6.0, -6.2, -6.0, -6.4, -6.2, -6.5, -6.3, -6.6],
+    endLabel: "same as day one",
+    points: [-6.0, -5.7, -6.3, -5.9, -6.5, -6.1, -6.6, -6.8],
   },
+];
+
+/** Moments on the untrained path — the craft that makes the chart a story. */
+export const CHART_ANNOTATIONS: readonly ChartAnnotation[] = [
+  { atIndex: 2, label: "same leak again" },
+  { atIndex: 5, label: "still guessing" },
+];
+
+/** Three x-axis ticks. Sessions, never weeks-to-profit. */
+export const CHART_X_LABELS: readonly { readonly atIndex: number; readonly label: string }[] = [
+  { atIndex: 0, label: "session 1" },
+  { atIndex: 3, label: "session 4" },
+  { atIndex: 7, label: "session 8" },
 ];
 
 export const CHART_HEADING = "Two players, same starting point.";
 
 export const CHART_SUB =
   "One works on the spots they get wrong. The other keeps playing. This is the gap that opens up.";
+
+/** Title drawn inside the chart card — the reference puts the subject on the card. */
+export const CHART_CARD_TITLE = "win rate";
+
+export const CHART_CARD_META = "bb / 100 hands · illustrative";
 
 /** The accessible name for the SVG. Must carry the caveat too. */
 export const CHART_CAPTION =
@@ -71,6 +107,39 @@ export const CHART_CAPTION =
 export const CHART_FOOTNOTE =
   "Illustrative only. Not a prediction, a guarantee, or measured results. Win rate is shown in big blinds per 100 hands.";
 
+export interface ChartPoint {
+  readonly x: number;
+  readonly y: number;
+}
+
+/** Map series values into the padded plot rectangle. */
+export function chartPoints(
+  points: readonly number[],
+  width: number,
+  height: number,
+  yMin: number,
+  yMax: number,
+  pad: typeof CHART_PAD = CHART_PAD,
+): ChartPoint[] {
+  const plotW = width - pad.left - pad.right;
+  const plotH = height - pad.top - pad.bottom;
+  return points.map((value, i) => ({
+    x: pad.left + (i / Math.max(1, points.length - 1)) * plotW,
+    y: pad.top + plotH - ((value - yMin) / (yMax - yMin)) * plotH,
+  }));
+}
+
+export function yAtValue(
+  value: number,
+  height: number,
+  yMin: number,
+  yMax: number,
+  pad: typeof CHART_PAD = CHART_PAD,
+): number {
+  const plotH = height - pad.top - pad.bottom;
+  return pad.top + plotH - ((value - yMin) / (yMax - yMin)) * plotH;
+}
+
 /**
  * An SVG path through the points, as a smooth curve.
  *
@@ -84,13 +153,10 @@ export function chartPath(
   height: number,
   yMin: number,
   yMax: number,
+  pad: typeof CHART_PAD = CHART_PAD,
 ): string {
-  if (points.length === 0) return "";
-
-  const xy = points.map((value, i) => ({
-    x: (i / Math.max(1, points.length - 1)) * width,
-    y: height - ((value - yMin) / (yMax - yMin)) * height,
-  }));
+  const xy = chartPoints(points, width, height, yMin, yMax, pad);
+  if (xy.length === 0) return "";
 
   const first = xy[0]!;
   if (xy.length === 1) return `M ${first.x} ${first.y}`;
@@ -110,6 +176,27 @@ export function chartPath(
     d += ` C ${round(c1x)} ${round(c1y)}, ${round(c2x)} ${round(c2y)}, ${round(p2.x)} ${round(p2.y)}`;
   }
   return d;
+}
+
+/**
+ * Soft fill under a series: the stroke path, then down to the plot floor and
+ * back. Used for the untrained curve so the gap reads as area, not two lines.
+ */
+export function chartAreaPath(
+  points: readonly number[],
+  width: number,
+  height: number,
+  yMin: number,
+  yMax: number,
+  pad: typeof CHART_PAD = CHART_PAD,
+): string {
+  const stroke = chartPath(points, width, height, yMin, yMax, pad);
+  if (stroke === "") return "";
+  const xy = chartPoints(points, width, height, yMin, yMax, pad);
+  const last = xy[xy.length - 1]!;
+  const first = xy[0]!;
+  const floor = height - pad.bottom;
+  return `${stroke} L ${round(last.x)} ${round(floor)} L ${round(first.x)} ${round(floor)} Z`;
 }
 
 function round(n: number): number {

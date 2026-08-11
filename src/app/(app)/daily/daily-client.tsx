@@ -15,6 +15,7 @@ import { capture } from "@/lib/analytics-client";
 import { cn } from "@/lib/utils";
 import { actionLabel } from "@/lib/action-label";
 import { actionGridClass } from "@/lib/action-grid";
+import { missingActionTip, TRAINER_ACTIONS_CAPTION } from "@/lib/spot-situation";
 import { APP_HOME } from "@/lib/app-chrome";
 
 /**
@@ -197,12 +198,19 @@ export function DailyClient() {
 
   const spot = today.spots[index];
   const progressValue = result !== null ? index + 1 : index;
+  const actionGapTip =
+    result !== null && spot !== undefined ? missingActionTip(spot.legalActions) : null;
 
   return (
     <div className="flex flex-col gap-5" data-daily>
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-display-md">Daily #{today.dayNumber}</h1>
+          <h1 className="text-display-md">
+            Daily #{today.dayNumber}
+            <span className="text-text-secondary text-body-md ml-2 font-sans font-normal">
+              · Decision {Math.min(index + 1, today.spots.length)} of {today.spots.length}
+            </span>
+          </h1>
           <p className="text-text-secondary text-body-md mt-1">
             Five spots. One attempt each. No takebacks.
           </p>
@@ -238,24 +246,20 @@ export function DailyClient() {
             error boundary. 7.1 fixed exactly this in the arena; the same line
             survived here. SpotTable takes the cards as they arrive.
           */}
-          <div className="flex flex-col gap-3">
-            <SpotTable
-              seats={spot.seats}
-              heroPos={spot.heroPos}
-              heroCards={spot.heroCards}
-              board={spot.board}
-              potBb={spot.potBb}
-              effStackBb={spot.effStackBb}
-              actionHistory={spot.actionHistory}
-            />
-            {spot.actionHistory.length > 1 && (
-              <p className="text-text-secondary text-body-sm text-center">
-                {spot.actionHistory.join(" · ")}
-              </p>
-            )}
-          </div>
+          <SpotTable
+            seats={spot.seats}
+            heroPos={spot.heroPos}
+            heroCards={spot.heroCards}
+            board={spot.board}
+            potBb={spot.potBb}
+            effStackBb={spot.effStackBb}
+            actionHistory={spot.actionHistory}
+          />
 
           <div className={cn("grid gap-2.5", actionGridClass(spot.legalActions.length))}>
+            <p className="text-text-tertiary text-caption col-span-full text-center text-balance">
+              {TRAINER_ACTIONS_CAPTION}
+            </p>
             {spot.legalActions.map((action) => (
               <Button
                 key={action}
@@ -270,6 +274,12 @@ export function DailyClient() {
               </Button>
             ))}
           </div>
+
+          {actionGapTip !== null && (
+            <p className="text-text-tertiary text-caption text-center" data-missing-action-tip>
+              {actionGapTip}
+            </p>
+          )}
         </>
       )}
 

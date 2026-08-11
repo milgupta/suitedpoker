@@ -228,8 +228,9 @@ test.describe("the demo hand", () => {
     await page.waitForTimeout(3_500);
 
     await expect(page.locator("[data-demo-hand]")).toHaveCount(0);
-    // The questionnaire diagnosis is still there.
-    await expect(page.locator("[data-leak-headline]")).toBeVisible();
+    // The questionnaire diagnosis is still there (rating + path).
+    await expect(page.getByText(/Where you stand/i)).toBeVisible();
+    await expect(page.locator("[data-path]")).toBeVisible();
   });
 
   test("the whole screen fits the funnel budget", async ({ page }) => {

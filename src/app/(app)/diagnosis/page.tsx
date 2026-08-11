@@ -4,7 +4,9 @@ import { eq } from "drizzle-orm";
 import { createClient } from "@/lib/supabase/server";
 import { getDb } from "@/db";
 import { profiles } from "@/db/schema";
+import { APP_HOME } from "@/lib/app-chrome";
 import { buildDiagnosis } from "@/lib/diagnosis";
+import { hasActiveSubscription } from "@/lib/entitlement";
 import { resumeIndex, TOTAL_STEPS, type Answers } from "@/lib/onboarding";
 import { DiagnosisClient } from "./diagnosis-client";
 import type { DemoHandRecord } from "@/lib/demo-hand";
@@ -46,9 +48,23 @@ export default async function DiagnosisPage() {
   // The quiz must actually be finished — a partial diagnosis reads as broken.
   if (resumeIndex(answers) < TOTAL_STEPS) redirect("/onboarding");
 
+  // Subscribers who reopen this URL should train, not see "See my plan".
+  let entitled = false;
+  try {
+    entitled = await hasActiveSubscription(user.id);
+  } catch {
+    // Fail toward the paywall CTA — wrong for a subscriber only if the
+    // entitlement check itself is down, which the paywall page also guards.
+  }
+
   return (
     <div className="mx-auto w-full max-w-[30rem] pb-16">
-      <DiagnosisClient diagnosis={buildDiagnosis(answers)} demoHand={demoHand} />
+      <DiagnosisClient
+        diagnosis={buildDiagnosis(answers)}
+        demoHand={demoHand}
+        nextHref={entitled ? APP_HOME : "/paywall"}
+        nextLabel={entitled ? "Start practicing →" : "See my plan →"}
+      />
     </div>
   );
 }

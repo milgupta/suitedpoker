@@ -24,6 +24,7 @@ import {
   QUESTIONS,
   questionAt,
   resumeIndex,
+  continueAfterWelcome,
   TOTAL_STEPS,
   type Answers,
 } from "../../src/lib/onboarding";
@@ -200,6 +201,21 @@ describe("resume", () => {
       minutes: "5",
     };
     expect(resumeIndex(all)).toBe(TOTAL_STEPS);
+  });
+
+  it("sends a finished quiz from /welcome into practice, not back into the quiz", () => {
+    const all: Answers = {
+      venue: "home",
+      pain: "tilt",
+      frequency: "weekly",
+      goal: "serious",
+      study: "never",
+      leaks: ["tilt_control"],
+      minutes: "5",
+    };
+    expect(continueAfterWelcome(all)).toBe("/practice");
+    expect(continueAfterWelcome({})).toBe("/onboarding");
+    expect(continueAfterWelcome({ venue: "home" })).toBe("/onboarding");
   });
 
   it("knows what counts as answered", () => {

@@ -23,6 +23,7 @@ import { capture } from "@/lib/analytics-client";
 import { cn } from "@/lib/utils";
 import { GRADES } from "@/lib/grade";
 import { actionLabel } from "@/lib/action-label";
+import { missingActionTip, TRAINER_ACTIONS_CAPTION } from "@/lib/spot-situation";
 import { actionGridClass, capsuleSegments } from "@/lib/action-grid";
 import { evColor } from "@/lib/ev-color";
 
@@ -271,6 +272,8 @@ export function ArenaClient() {
    */
   const segments =
     result === null || spot === null ? [] : capsuleSegments(spot.legalActions, result);
+  const actionGapTip =
+    result !== null && spot !== null ? missingActionTip(spot.legalActions) : null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -298,15 +301,27 @@ export function ArenaClient() {
             Focusing on {leakFocusLabel(leakFocus)}
           </span>
         )}
-        <Hud label="Hands" value={hands} />
-        <Hud label="Accuracy" value={accuracy} decimals={0} suffix="%" />
-        <Hud label="Streak" value={streak} />
-        {/* bb lost and Sharp sit in the secondary line — three above the fold
-            on 390px, the rest available without crowding the table. */}
-        <span className="text-text-tertiary flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[0.9em]">
-          <Hud label="bb lost" value={bbLost} decimals={2} />
-          <Hud label="Sharp" value={sharpCount} />
-        </span>
+        {hands === 0 ? (
+          <span className="text-text-secondary text-body-sm" data-arena-goal>
+            {leakFocus !== null
+              ? `Focus: ${leakFocusLabel(leakFocus)}`
+              : preset.label !== undefined
+                ? `Session: ${preset.label}`
+                : "Play a hand — metrics appear after your first decision."}
+          </span>
+        ) : (
+          <>
+            <Hud label="Hands" value={hands} />
+            <Hud label="Accuracy" value={accuracy} decimals={0} suffix="%" />
+            <Hud label="Streak" value={streak} />
+            {/* bb lost and Sharp sit in the secondary line — three above the fold
+                on 390px, the rest available without crowding the table. */}
+            <span className="text-text-tertiary flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[0.9em]">
+              <Hud label="bb lost" value={bbLost} decimals={2} />
+              <Hud label="Sharp" value={sharpCount} />
+            </span>
+          </>
+        )}
         {preset.length !== undefined && (
           <span className="text-caption font-mono">
             {hands} / {preset.length}
@@ -340,12 +355,11 @@ export function ArenaClient() {
          * loading state, it is a guaranteed reflow.
          */
         <div className="flex flex-col items-center gap-4">
-          <Shimmer className="aspect-square w-full sm:aspect-[5/4]" />
-          {/* Two xl cards: 96px wide, 1:1.4, with the 10px gap between them. */}
+          <Shimmer className="h-10 w-full max-w-md" />
+          <Shimmer className="aspect-square w-full max-w-[min(100%,52dvh)] sm:aspect-[5/4] sm:max-w-[min(100%,calc(55dvh*1.25))]" />
           <Shimmer className="h-[134px] w-[202px]" />
-          {/* Two lines: "100BB effective", then the action history. */}
-          <Shimmer className="h-4 w-32" />
-          <Shimmer className="h-4 w-56" />
+          <Shimmer className="h-4 w-64" />
+          <Shimmer className="h-12 w-full max-w-md" />
           <Shimmer className="h-14 w-full" />
         </div>
       ) : (
@@ -360,6 +374,9 @@ export function ArenaClient() {
           )}
 
           <div className={cn("grid gap-2.5", actionGridClass(spot.legalActions.length))}>
+            <p className="text-text-tertiary text-caption col-span-full text-center text-balance">
+              {TRAINER_ACTIONS_CAPTION}
+            </p>
             {spot.legalActions.map((action) => (
               <Button
                 key={action}
@@ -382,6 +399,12 @@ export function ArenaClient() {
               </Button>
             ))}
           </div>
+
+          {actionGapTip !== null && (
+            <p className="text-text-tertiary text-caption text-center" data-missing-action-tip>
+              {actionGapTip}
+            </p>
+          )}
 
           {result === null && spotId !== null && (
             <HintButton
@@ -483,28 +506,15 @@ function SpotView({ spot }: { spot: ClientSpot }) {
    * that was the wrong presentation of a poker hand.
    */
   return (
-    <div className="flex flex-col gap-3">
-      <SpotTable
-        seats={spot.seats}
-        heroPos={spot.heroPos}
-        heroCards={spot.heroCards}
-        board={spot.board}
-        potBb={spot.potBb}
-        effStackBb={spot.effStackBb}
-        actionHistory={spot.actionHistory}
-      />
-
-      {/* The ordered sequence still has a home. The seat chips say who did
-          what; this says in what order, which the ring cannot show. */}
-      {/* Only when there is a SEQUENCE. With one action the seat chip already
-          says it, and repeating it underneath is the wall of text this screen
-          was rebuilt to get rid of. */}
-      {spot.actionHistory.length > 1 && (
-        <p className="text-text-secondary text-body-sm text-center">
-          {spot.actionHistory.join(" · ")}
-        </p>
-      )}
-    </div>
+    <SpotTable
+      seats={spot.seats}
+      heroPos={spot.heroPos}
+      heroCards={spot.heroCards}
+      board={spot.board}
+      potBb={spot.potBb}
+      effStackBb={spot.effStackBb}
+      actionHistory={spot.actionHistory}
+    />
   );
 }
 

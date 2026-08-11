@@ -32,17 +32,12 @@ export const SHOWCASE_NODE_REF = "BB:vs_rfi_BTN";
 /**
  * The featured hand.
  *
- * Ordinary-looking on purpose, and the solver does something with it that a
- * beginner will not predict: ace-five suited defends a button open by RAISING
- * two times in five, as a bluff, and calling the other three. Nobody who has
- * only ever been told "play good hands" expects a five to be re-raising, and
- * nobody expects both answers to be right.
- *
- * It was QJo, which the repaired big-blind range defends as a pure call — a
- * true strategy and a useless illustration, since the page's whole argument is
- * that one hand can have two correct answers.
+ * T9o at this node is an 80/20 call/fold mix — wide enough that the two
+ * segments are obvious at a glance on a phone. A5s was a 60/40 call/raise with
+ * identical EV on both lines, so the frequency bar painted as one green slab
+ * and the mix the page exists to demonstrate disappeared.
  */
-export const SHOWCASE_HAND: HandKey = "A5s";
+export const SHOWCASE_HAND: HandKey = "T9o";
 
 export interface Showcase {
   readonly nodeRef: string;

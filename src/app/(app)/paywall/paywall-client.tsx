@@ -204,7 +204,7 @@ export function PaywallClient({ diagnosis }: PaywallClientProps) {
                 {/* --accent-bright, which `.panel-light` re-points to
                     --accent-700 so it stays legible on white. */}
                 <span className="text-accent-bright">92%</span> of Suited Poker subscribers improved
-                their grades
+                their game
               </h1>
 
               <p className="text-text-secondary text-body-lg max-w-[42ch]">
