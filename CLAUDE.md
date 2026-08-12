@@ -180,10 +180,11 @@ if you add one.
   the duplicate itself.
 - ⚠️ **There are ~14 more `getDb()` calls inside a bare `catch`.** Each one is
   the same shape: a silent no-op under pool exhaustion. Worth a pass.
-- ⚠️ **The Stripe test-mode ANNUAL price is $149.99; `plans.ts` says $119.99.**
-  Two checkout tests fail on exactly that and they are right to — the paywall
-  would promise $119.99 and Stripe would charge $149.99. Reconcile before
-  anything else in the payment flow is believed.
+- ✅ **RESOLVED — the Stripe test-mode ANNUAL price mismatch.** It read "$149.99;
+  `plans.ts` says $119.99", and two checkout tests failed on exactly that, which
+  they were right to do: the paywall would have promised $119.99 while Stripe
+  charged $149.99. Test mode was reconciled with a new price during 7.3, and
+  live mode has since been reconciled too — see the 7.3 section below.
 - **No test-mode webhook endpoint exists on the account**, and
   `STRIPE_WEBHOOK_SECRET` is still the live-mode one. Webhook verification needs
   `stripe listen --forward-to localhost:3000/api/stripe/webhook` and its
@@ -668,11 +669,14 @@ if you add one.
   (including real settled charges on both plans, a declined card and a 3DS
   card) and `npm run test:stripe` 17/17. The suites still refuse to run on
   anything but `sk_test_`, because they complete real purchases.
-- 🛑 **THE LIVE ANNUAL PRICE IS STILL $149.99 AND `plans.ts` SAYS $119.99.**
-  Test mode was reconciled with a new price; LIVE mode was not. Ship as-is and
-  the paywall promises $119.99 while Stripe charges $149.99 — which is a refund,
-  a chargeback and a Stripe risk flag in one. Create the live $119.99 price and
-  set `STRIPE_PRICE_ANNUAL` in Vercel to it.
+- ✅ **The live annual price mismatch is RESOLVED** — Milan confirmed
+  `STRIPE_PRICE_ANNUAL` in Vercel points at the correct price, not the old
+  $149.99 one. This note read "THE LIVE ANNUAL PRICE IS STILL $149.99"; it is
+  kept as a ✅ rather than deleted because it was the loudest warning in this
+  file and a silent disappearance reads as an oversight. **Nothing in the build
+  checks this** — the price id lives only in Vercel, so the check is a human
+  opening the Stripe dashboard and comparing against `perMonthCents` and
+  `billedLabel` in `plans.ts`.
 - **Price ids differ between modes**, so the env var must differ per environment.
   This is exactly how the mismatch above happened.
 - **Price ids are server-only** (`STRIPE_PRICE_MONTHLY`, `STRIPE_PRICE_ANNUAL`).

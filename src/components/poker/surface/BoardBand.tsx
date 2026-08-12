@@ -12,8 +12,10 @@ import { PlayingCard } from "../PlayingCard";
  * patterned backs (PlayingCard's `placeholder`) and cards reveal in place, so
  * zero layout shift is by construction rather than by skeleton-matching.
  *
- * The pot is a bare right-aligned number — no "POT" label — that counts up
- * when a street's bets clear into it.
+ * The pot sits right-aligned under the slots — a tertiary "Pot" label, then the
+ * figure in `bb` — and counts up when a street's bets clear into it. It was
+ * specified as a bare unlabelled number; see the reasoning at the render site
+ * for why a preflop drill cannot carry that.
  */
 
 export interface BoardBandProps {
@@ -81,10 +83,28 @@ export function BoardBand({ board, potBb, highlight = null, className }: BoardBa
         <Slots board={board} highlight={highlight} size="lg" />
       </div>
 
-      <div className="flex justify-end">
+      {/*
+       * THE LABEL LEADS THE FIGURE.
+       *
+       * DESIGN.md §6.2 specified a bare right-aligned number with no "POT"
+       * label, and mid-hand that reads fine: there are cards out, bets have
+       * cleared into it, and the number is obviously the pot because you
+       * watched it grow. A PREFLOP DRILL has none of that — five card backs,
+       * nobody has acted, and a lone "1.5" floating to the right of them with
+       * nothing on screen saying what it counts. That is the state most drills
+       * OPEN in, which makes it the first thing a beginner sees and the worst
+       * possible place to be unlabelled.
+       *
+       * Lowercase `bb`, matching `sizing.ts` and every other quantity on the
+       * surface. An uppercase `BB` beside a lowercase `100bb` reads as a
+       * different unit.
+       */}
+      <div className="flex items-baseline justify-end gap-1.5">
+        <span className="text-overline text-text-tertiary uppercase">Pot</span>
         <AnimatedNumber
           value={potBb}
           decimals={1}
+          suffix="bb"
           className="text-text-primary text-heading-md font-mono font-semibold tabular-nums"
         />
       </div>

@@ -213,6 +213,18 @@ describe("BoardBand", () => {
     expect(container.querySelectorAll("[role='img']").length).toBeGreaterThanOrEqual(10);
   });
 
+  /*
+   * DESIGN.md §6.2 asked for a bare unlabelled figure until a preflop drill
+   * proved it unreadable — five card backs, no bets, and a lone "1.5" naming
+   * nothing. Pinned here so it cannot quietly revert: the spec and the code
+   * now agree, and this is what keeps them agreeing.
+   */
+  it("labels the pot and carries the bb unit", () => {
+    render(<BoardBand board={[]} potBb={1.5} />);
+    expect(screen.getByText("Pot")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "1.5bb" })).toBeInTheDocument();
+  });
+
   it("dims every face-up card outside the highlight set and none inside it", () => {
     const board = cardsFromString("Kh 5h 2h 8c 3d");
     const highlight = new Set(board.slice(0, 3));

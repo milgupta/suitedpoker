@@ -50,7 +50,7 @@ export function HandContextChip({
           <dt className="text-text-tertiary">Preflop</dt>
           <dd>{context.preflopAction}</dd>
           <dt className="text-text-tertiary">Effective</dt>
-          <dd className="font-mono tabular-nums">{context.effectiveStackBb.toFixed(0)}BB</dd>
+          <dd className="font-mono tabular-nums">{context.effectiveStackBb.toFixed(0)}bb</dd>
           <dt className="text-text-tertiary">Pot type</dt>
           <dd>{context.potType}</dd>
         </dl>

@@ -136,8 +136,8 @@ export function RangesClient() {
       ) : (
         <>
           <div className="text-text-tertiary text-caption flex flex-wrap gap-x-4 font-mono">
-            <span>{selected.potBb}BB pot</span>
-            <span>{selected.effStackBb}BB effective</span>
+            <span>Pot {selected.potBb}bb</span>
+            <span>{selected.effStackBb}bb effective</span>
           </div>
 
           <div className="flex flex-wrap gap-3">

@@ -76,10 +76,10 @@ export function historyLines(hand: HandHistoryData, heroSeat: number): Line[] {
         : event.action === "check"
           ? `${who} checks.`
           : event.action === "call"
-            ? `${who} calls ${amountBb}BB.`
+            ? `${who} calls ${amountBb}bb.`
             : event.action === "bet"
-              ? `${who} bets ${amountBb}BB.`
-              : `${who} raises to ${amountBb}BB.`;
+              ? `${who} bets ${amountBb}bb.`
+              : `${who} raises to ${amountBb}bb.`;
 
     lines.push({ street: event.street, text, isHero: event.seat === heroSeat });
   }
@@ -157,8 +157,8 @@ export function HandHistory({ hand, heroSeat, trailOff = false, className }: Han
       aria-label="Hand history"
     >
       <p className="text-text-tertiary font-mono tabular-nums">
-        {(hand.smallBlind / hand.bigBlind).toFixed(1)} / 1.0 BB ·{" "}
-        {(Math.max(...hand.startingStacks) / hand.bigBlind).toFixed(0)}BB effective
+        {(hand.smallBlind / hand.bigBlind).toFixed(1)} / 1.0 bb ·{" "}
+        {(Math.max(...hand.startingStacks) / hand.bigBlind).toFixed(0)}bb effective
       </p>
 
       <div>
@@ -178,7 +178,7 @@ export function HandHistory({ hand, heroSeat, trailOff = false, className }: Han
         return (
           <div key={street}>
             <p className="text-text-tertiary font-mono tabular-nums">
-              {STREET_LABEL[street]} ({pots[street].toFixed(1)}BB)
+              {STREET_LABEL[street]} ({pots[street].toFixed(1)}bb)
               <BoardCards cards={cards} />
             </p>
             {streetLines.map((line, i) => (

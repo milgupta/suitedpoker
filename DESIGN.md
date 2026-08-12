@@ -517,7 +517,12 @@ on video; the reasoning is that bands scale to the desktop this product is
 - **Five card slots, always present.** Undealt slots render as patterned card
   backs; cards reveal in place. Zero layout shift is by construction, not by
   skeleton-matching.
-- The pot is a bare number, right-aligned under the slots. No "POT" label.
+- The pot is right-aligned under the slots and **labelled**: a tertiary `Pot`
+  overline, then the figure with a lowercase `bb` unit. This read "a bare
+  number, no POT label" until a preflop drill proved it unreadable — five card
+  backs, no bets yet, and a lone `1.5` beside them saying nothing about what it
+  counted. Mid-hand a bare number is legible because you watched it grow; a
+  drill opens cold and gets no such chance.
 - Street bets are small neutral **badges** under each seat (and by the hero
   dock). They are interface chrome: never amber (grade ramp), never the grade
   green. When a street closes they clear and the pot number counts up.
