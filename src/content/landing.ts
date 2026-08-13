@@ -36,7 +36,6 @@ export const HERO = {
   titleAccent: "Start knowing.",
   body: "Learn the strategy behind every decision — explained in plain English, one hand at a time. Built for players who know the rules and are stuck on everything after that.",
   cta: "Sign Up",
-  ctaNote: "Eight questions and one real hand. About two minutes.",
   secondary: "See how it works",
 } as const;
 

@@ -11,10 +11,10 @@ import {
 } from "@/components/poker/surface";
 import { HOW, STEPS } from "@/content/landing";
 import { actionLabel } from "@/lib/action-label";
-import type { Showcase } from "@/lib/landing-showcase";
+import { featuredCombo, type Showcase } from "@/lib/landing-showcase";
 import { marketingContrast } from "@/lib/marketing-contrast";
 import { cn } from "@/lib/utils";
-import { combosOf, type Combo } from "@/poker/range";
+import type { Combo } from "@/poker/range";
 
 /**
  * One hand, three screens — the loop the rest of the page is selling.
@@ -24,7 +24,7 @@ import { combosOf, type Combo } from "@/poker/range";
  * open — the previous version showed an unclicked Why? on a 100% fold.
  */
 export function HowItWorks({ showcase }: { showcase: Showcase }) {
-  const combo = combosOf(showcase.hand)[0];
+  const combo = featuredCombo(showcase.hand);
   const top = showcase.segments[0];
   const mixLine = showcase.segments
     .map((segment) => `${actionLabel(segment.action)} ${Math.round(segment.freq * 100)}%`)
@@ -51,11 +51,31 @@ export function HowItWorks({ showcase }: { showcase: Showcase }) {
           {STEPS.map((step, index) => (
             <li
               key={step.title}
-              className={cn("flex flex-col gap-5", index === 0 && "sm:col-span-2")}
+              /**
+               * `min-w-0` is load-bearing, not tidying. A grid item defaults to
+               * `min-width: auto`, so the table's min-content width — 404px —
+               * won its own 327px track and the figure's `overflow-hidden`
+               * silently ate 77px off the right edge. The page itself never
+               * overflowed, so `sweep.spec.ts` stayed green throughout: its
+               * check treats `overflow: hidden` as deliberate clipping.
+               */
+              className={cn("flex min-w-0 flex-col gap-5", index === 0 && "sm:col-span-2")}
             >
               <figure
                 data-step={index + 1}
-                className="border-border-strong bg-surface-1 flex flex-1 flex-col overflow-hidden rounded-xl border p-5"
+                className={cn(
+                  "border-border-strong bg-surface-1 flex flex-1 flex-col overflow-hidden border",
+                  "rounded-xl p-5",
+                  /**
+                   * Step 1 draws a six-seat table, whose narrowest honest
+                   * layout is ~359px. Inside the section's `px-6` a 375px phone
+                   * offers 327px, so it goes full-bleed below `sm` and takes
+                   * the 48px of page gutter back. Scaling it down instead would
+                   * put the seat labels under 10px.
+                   */
+                  index === 0 &&
+                    "-mx-6 rounded-none border-x-0 px-2 sm:mx-0 sm:rounded-xl sm:border-x sm:px-5",
+                )}
               >
                 {index === 0 && top !== undefined ? (
                   <AnswerTable showcase={showcase} combo={combo} />

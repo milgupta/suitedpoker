@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ChevronDownIcon } from "lucide-react";
 import { TrackView } from "@/components/track-view";
 import { AppFrame } from "@/components/marketing/AppFrame";
 import { DecisionShowcase } from "@/components/marketing/DecisionShowcase";
@@ -132,8 +133,6 @@ export default function Home() {
                 </Link>
               </div>
 
-              <p className="text-text-tertiary text-body-md mt-4">{HERO.ctaNote}</p>
-
               <ul className="text-text-tertiary text-caption mt-8 flex flex-wrap gap-x-5 gap-y-2">
                 {HERO_PROOF.map((point) => (
                   <li key={point} className="flex items-center gap-2">
@@ -188,7 +187,18 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── The idea, with the whole range behind it ─────────────────────── */}
+        {/* ── How it works. One hand, three screens — rendered, not photographed. */}
+        <HowItWorks showcase={showcase} />
+
+        {/* After the loop is clear, social proof — not in the first viewport. */}
+        <TestimonialCarousel />
+
+        {/* ── The idea, with the whole range behind it ──────────────────────────
+            Deliberately AFTER the loop and the proof. "A hand is a mix, not one
+            right answer" is the claim this product stands on, and it only lands
+            once the reader has seen what a hand looks like here. Ahead of the
+            loop it is an assertion; behind it, it is the explanation for
+            something they have already been shown. */}
         <section id="mix" className="border-border border-t">
           <div className="mx-auto max-w-(--container-app) px-6 py-20">
             <div className="grid gap-12 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1fr)] lg:gap-16">
@@ -212,12 +222,6 @@ export default function Home() {
             </div>
           </div>
         </section>
-
-        {/* ── How it works. One hand, three screens — rendered, not photographed. */}
-        <HowItWorks showcase={showcase} />
-
-        {/* After the loop is clear, social proof — not in the first viewport. */}
-        <TestimonialCarousel />
 
         {/* ── What you get ─────────────────────────────────────────────────── */}
         <section className="border-border border-t">
@@ -269,18 +273,37 @@ export default function Home() {
           <div className="mx-auto max-w-(--container-app) px-6 py-20">
             <h2 className="text-display-md sm:text-display-lg">Questions</h2>
 
-            {/* Open, never an accordion. The ad-account scan reads rendered
-                text, and collapsed answers are not in it — the "is this
-                gambling?" denial is the single most important sentence on the
-                page for ad review, and it has to be visible to be counted. */}
-            <dl className="mt-10 grid gap-x-12 gap-y-8 md:grid-cols-2">
-              {FAQ.map((item) => (
-                <div key={item.q}>
-                  <dt className="text-heading-md">{item.q}</dt>
-                  <dd className="text-text-secondary text-body-md mt-2 text-pretty">{item.a}</dd>
-                </div>
+            {/* An accordion, with ONE exception that is not cosmetic.
+
+                `bodyText()` in the landing spec reads `innerText`, which does
+                not include the contents of a closed <details>. Collapse the
+                gambling answer and the rendered page shows "Is this gambling?"
+                with no denial anywhere near it — which is both a failing test
+                and, far worse, exactly what a Meta reviewer would see. So the
+                first item ships open. Everything after it collapses.
+
+                Native <details>, not the Radix accordion: this keeps the page a
+                server component, and a marketing page should not ship a
+                JavaScript bundle to open a paragraph. */}
+            <div className="mt-10 max-w-3xl">
+              {FAQ.map((item, index) => (
+                <details
+                  key={item.q}
+                  open={index === 0}
+                  className="group border-border border-b"
+                  data-faq
+                >
+                  <summary className="text-heading-md flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-4 py-5 marker:content-none [&::-webkit-details-marker]:hidden">
+                    {item.q}
+                    <ChevronDownIcon
+                      aria-hidden="true"
+                      className="text-text-secondary size-5 shrink-0 transition-transform duration-200 group-open:rotate-180"
+                    />
+                  </summary>
+                  <p className="text-text-secondary text-body-md pb-5 text-pretty">{item.a}</p>
+                </details>
               ))}
-            </dl>
+            </div>
           </div>
         </section>
 

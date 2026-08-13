@@ -5,7 +5,8 @@ import { positionName } from "@/lib/demo-hand";
 import type { Grade } from "@/lib/grade";
 import { formatActionHistory, situationLine } from "@/lib/spot-situation";
 import { bandFor } from "@/poker/grader";
-import type { HandKey } from "@/poker/range";
+import { SUITS, suitOf } from "@/poker/cards";
+import { combosOf, type Combo, type HandKey } from "@/poker/range";
 import { committedBbOf, PREFLOP_ORDER, seatActivity } from "@/poker/seat-activity";
 import type { PreflopNode } from "@/poker/solutions";
 
@@ -184,6 +185,24 @@ const RANK_WORD: Record<string, string> = {
   "3": "Three",
   "2": "Two",
 };
+
+/**
+ * The one concrete combo every marketing surface draws for the featured hand.
+ *
+ * Hearts, because a red pair of cards reads better against the near-black
+ * canvas than the clubs `combosOf` happens to return first. It is a SUITED
+ * combo either way: making only the queen red would turn KQs into KQo, which
+ * is a different hand with a different mix, and every number on the panel
+ * would then describe cards the reader is not looking at.
+ *
+ * Shared rather than picked per component, so the hero and "How it works"
+ * cannot drift while both claim to be showing the same hand.
+ */
+export function featuredCombo(hand: HandKey): Combo | undefined {
+  const combos = combosOf(hand);
+  const hearts = SUITS.indexOf("h");
+  return combos.find((combo) => combo.every((card) => suitOf(card) === hearts)) ?? combos[0];
+}
 
 /** "King-Queen suited", "Pocket Aces" — the name a beginner would say. */
 export function handNameOf(hand: HandKey): string {

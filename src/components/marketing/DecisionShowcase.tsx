@@ -4,9 +4,8 @@ import { FrequencyBar } from "@/components/poker/FrequencyBar";
 import { PlayingCard } from "@/components/poker/PlayingCard";
 import { GradeBadge } from "@/components/ui/grade-badge";
 import { actionVerb } from "@/lib/action-label";
-import type { Showcase } from "@/lib/landing-showcase";
+import { featuredCombo, type Showcase } from "@/lib/landing-showcase";
 import { marketingContrast } from "@/lib/marketing-contrast";
-import { combosOf } from "@/poker/range";
 
 /**
  * The hero panel: one real hand, the real mix, and what the minority line costs.
@@ -23,8 +22,7 @@ export function DecisionShowcase({ showcase }: { showcase: Showcase }) {
   const [top, ...rest] = showcase.segments;
   const alternative = rest[0];
   const barSegments = marketingContrast(showcase.segments);
-  // One concrete combo of the hand key — same pick ChoiceGrid uses for tiles.
-  const combo = combosOf(showcase.hand)[0];
+  const combo = featuredCombo(showcase.hand);
 
   return (
     <div className="flex flex-col gap-5">
@@ -42,9 +40,6 @@ export function DecisionShowcase({ showcase }: { showcase: Showcase }) {
           )}
           <span className="text-text-secondary text-body-md">{showcase.situation}</span>
         </div>
-        <span className="text-text-tertiary text-caption font-mono tabular-nums">
-          {showcase.potBb}bb pot · {showcase.effStackBb}bb deep
-        </span>
       </div>
 
       <FrequencyBar segments={barSegments} />
