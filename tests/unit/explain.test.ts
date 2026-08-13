@@ -189,6 +189,19 @@ describe("the 36-explanation matrix", () => {
     expect(text).not.toContain("0%");
   });
 
+  it("does not call a 0% chosen action a correct mix line", () => {
+    const text = templateExplanation({
+      ...gradeFor("inaccuracy", "mixed"),
+      chosenAction: "bet_33",
+      bestAction: "bet_66",
+      topAction: "bet_66",
+      topFreq: 0.5,
+      frequencies: { check: 0.2, bet_33: 0, bet_66: 0.5, bet_100: 0.3 },
+    });
+    expect(text).toContain("never takes");
+    expect(text).not.toMatch(/without either line being a mistake/);
+  });
+
   it("says mix, not error, on a mixed spot", () => {
     for (const c of CASES.filter((x) => x.displayMode === "mixed")) {
       expect(c.text.toLowerCase()).toContain("mix");

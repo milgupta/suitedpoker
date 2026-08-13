@@ -16,6 +16,7 @@ import {
   gradeDecision,
   type GradeInput,
   type GradeName,
+  isPlayedFrequency,
   scoreSession,
 } from "@/poker/grader";
 import { parsePreflopNode, type PreflopNode } from "@/poker/solutions";
@@ -317,6 +318,74 @@ describe("folding a 100% raise", () => {
       evs: { fold: 0, raise: 0.1 },
     };
     expect(gradeDecision(node, "fold").grade).toBe("solid");
+  });
+});
+
+// ── Unplayed actions ──────────────────────────────────────────────────────────
+
+describe("an action the strategy never takes", () => {
+  /**
+   * The live failure: bet 33% at 0%, EV only 0.40bb off the peak, graded Solid
+   * while the capsules printed 0% and the mix copy named every other size.
+   */
+  const screenshot: GradeInput = {
+    actions: ["check", "bet_33", "bet_66", "bet_100"],
+    frequencies: { check: 0.2, bet_33: 0, bet_66: 0.5, bet_100: 0.3 },
+    evs: { check: 1.1, bet_33: 1.1, bet_66: 1.5, bet_100: 1.3 },
+  };
+
+  it("cannot grade solid even when the EV gap is inside the solid band", () => {
+    const result = gradeDecision(screenshot, "bet_33");
+    expect(result.evLoss).toBeCloseTo(0.4, 9);
+    expect(result.grade).toBe("inaccuracy");
+    expect(result.isBalancedAlternative).toBe(false);
+    record("unplayed size", "0% bet 33% at −0.40bb grades inaccuracy, not solid");
+  });
+
+  it("still grades a real mix component as solid", () => {
+    expect(gradeDecision(screenshot, "check").grade).toBe("solid");
+    expect(gradeDecision(screenshot, "bet_100").grade).toBe("solid");
+    expect(gradeDecision(screenshot, "bet_66").grade).toBe("best");
+  });
+
+  it("does not soften a real blunder on an unplayed line", () => {
+    const node: GradeInput = {
+      actions: ["fold", "raise"],
+      frequencies: { raise: 1, fold: 0 },
+      evs: { fold: 0, raise: 6 },
+    };
+    expect(gradeDecision(node, "fold").grade).toBe("blunder");
+  });
+
+  it("cannot grade best just because the EV table ranks a 0% line highest", () => {
+    const node: GradeInput = {
+      actions: ["check", "bet_33", "bet_66"],
+      frequencies: { check: 0.4, bet_33: 0, bet_66: 0.6 },
+      evs: { check: 1, bet_33: 2, bet_66: 1.9 },
+    };
+    const result = gradeDecision(node, "bet_33");
+    expect(result.evLoss).toBe(0);
+    expect(result.grade).toBe("inaccuracy");
+  });
+
+  it("never grades a displayed-0% action better than inaccuracy on the preflop set", () => {
+    let checked = 0;
+    for (const node of nodes) {
+      for (const handKey of HAND_KEYS) {
+        for (const action of node.actions) {
+          const result = grade(node, handKey, action);
+          if (!isPlayedFrequency(result.frequencies[action] ?? 0)) {
+            expect(["inaccuracy", "mistake", "blunder"]).toContain(result.grade);
+            checked++;
+          }
+        }
+      }
+    }
+    expect(checked).toBeGreaterThan(0);
+    record(
+      "unplayed floor holds",
+      `${checked.toLocaleString("en-US")} zero-frequency actions, none better than inaccuracy`,
+    );
   });
 });
 

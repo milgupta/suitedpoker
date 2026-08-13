@@ -28,6 +28,7 @@ const MARKETING_SOURCES = [
   "src/components/marketing/SiteHeader.tsx",
   "src/components/marketing/SiteFooter.tsx",
   "src/components/marketing/AppFrame.tsx",
+  "src/components/marketing/HowItWorks.tsx",
   "src/content/landing.ts",
 ];
 

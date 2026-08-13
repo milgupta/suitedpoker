@@ -259,6 +259,27 @@ test.describe("the landing page", () => {
     const cells = page.locator("[role='gridcell']");
     await expect(cells).toHaveCount(169);
   });
+
+  test("how it works is one mixed hand, rendered not photographed", async ({ page }) => {
+    await page.goto("/");
+    const how = page.locator("[data-section='how']");
+    await expect(how).toBeVisible();
+
+    const text = await how.innerText();
+    expect(text).toMatch(/King-Queen suited/);
+    expect(text).toMatch(/In the big blind, facing an open from the button/);
+    expect(text).toMatch(/70%/);
+    expect(text).toMatch(/30%/);
+    expect(text).not.toMatch(/100%/);
+    expect(text).toMatch(/genuine mix/i);
+    expect(text).not.toMatch(/limping the big blind/i);
+
+    await expect(how.locator("[data-step]")).toHaveCount(3);
+    await expect(how.locator("[data-how-table]")).toBeVisible();
+    await expect(how.locator("[data-game-surface]")).toBeVisible();
+    await expect(how.getByRole("button", { name: /Call, 70 percent/i })).toBeVisible();
+    await expect(how.getByText("You called")).toHaveCount(0);
+  });
 });
 
 test.describe("the pricing page", () => {

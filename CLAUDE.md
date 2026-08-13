@@ -1387,6 +1387,39 @@ if you add one.
   `performance.now()` set in an effect.
 - Measured: **2.8s added to the funnel** against a 45s budget.
 
+**What the e2e isolation pass left you.**
+
+- ⚠️ **THE SECOND SUPABASE PROJECT STILL DOES NOT EXIST.** Everything around it
+  is now built and verified; the ten minutes in the Supabase dashboard are
+  Milan's, and until they happen every full e2e run still puts ~60 users in the
+  production `auth.users` table. `docs/E2E-DATABASE.md` is the checklist.
+- 🔴 **ISOLATING `adminClient()` WAS ONLY HALF OF IT, AND THE OTHER HALF WAS
+  MISSING.** `playwright.config.ts` had no `webServer.env`, so the server under
+  test read `.env.local` and pointed at production no matter what the `E2E_*`
+  vars said. Following the doc as it stood would have failed the whole suite
+  (users created in project B, logins attempted against project A) — and
+  `auth.spec.ts` and `analytics.spec.ts` drive the REAL SIGNUP FORM, so those
+  users would have kept landing in production while `isolated` read true and the
+  warning stopped printing. **A false all-clear was one env var away.**
+- **All four variables or none**, `E2E_DATABASE_URL` included. The Supabase
+  three isolate `auth.users` and nothing else; `profiles`, `drill_attempts`,
+  `sim_hands` and `subscriptions` go through drizzle over `DATABASE_URL`. The
+  doc used to call it "only needed for setup:e2e-db", which was wrong.
+- 🔴 **`reuseExistingServer` DEFEATS `webServer.env` ENTIRELY AND SILENTLY.** A
+  server already on the port is used as it was started. So
+  `tests/e2e/global-setup.ts` asks the RUNNING server instead of trusting the
+  config: it submits the login form once and reads the hostname of the auth
+  request the browser makes (login goes through the browser Supabase client, so
+  the destination is observable from outside). The request is **aborted** —
+  nothing is sent and the check creates no user anywhere.
+- **It fails CLOSED.** An unreadable destination aborts the run. Verified all
+  three paths against a live server: the probe read the real production ref off
+  :3000 and refused, a partial set refuses without launching a browser, and an
+  unset set proceeds with the existing per-run warning.
+- **`NEXT_PUBLIC_SITE_URL` is `localhost` locally, so `assertNotProduction()`
+  never fires here.** Until the project exists, a printed warning is the only
+  thing between a local run and the production auth table.
+
 **What the full e2e passes left you.**
 
 - **`npm run smoke` before any long run.** 28 routes, two seconds. A confirming

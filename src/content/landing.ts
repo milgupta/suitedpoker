@@ -83,36 +83,33 @@ export const MIX = {
    * is rendered from the solution file and would drift out of the prose.
    */
   closing:
-    "Fold this hand and you have not made a mistake — you have taken the less common of two reasonable lines, and the app tells you exactly what it costs. Learning why both exist is the part that transfers to the table.",
+    "Take the less common line on this hand and you have not made a mistake — you have taken one of two reasonable lines, and the app tells you exactly what it costs. Learning why both exist is the part that transfers to the table.",
   gridCaption: "The whole range behind that one hand. Every cell is the same data.",
+} as const;
+
+export const HOW = {
+  eyebrow: "The loop",
+  title: "How it works",
+  lede: "The same hand, three screens.",
 } as const;
 
 export interface Step {
   readonly title: string;
   readonly body: string;
-  /** Basename under `public/screenshots/how/` (png/webp/avif). */
-  readonly shot: string;
-  readonly alt: string;
 }
 
 export const STEPS: readonly Step[] = [
   {
     title: "Answer a spot",
-    body: "A real hand, with the position, the stacks and the action so far. You pick what you would do — no hints unless you ask.",
-    shot: "step-answer",
-    alt: "Arena hand: Ace-King of diamonds with the action so far and stack",
+    body: "A real hand — position, stacks, the action so far. You pick what you would do.",
   },
   {
-    title: "See the whole strategy",
-    body: "Not a tick or a cross. How often each action is taken, and what yours costs in big blinds against the best one.",
-    shot: "step-why",
-    alt: "Hole cards with the full mix — 100 percent on the best action",
+    title: "See the mix",
+    body: "Not a tick or a cross. How often each action is taken. Both lines here cost the same — the split is the lesson.",
   },
   {
     title: "Understand why",
-    body: "A plain-English explanation of the idea behind it, written for someone who does not already speak solver. Ask follow-up questions.",
-    shot: "step-strategy",
-    alt: "Graded Fold marked Best, with a plain-English line on how often it is taken",
+    body: "A plain-English explanation of the idea, written for someone who does not already speak solver.",
   },
 ];
 

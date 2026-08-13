@@ -13,8 +13,11 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { marketingContrast } from "@/lib/marketing-contrast";
 import {
   buildShowcase,
+  handNameOf,
+  mixExplanation,
   rangeStrategyOf,
   segmentsFor,
   situationOf,
@@ -145,6 +148,69 @@ describe("the landing showcase", () => {
     expect(showcase.potBb).toBe(NODE.potBb);
     expect(showcase.effStackBb).toBe(NODE.effStackBb);
     expect(showcase.nodeRef).toBe(NODE.ref);
+    expect(showcase.legalActions).toEqual(NODE.actions);
+  });
+
+  it("the How-it-works table matches a real drill of this node", () => {
+    const showcase = buildShowcase(NODE);
+    const { table } = showcase;
+
+    expect(table.opponents.map((seat) => seat.position)).toEqual(["UTG", "MP", "CO", "BTN", "SB"]);
+    expect(table.opponents.some((seat) => seat.position === "BB")).toBe(false);
+
+    const byPos = new Map(table.opponents.map((seat) => [seat.position, seat]));
+    expect(byPos.get("UTG")?.folded).toBe(true);
+    expect(byPos.get("BTN")?.folded).toBe(false);
+    expect(byPos.get("BTN")?.isDealer).toBe(true);
+    expect(byPos.get("BTN")?.betBb).toBe(2.5);
+    expect(byPos.get("SB")?.folded).toBe(true);
+
+    expect(table.history).toBe("BTN opens 2.5bb");
+    expect(table.situationLine).toMatch(/button/i);
+    expect(table.situationLine).toMatch(/big blind/i);
+    expect(table.strengthLabel).toBe("High card");
+    expect(table.heroBetBb).toBe(1);
+  });
+
+  it("names the featured hand in English, never as a grid key", () => {
+    expect(handNameOf("KQs")).toBe("King-Queen suited");
+    expect(handNameOf("AA")).toBe("Pocket Aces");
+    expect(handNameOf("AKo")).toBe("Ace-King offsuit");
+    expect(buildShowcase(NODE).handName).toBe("King-Queen suited");
+  });
+
+  it("the How-it-works explanation is the mix, derived from the file", () => {
+    const showcase = buildShowcase(NODE);
+    const cell = NODE.strategy[SHOWCASE_HAND]!;
+    const callPct = Math.round((cell.call ?? 0) * 100);
+    const raisePct = Math.round((cell.raise ?? 0) * 100);
+
+    expect(showcase.explanation).toContain("genuine mix");
+    expect(showcase.explanation).toContain(`${callPct}%`);
+    expect(showcase.explanation).toContain(`${raisePct}%`);
+    expect(showcase.explanation).not.toMatch(/100%/);
+    expect(mixExplanation(showcase.segments)).toBe(showcase.explanation);
+  });
+
+  it("a pure line does not claim to be a mix", () => {
+    const line = mixExplanation([{ action: "fold", freq: 1, evLoss: 0 }]);
+    expect(line).toMatch(/100%/);
+    expect(line).not.toMatch(/genuine mix/);
+  });
+
+  it("marketing contrast exaggerates colour only on an indifferent mix", () => {
+    const painted = marketingContrast([
+      { action: "call", freq: 0.7, evLoss: 0 },
+      { action: "raise", freq: 0.3, evLoss: 0 },
+    ]);
+    expect(painted[0]?.evLoss).toBe(0);
+    expect(painted[1]?.evLoss).toBe(0.4);
+
+    const honest = marketingContrast([
+      { action: "call", freq: 0.7, evLoss: 0 },
+      { action: "raise", freq: 0.3, evLoss: 0.5 },
+    ]);
+    expect(honest[1]?.evLoss).toBe(0.5);
   });
 
   it("throws rather than rendering a blank for a hand the node has no strategy for", () => {

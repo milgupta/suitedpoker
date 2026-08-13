@@ -2,15 +2,16 @@ import Link from "next/link";
 import { TrackView } from "@/components/track-view";
 import { AppFrame } from "@/components/marketing/AppFrame";
 import { DecisionShowcase } from "@/components/marketing/DecisionShowcase";
+import { HowItWorks } from "@/components/marketing/HowItWorks";
 import { RangeShowcase } from "@/components/marketing/RangeShowcase";
 import { SiteFooter } from "@/components/marketing/SiteFooter";
 import { SiteHeader } from "@/components/marketing/SiteHeader";
-import { landingShowcase } from "@/lib/landing-showcase-server";
-import { methodologyFacts } from "@/lib/methodology-server";
-import { provenanceHeadline } from "@/lib/methodology";
-import { PLANS } from "@/lib/stripe/plans";
-import { FAQ, FEATURES, FINAL_CTA, HERO, HERO_PROOF, MIX, PROBLEM, STEPS } from "@/content/landing";
 import { TestimonialCarousel } from "@/components/marketing/TestimonialCarousel";
+import { FAQ, FEATURES, FINAL_CTA, HERO, HERO_PROOF, MIX, PROBLEM } from "@/content/landing";
+import { landingShowcase } from "@/lib/landing-showcase-server";
+import { provenanceHeadline } from "@/lib/methodology";
+import { methodologyFacts } from "@/lib/methodology-server";
+import { PLANS } from "@/lib/stripe/plans";
 
 /**
  * THE LANDING PAGE.
@@ -212,47 +213,8 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── How it works ─────────────────────────────────────────────────── */}
-        <section id="how" className="border-border border-t">
-          <div className="mx-auto max-w-(--container-app) px-6 py-20">
-            <h2 className="text-display-md sm:text-display-lg">How it works</h2>
-
-            <ol className="mt-12 grid gap-10 sm:grid-cols-3 sm:gap-8">
-              {STEPS.map((step, index) => (
-                <li key={step.title} className="flex flex-col gap-5">
-                  {/*
-                   * Fixed height, not intrinsic aspect — same reason as the
-                   * features page. Phone captures are tall; sizing from the
-                   * image would make each column a different height and the
-                   * section lurch as they load.
-                   */}
-                  <div className="border-border bg-surface-1 overflow-hidden rounded-lg border">
-                    <picture>
-                      <source srcSet={`/screenshots/how/${step.shot}.avif`} type="image/avif" />
-                      <source srcSet={`/screenshots/how/${step.shot}.webp`} type="image/webp" />
-                      <img
-                        src={`/screenshots/how/${step.shot}.png`}
-                        alt={step.alt}
-                        width={960}
-                        height={600}
-                        loading="lazy"
-                        decoding="async"
-                        className="h-56 w-full object-cover sm:h-64"
-                      />
-                    </picture>
-                  </div>
-                  <div className="hairline-top pt-5">
-                    <span className="text-text-tertiary text-body-sm font-mono tabular-nums">
-                      Step {String(index + 1).padStart(2, "0")}
-                    </span>
-                    <h3 className="text-heading-lg mt-3">{step.title}</h3>
-                    <p className="text-text-secondary text-body-md mt-3 text-pretty">{step.body}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </section>
+        {/* ── How it works. One hand, three screens — rendered, not photographed. */}
+        <HowItWorks showcase={showcase} />
 
         {/* After the loop is clear, social proof — not in the first viewport. */}
         <TestimonialCarousel />

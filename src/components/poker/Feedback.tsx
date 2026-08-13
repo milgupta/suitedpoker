@@ -2,7 +2,7 @@
 
 import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useState, type ReactNode } from "react";
-import type { Grade } from "@/poker/grader";
+import { isPlayedFrequency, type Grade } from "@/poker/grader";
 import { GradeBadge } from "@/components/ui/grade-badge";
 import { Button } from "@/components/ui/button";
 import { Shimmer } from "@/components/motion";
@@ -67,22 +67,26 @@ function toSegments(result: Grade): FrequencySegment[] {
  */
 function playedActions(result: Grade): string[] {
   return Object.entries(result.frequencies)
-    .filter(([, freq]) => freq > 0)
+    .filter(([, freq]) => isPlayedFrequency(freq))
     .sort((a, b) => b[1] - a[1])
     .map(([action]) => action);
+}
+
+function mixList(result: Grade): string {
+  const played = playedActions(result).slice(0, 3).map(actionPhrase);
+  if (played.length <= 1) return played[0] ?? actionPhrase(result.bestAction);
+  return `${played.slice(0, -1).join(", ")} and ${played[played.length - 1]}`;
 }
 
 /** One line of why, generated from the solution data — no AI round trip. */
 function whyLine(result: Grade): string {
   const topPct = Math.round(result.topFreq * 100);
-  const best = actionPhrase(result.bestAction);
 
   if (result.displayMode === "mixed") {
-    const played = playedActions(result).slice(0, 3).map(actionPhrase);
-    const list =
-      played.length > 1
-        ? `${played.slice(0, -1).join(", ")} and ${played[played.length - 1]}`
-        : (played[0] ?? best);
+    const list = mixList(result);
+    if (!isPlayedFrequency(result.frequencies[result.chosenAction] ?? 0)) {
+      return `The chart never ${actionVerb(result.chosenAction)} here. The mix is ${list}.`;
+    }
     return `No single action is right here — the strategy splits between ${list}, so more than one line is part of a balanced approach.`;
   }
 
@@ -188,12 +192,21 @@ export function Feedback({
 
       {/* 2. The verdict — branches on displayMode */}
       {result.displayMode === "mixed" ? (
-        <div>
-          <h2 className="text-display-md">This one&apos;s a genuine mix.</h2>
-          <p className="text-text-secondary text-body-md mt-2">
-            The frequencies are the lesson here, not a single right answer.
-          </p>
-        </div>
+        isPlayedFrequency(result.frequencies[result.chosenAction] ?? 0) ? (
+          <div>
+            <h2 className="text-display-md">This one&apos;s a genuine mix.</h2>
+            <p className="text-text-secondary text-body-md mt-2">
+              The frequencies are the lesson here, not a single right answer.
+            </p>
+          </div>
+        ) : (
+          <div>
+            <h2 className="text-display-md">Not in the mix.</h2>
+            <p className="text-text-secondary text-body-md mt-2">
+              The frequencies are the lesson here — and this line is not one of them.
+            </p>
+          </div>
+        )
       ) : (
         <div className="flex flex-wrap items-baseline gap-3">
           <span className="text-display-md" style={{ color: "var(--color-grade-best)" }}>

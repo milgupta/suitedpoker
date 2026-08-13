@@ -1,10 +1,11 @@
 "use client";
 
-import { FrequencyBar, type FrequencySegment } from "@/components/poker/FrequencyBar";
+import { FrequencyBar } from "@/components/poker/FrequencyBar";
 import { PlayingCard } from "@/components/poker/PlayingCard";
 import { GradeBadge } from "@/components/ui/grade-badge";
 import { actionVerb } from "@/lib/action-label";
 import type { Showcase } from "@/lib/landing-showcase";
+import { marketingContrast } from "@/lib/marketing-contrast";
 import { combosOf } from "@/poker/range";
 
 /**
@@ -73,19 +74,4 @@ export function DecisionShowcase({ showcase }: { showcase: Showcase }) {
       ) : null}
     </div>
   );
-}
-
-/**
- * Widen the colour gap for indifferent mixes without inventing frequencies.
- * Primary stays best-green (0bb); every other played line is drawn at the
- * inaccuracy stop (~yellow) — the same colour the arena uses for a small EV
- * gap — so width still means frequency and the two colours separate.
- */
-function marketingContrast(segments: readonly FrequencySegment[]): FrequencySegment[] {
-  if (segments.length < 2) return [...segments];
-  const indifferent = segments.every((s) => s.evLoss < 0.02);
-  if (!indifferent) return [...segments];
-  // 0.4bb sits on the inaccuracy/yellow portion of `evColor`'s ramp — past the
-  // near-green solid band, well before mistake orange.
-  return segments.map((segment, i) => (i === 0 ? segment : { ...segment, evLoss: 0.4 }));
 }

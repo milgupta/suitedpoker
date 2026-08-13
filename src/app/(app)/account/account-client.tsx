@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { formatUsd } from "@/lib/stripe/plans";
+import { SUPPORT_EMAIL, supportMailto } from "@/lib/support-mailto";
 import type { AccountData } from "@/lib/account-server";
 
 /**
@@ -41,7 +42,9 @@ export function AccountClient({ account }: { account: AccountData | Serialisable
       <Separator className="my-8" />
       <PasswordSection />
       <Separator className="my-8" />
-      <DangerSection />
+      <SupportSection account={account} />
+      <Separator className="my-8" />
+      <DangerSection account={account} />
     </div>
   );
 }
@@ -55,6 +58,19 @@ function ProfileSection({ account }: { account: AccountData | Serialisable }) {
     account.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
   );
   const [state, setState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [copied, setCopied] = useState<"idle" | "done" | "failed">("idle");
+
+  async function copyUserId() {
+    try {
+      await navigator.clipboard.writeText(account.userId);
+      setCopied("done");
+    } catch {
+      // Clipboard access can be refused outright (an insecure context, or a
+      // browser policy). Saying so beats a button that silently does nothing.
+      setCopied("failed");
+    }
+    window.setTimeout(() => setCopied("idle"), 2500);
+  }
 
   // The browser's zone, offered when ours differs from it. The daily challenge
   // and the streak both key off the stored value, so a stale one silently costs
@@ -99,7 +115,48 @@ function ProfileSection({ account }: { account: AccountData | Serialisable }) {
           <Label htmlFor="email">Email</Label>
           <Input id="email" value={account.email} readOnly disabled className="mt-1.5" />
           <p className="text-text-tertiary text-body-sm mt-1.5">
-            Changing your email means changing your login. Email us and we will do it with you.
+            Changing your email means changing your login.{" "}
+            <a
+              href={supportMailto("support", {
+                email: account.email,
+                userId: account.userId,
+                planLabel: account.billing.planLabel,
+              })}
+              className="text-accent-bright underline"
+            >
+              Email us
+            </a>{" "}
+            and we will do it with you.
+          </p>
+        </div>
+
+        <div>
+          <Label htmlFor="user-id">User ID</Label>
+          {/* A UUID is 36 unbroken characters — it cannot wrap, so it goes in an
+              input that scrolls rather than a text node that would push the page
+              sideways at 390px. */}
+          <div className="mt-1.5 flex items-center gap-2">
+            <Input
+              id="user-id"
+              value={account.userId}
+              readOnly
+              disabled
+              className="font-mono"
+              data-testid="user-id"
+            />
+            <Button
+              variant="ghost"
+              className="shrink-0"
+              onClick={() => void copyUserId()}
+              data-testid="copy-user-id"
+            >
+              {copied === "done" ? "Copied" : copied === "failed" ? "Couldn't" : "Copy"}
+            </Button>
+          </div>
+          <p className="text-text-tertiary text-body-sm mt-1.5" role="status">
+            {copied === "failed"
+              ? "Your browser wouldn't let us copy it — select the field instead."
+              : "Quote this if you ever write to support. It identifies your account."}
           </p>
         </div>
 
@@ -358,9 +415,54 @@ function PasswordSection() {
   );
 }
 
+/* ── support ─────────────────────────────────────────────────────────────── */
+
+/**
+ * Support sits above the deletion block on purpose: someone frustrated enough
+ * to be scrolling this far should reach a person before they reach the button
+ * that ends the account.
+ */
+function SupportSection({ account }: { account: AccountData | Serialisable }) {
+  const context = {
+    email: account.email,
+    userId: account.userId,
+    planLabel: account.billing.planLabel,
+  };
+
+  return (
+    <section aria-labelledby="support-heading" data-testid="support-section">
+      <h2 id="support-heading" className="text-heading-md">
+        Support
+      </h2>
+
+      <p className="text-text-secondary text-body-md mt-3">
+        Something broken, a hand graded in a way you don&apos;t agree with, or a feature you wish
+        existed — write to us. A person reads every one of these.
+      </p>
+
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+        <Button asChild>
+          <a href={supportMailto("support", context)} data-testid="support-email">
+            Email support
+          </a>
+        </Button>
+        <Button variant="ghost" asChild>
+          <a href={supportMailto("feature", context)} data-testid="support-feature">
+            Suggest a feature
+          </a>
+        </Button>
+      </div>
+
+      <p className="text-text-tertiary text-body-sm mt-3">
+        Or write to {SUPPORT_EMAIL} directly. Your account details are filled in for us either way.
+      </p>
+    </section>
+  );
+}
+
 /* ── deletion ────────────────────────────────────────────────────────────── */
 
-function DangerSection() {
+function DangerSection({ account }: { account: AccountData | Serialisable }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [typed, setTyped] = useState("");
@@ -436,7 +538,18 @@ function DangerSection() {
           {state === "error" && (
             <p className="text-grade-mistake text-body-sm mt-3" role="status">
               We couldn&apos;t delete it — most likely your subscription didn&apos;t cancel cleanly.
-              Nothing was removed. Email us and we will sort it out.
+              Nothing was removed.{" "}
+              <a
+                href={supportMailto("support", {
+                  email: account.email,
+                  userId: account.userId,
+                  planLabel: account.billing.planLabel,
+                })}
+                className="text-accent-bright underline"
+              >
+                Email us
+              </a>{" "}
+              and we will sort it out.
             </p>
           )}
         </div>

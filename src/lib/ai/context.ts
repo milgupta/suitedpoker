@@ -1,4 +1,4 @@
-import type { Grade } from "@/poker/grader";
+import { isPlayedFrequency, type Grade } from "@/poker/grader";
 import type { ClientSpot, Spot } from "@/poker/generator";
 import type { Card } from "@/poker/cards";
 import { cardsToString } from "@/poker/cards";
@@ -101,7 +101,7 @@ export function buildCoachContext(
   const folded = PREFLOP_ORDER.filter((p) => seats[p].folded);
 
   const neverPlayed = Object.entries(grade.frequencies)
-    .filter(([, freq]) => freq === 0)
+    .filter(([, freq]) => !isPlayedFrequency(freq))
     .map(([action]) => actionLabel(action));
 
   const lines = [

@@ -104,6 +104,14 @@ const SHARP_MAX_SUCCESS_RATE = 0.35;
 
 const BALANCED_MIN_FREQ = 0.15;
 
+/**
+ * Capsules round to a whole percent. A line that would print 0% is not in the
+ * mix, even if a tiny authored frequency survived rounding.
+ */
+export function isPlayedFrequency(frequency: number): boolean {
+  return Math.round(frequency * 100) > 0;
+}
+
 export interface GradeInput {
   actions: readonly string[];
   frequencies: Record<string, number>;
@@ -194,6 +202,15 @@ export function gradeDecision(
   if (chosenAction === "fold" && isPureRaise) {
     const order = GRADE_NAMES.indexOf(grade);
     if (order < GRADE_NAMES.indexOf("mistake")) grade = "mistake";
+  }
+
+  // Frequency is the strategy. Authored EVs are indifference-modelled, so a
+  // size the chart never takes can sit 0.4bb off the peak and grade Solid —
+  // then the capsules print 0% above a green badge. The mix copy already
+  // omits unplayed lines; the grade has to agree.
+  if (!isPlayedFrequency(chosenFreq)) {
+    const floor = GRADE_NAMES.indexOf("inaccuracy");
+    if (GRADE_NAMES.indexOf(grade) < floor) grade = "inaccuracy";
   }
 
   // `sharp` is an upgrade of `best`, not a band. It is computed from real user

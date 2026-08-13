@@ -1,9 +1,12 @@
 import type { FrequencySegment } from "@/components/poker/FrequencyBar";
 import type { RangeStrategy } from "@/components/poker/RangeGrid";
+import { actionLabel, actionPhrase } from "@/lib/action-label";
 import { positionName } from "@/lib/demo-hand";
 import type { Grade } from "@/lib/grade";
+import { formatActionHistory, situationLine } from "@/lib/spot-situation";
 import { bandFor } from "@/poker/grader";
 import type { HandKey } from "@/poker/range";
+import { committedBbOf, PREFLOP_ORDER, seatActivity } from "@/poker/seat-activity";
 import type { PreflopNode } from "@/poker/solutions";
 
 /**
@@ -43,10 +46,19 @@ export const SHOWCASE_HAND: HandKey = "KQs";
 export interface Showcase {
   readonly nodeRef: string;
   readonly hand: HandKey;
+  /** "King-Queen suited" — never "KQs". */
+  readonly handName: string;
   /** "In the big blind, facing an open from the button" — never "BB vs BTN". */
   readonly situation: string;
+  /** Every action the node offers, in button order — including 0% lines. */
+  readonly legalActions: readonly string[];
   /** Every action the solution actually plays, widest first. */
   readonly segments: readonly FrequencySegment[];
+  /**
+   * The post-hand explanation, derived from the same segments the bar draws.
+   * Lives here so the How-it-works frame cannot drift from the numbers.
+   */
+  readonly explanation: string;
   /** The whole 169-cell range behind the featured hand. */
   readonly strategy: RangeStrategy;
   /**
@@ -62,6 +74,30 @@ export interface Showcase {
   readonly alternativeGrade: Grade | null;
   readonly potBb: number;
   readonly effStackBb: number;
+  /** The drill table for "Answer a spot" — same seats the generator would draw. */
+  readonly table: ShowcaseTable;
+}
+
+/**
+ * Opponent seats as the strip wants them. Kept free of `src/poker` types so a
+ * client component can render the table without importing the generator.
+ */
+export interface ShowcaseOpponent {
+  readonly position: string;
+  readonly stackBb: number;
+  readonly folded: boolean;
+  readonly isDealer: boolean;
+  readonly isActing: boolean;
+  readonly betBb: number | null;
+}
+
+export interface ShowcaseTable {
+  readonly opponents: readonly ShowcaseOpponent[];
+  /** Drill situation line — "the button (BTN) opened. Action on you…" */
+  readonly situationLine: string;
+  readonly history: string;
+  readonly strengthLabel: string;
+  readonly heroBetBb: number | null;
 }
 
 /**
@@ -133,6 +169,62 @@ export function situationOf(node: PreflopNode): string {
   return opener;
 }
 
+const RANK_WORD: Record<string, string> = {
+  A: "Ace",
+  K: "King",
+  Q: "Queen",
+  J: "Jack",
+  T: "Ten",
+  "9": "Nine",
+  "8": "Eight",
+  "7": "Seven",
+  "6": "Six",
+  "5": "Five",
+  "4": "Four",
+  "3": "Three",
+  "2": "Two",
+};
+
+/** "King-Queen suited", "Pocket Aces" — the name a beginner would say. */
+export function handNameOf(hand: HandKey): string {
+  if (hand.length === 2) {
+    const rank = RANK_WORD[hand[0] ?? ""];
+    return rank !== undefined ? `Pocket ${rank}s` : hand;
+  }
+  const high = RANK_WORD[hand[0] ?? ""];
+  const low = RANK_WORD[hand[1] ?? ""];
+  if (high === undefined || low === undefined) return hand;
+  return `${high}-${low} ${hand.endsWith("s") ? "suited" : "offsuit"}`;
+}
+
+/**
+ * The sentence under the grade. Frequencies come from the segments, never
+ * typed into the string, so a repaired node updates the How-it-works copy
+ * the same way it updates the hero bar.
+ */
+export function mixExplanation(segments: readonly FrequencySegment[]): string {
+  const played = segments.filter((segment) => segment.freq > 0);
+  const parts = played
+    .map((segment) => `${actionPhrase(segment.action)} ${Math.round(segment.freq * 100)}%`)
+    .join(", ");
+  const top = played[0];
+  const alternative = played[1];
+
+  if (top === undefined) {
+    return "The chart has no line here.";
+  }
+
+  if (alternative === undefined) {
+    return `${actionLabel(top.action)} wins the most in the long run here, taken ${Math.round(top.freq * 100)}% of the time.`;
+  }
+
+  if (alternative.evLoss < 0.005) {
+    return `This spot is a genuine mix: ${parts}. Both lines are worth the same, which is the only reason to split a hand at all.`;
+  }
+
+  return `This spot is a genuine mix: ${parts}. Taking the second line gives up ${alternative.evLoss.toFixed(2)}bb — a different line, not a mistake.`;
+}
+
 export function buildShowcase(node: PreflopNode, hand: HandKey = SHOWCASE_HAND): Showcase {
   const segments = segmentsFor(node, hand);
   const alternative = segments[1];
@@ -140,11 +232,55 @@ export function buildShowcase(node: PreflopNode, hand: HandKey = SHOWCASE_HAND):
   return {
     nodeRef: node.ref,
     hand,
+    handName: handNameOf(hand),
     situation: situationOf(node),
+    legalActions: [...node.actions],
     segments,
+    explanation: mixExplanation(segments),
     strategy: rangeStrategyOf(node),
     alternativeGrade: alternative === undefined ? null : bandFor(alternative.evLoss),
     potBb: node.potBb,
     effStackBb: node.effStackBb,
+    table: tableOf(node, hand),
+  };
+}
+
+/**
+ * Same walk `generateSpot` uses, so the marketing table and a real drill of
+ * this node cannot disagree about who folded.
+ */
+function actionHistoryOf(node: PreflopNode): readonly string[] {
+  if (node.actionSeq === "rfi") return ["folded to hero"];
+  const opponent = node.actionSeq.split("_").pop() ?? "";
+  if (node.actionSeq.startsWith("vs_rfi_")) return [`${opponent} opens 2.5bb`];
+  if (node.actionSeq.startsWith("vs_3bet_")) {
+    return [`${node.heroPos} opens 2.5bb`, `${opponent} 3bets to 11bb`];
+  }
+  return [`${opponent} opens 2.5bb`, `${node.heroPos} 3bets to 11bb`, `${opponent} 4bets to 22bb`];
+}
+
+function tableOf(node: PreflopNode, hand: HandKey): ShowcaseTable {
+  const history = actionHistoryOf(node);
+  const activity = seatActivity(node.heroPos, history);
+
+  return {
+    opponents: PREFLOP_ORDER.filter((position) => position !== node.heroPos).map((position) => {
+      const state = activity[position]!;
+      return {
+        position,
+        stackBb: node.effStackBb,
+        folded: state.folded,
+        isDealer: position === "BTN",
+        isActing: state.toAct && !state.folded,
+        betBb: committedBbOf(position, state, 0),
+      };
+    }),
+    situationLine: situationLine(node.heroPos, history, 0),
+    history: formatActionHistory(history, node.heroPos),
+    // Preflop, no board: a pair is a pair, everything else is high card.
+    // The dock's handStrength agrees; computing it here would drag the
+    // evaluator into a module the landing page type-imports.
+    strengthLabel: hand.length === 2 ? "Pair" : "High card",
+    heroBetBb: committedBbOf(node.heroPos, activity[node.heroPos]!, 0),
   };
 }

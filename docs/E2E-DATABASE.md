@@ -51,11 +51,44 @@ Project Settings → API, into `.env.local`:
 E2E_SUPABASE_URL=https://<new-ref>.supabase.co
 E2E_SUPABASE_ANON_KEY=<anon key>
 E2E_SUPABASE_SERVICE_ROLE_KEY=<service_role key>
-E2E_DATABASE_URL=postgresql://...   # only needed for setup:e2e-db
+E2E_DATABASE_URL=postgresql://...   # Settings → Database → URI, TRANSACTION mode (6543)
 ```
 
-Add the same three to CI. **Do not** add them to Vercel — the app must never
-read them.
+**All four, or none.** The Supabase three isolate `auth.users`. They do nothing
+for `profiles`, `drill_attempts`, `sim_hands` or `subscriptions` — those are
+reached through drizzle over `DATABASE_URL`. A run with three of the four
+writes the users to the test project and everything else to production, and the
+warning that would have told you so goes quiet because the auth half looks
+right. `tests/e2e/global-setup.ts` refuses a partial set outright.
+
+Use the **transaction** pooler (port 6543) for `E2E_DATABASE_URL`, not session
+mode — see the `EMAXCONNSESSION` note in `CLAUDE.md`.
+
+Add all four to CI. **Do not** add them to Vercel — the app must never read
+them.
+
+## What actually gets isolated
+
+Setting those variables is not enough on its own, and this is the part that is
+easy to get wrong.
+
+`tests/support/e2e-supabase.ts` decides where the **test process** creates
+users. The **server** has its own credentials, and three specs
+(`auth.spec.ts`, `analytics.spec.ts`) drive the real signup form — so the
+server's project is what decides whether a run pollutes production.
+
+`playwright.config.ts` passes all four into `webServer.env`, so the server
+Playwright starts is built and run against the e2e project.
+`NEXT_PUBLIC_SUPABASE_URL` is inlined at build time, which is why the
+`next build` in `webServer.command` has to happen under that environment.
+
+**`reuseExistingServer` is on locally.** If a server is already listening on the
+port, Playwright uses it exactly as it was started — with your `.env.local`, and
+the `env` above never applies. That is the failure this whole document exists to
+prevent, and it is silent. So `tests/e2e/global-setup.ts` submits the login form
+once and reads the hostname of the auth request the browser makes (the request
+is aborted; nothing is sent and no user is created). A project ref that is not
+the e2e one aborts the run before any spec starts.
 
 ## Verify
 
@@ -63,7 +96,13 @@ read them.
 PORT=3100 PLAYWRIGHT_BASE_URL=http://localhost:3100 npx playwright test tests/e2e/auth.spec.ts
 ```
 
-The run should print no warning. If you see
+A correctly isolated run prints, before the first spec:
+
+```
+  ✓ e2e isolated — the app under test authenticates against <new-ref>
+```
+
+If you see
 
 ```
 ⚠  E2E IS RUNNING AGAINST THE APP'S OWN SUPABASE PROJECT.

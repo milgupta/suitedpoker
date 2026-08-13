@@ -35,6 +35,36 @@ function read(name: string): string {
   return process.env[name] ?? "";
 }
 
+/**
+ * Every variable a genuinely isolated run needs — INCLUDING the database URL.
+ *
+ * The three `E2E_SUPABASE_*` vars isolate the auth table, which is what the
+ * warning is about. They do not isolate `profiles`, `drill_attempts`,
+ * `sim_hands` or `subscriptions` — those are reached through drizzle over
+ * `DATABASE_URL`, and a run with only the Supabase three set writes sixty
+ * users into project B and all of their rows into production.
+ *
+ * So isolation is all-or-nothing here. A partial set is the worst outcome
+ * available: contamination continues, and the warning that would have told you
+ * so goes quiet because the auth half looks isolated.
+ */
+export const ISOLATION_VARS = [
+  "E2E_SUPABASE_URL",
+  "E2E_SUPABASE_ANON_KEY",
+  "E2E_SUPABASE_SERVICE_ROLE_KEY",
+  "E2E_DATABASE_URL",
+] as const;
+
+/** Empty means fully isolated. All four means a fresh clone. Anything else is a mistake. */
+export function missingIsolationVars(): readonly string[] {
+  return ISOLATION_VARS.filter((name) => read(name) === "");
+}
+
+/** The `<ref>` in `https://<ref>.supabase.co`, which identifies the project. */
+export function projectRefOf(url: string): string {
+  return new URL(url).hostname.split(".")[0] ?? "";
+}
+
 export function e2eCredentials(): E2ECredentials {
   const url = read("E2E_SUPABASE_URL");
   const anonKey = read("E2E_SUPABASE_ANON_KEY");

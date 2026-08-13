@@ -1,4 +1,4 @@
-import type { Grade } from "@/poker/grader";
+import { isPlayedFrequency, type Grade } from "@/poker/grader";
 import { isNoviceTier, type SkillTier } from "@/lib/explain-policy";
 import { actionLabel, actionPhrase } from "@/lib/action-label";
 
@@ -108,11 +108,14 @@ export function templateExplanation(grade: Grade, tier: SkillTier = "never"): st
     const parts = Object.entries(grade.frequencies)
       // A "raise 0%" in the list is noise, and on a mixed spot the list IS the
       // lesson — every entry in it has to be an action the strategy takes.
-      .filter(([, freq]) => Math.round(freq * 100) > 0)
+      .filter(([, freq]) => isPlayedFrequency(freq))
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3)
       .map(([action, freq]) => `${actionPhrase(action)} ${Math.round(freq * 100)}%`)
       .join(", ");
+    if (!isPlayedFrequency(grade.frequencies[grade.chosenAction] ?? 0)) {
+      return `This spot is a genuine mix: ${parts}. ${actionLabel(grade.chosenAction)} is not one of those lines — the chart never takes it here.`;
+    }
     return `This spot is a genuine mix: ${parts}. More than one action is correct here, which is why the same hand can be played differently without either line being a mistake.`;
   }
 
