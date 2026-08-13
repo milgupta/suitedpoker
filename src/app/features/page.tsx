@@ -13,7 +13,7 @@ import {
 
 export const metadata: Metadata = {
   // Short form, no em dash of its own — the root template prefixes
-  // "SuitedPoker — " to it.
+  // "Suited Poker — " to it.
   title: "Features",
   description:
     "Everything in a SuitedPoker subscription: solver-graded drills, the full range browser, a guided curriculum, table sessions and leak detection.",

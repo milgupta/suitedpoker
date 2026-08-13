@@ -10,34 +10,19 @@ import { BLOCKED_COUNTRIES, DISCLAIMER } from "../../src/lib/compliance";
  */
 
 test.describe("compliance", () => {
-  test("signup is blocked without the 18+ confirmation", async ({ page }) => {
+  test("signup has no 18+ checkbox or confirm-password field", async ({ page }) => {
     await page.goto("/signup");
+
+    await expect(page.getByTestId("age-confirm")).toHaveCount(0);
+    await expect(page.getByLabel(/confirm password/i)).toHaveCount(0);
 
     const unique = `e2e+age${Date.now()}@suitedpoker.com`;
     await page.getByLabel("Email").fill(unique);
     await page.getByLabel("Password", { exact: true }).fill("correct-horse-9");
-    await page.getByLabel(/confirm password/i).fill("correct-horse-9");
-
-    // Deliberately NOT checking the box.
-    await expect(page.getByTestId("age-confirm")).not.toBeChecked();
     await page.getByRole("button", { name: /create|sign up/i }).click();
 
-    // Still on signup, with the reason stated.
-    await expect(page).toHaveURL(/\/signup/);
-    await expect(page.getByRole("alert").filter({ hasText: /18 or over/i })).toBeVisible();
-  });
-
-  test("signup proceeds once it is confirmed", async ({ page }) => {
-    // The control: the gate must be a gate, not a wall.
-    await page.goto("/signup");
-    await page.getByTestId("age-confirm").check();
-    await expect(page.getByTestId("age-confirm")).toBeChecked();
-
-    // No validation ERROR before anything is submitted. Matched on the alert
-    // role rather than the text — "18 or over" is also the checkbox's own
-    // label, so a text match can never be zero and the assertion was
-    // unsatisfiable rather than wrong about the product.
-    await page.getByLabel("Email").fill(`e2e+age2${Date.now()}@suitedpoker.com`);
+    // Without the old gates, submit must leave the empty-form validation path —
+    // either check-email / onboarding, or a server auth alert. Never the 18+ copy.
     await expect(page.getByRole("alert").filter({ hasText: /18 or over/i })).toHaveCount(0);
   });
 

@@ -168,10 +168,6 @@ test.describe("auth", () => {
     await page.goto("/signup");
     await page.getByLabel("Email").fill(email);
     await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
-    await page.getByLabel("Confirm password").fill(PASSWORD);
-    // 9.6 made the 18+ confirmation required. Without it the form never
-    // submits, and the failure reads as "signup is broken".
-    await page.getByTestId("age-confirm").check();
     await page.getByRole("button", { name: "Create account" }).click();
 
     // Supabase's built-in SMTP allows only a handful of confirmation emails an

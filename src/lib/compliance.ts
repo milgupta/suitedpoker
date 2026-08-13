@@ -9,10 +9,6 @@
 
 export const DISCLAIMER = "Educational software. Play money only. No real-money gambling.";
 
-export const AGE_CONFIRMATION = "I'm 18 or over.";
-
-export const MINIMUM_AGE = 18;
-
 /**
  * Where we do not serve.
  *

@@ -32,12 +32,13 @@ export const SHOWCASE_NODE_REF = "BB:vs_rfi_BTN";
 /**
  * The featured hand.
  *
- * T9o at this node is an 80/20 call/fold mix — wide enough that the two
- * segments are obvious at a glance on a phone. A5s was a 60/40 call/raise with
- * identical EV on both lines, so the frequency bar painted as one green slab
- * and the mix the page exists to demonstrate disappeared.
+ * KQs at this node is a 70/30 call/raise mix — call-led so the primary segment
+ * reads as the answer, raise wide enough to see at a glance on a phone, and
+ * both lines indifferent so the copy can say they cost the same. A5s was a
+ * 60/40 with the same indifference but painted as one green slab before the
+ * marketing contrast exaggerated the minority colour.
  */
-export const SHOWCASE_HAND: HandKey = "T9o";
+export const SHOWCASE_HAND: HandKey = "KQs";
 
 export interface Showcase {
   readonly nodeRef: string;

@@ -54,7 +54,8 @@ function expandTemplates(paths: string[]): string[] {
   const shots = [...new Set([...fromBare, ...fromShotField])].filter(
     (s) =>
       existsSync(join(PUBLIC, "screenshots", `${s}.png`)) ||
-      existsSync(join(PUBLIC, "screenshots", "web", `${s}.png`)),
+      existsSync(join(PUBLIC, "screenshots", "web", `${s}.png`)) ||
+      existsSync(join(PUBLIC, "screenshots", "how", `${s}.png`)),
   );
 
   return paths.flatMap((path) => {

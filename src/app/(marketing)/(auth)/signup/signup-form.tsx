@@ -12,7 +12,6 @@ import { passwordStrength, signupSchema, type SignupValues } from "@/lib/auth-sc
 import { createClient } from "@/lib/supabase/client";
 import { authErrorMessage } from "@/lib/supabase/errors";
 import { capture } from "@/lib/analytics-client";
-import { AGE_CONFIRMATION } from "@/lib/compliance";
 import { START_CONTINUE_PATH } from "@/lib/start-answers";
 import { FormError } from "../auth-shell";
 
@@ -40,7 +39,7 @@ export function SignupForm() {
     formState: { errors, isSubmitting },
   } = useForm<SignupValues>({
     resolver: zodResolver(signupSchema),
-    defaultValues: { email: "", password: "", confirmPassword: "", ageConfirmed: false },
+    defaultValues: { email: "", password: "" },
   });
 
   const password = useWatch({ control, name: "password" }) ?? "";
@@ -56,9 +55,6 @@ export function SignupForm() {
       password: values.password,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(afterAuth)}`,
-        // Timestamped at the moment they confirmed, and carried through
-        // Supabase so the trigger writes it onto the profile.
-        data: { age_confirmed_at: new Date().toISOString() },
       },
     });
 
@@ -137,37 +133,6 @@ export function SignupForm() {
 
         {errors.password !== undefined && (
           <p className="text-danger-bright text-body-sm">{errors.password.message}</p>
-        )}
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="confirmPassword">Confirm password</Label>
-        <Input
-          id="confirmPassword"
-          type="password"
-          autoComplete="new-password"
-          aria-invalid={errors.confirmPassword !== undefined}
-          {...register("confirmPassword")}
-        />
-        {errors.confirmPassword !== undefined && (
-          <p className="text-danger-bright text-body-sm">{errors.confirmPassword.message}</p>
-        )}
-      </div>
-
-      {/* One line, not a wall of text. Required — z.literal(true) rejects an
-          unchecked box, which a plain boolean would accept silently. */}
-      <div className="flex flex-col gap-1.5">
-        <label className="text-body-md flex items-start gap-3">
-          <input
-            type="checkbox"
-            {...register("ageConfirmed")}
-            className="accent-accent tap-target mt-0.5 size-5"
-            data-testid="age-confirm"
-          />
-          <span>{AGE_CONFIRMATION}</span>
-        </label>
-        {errors.ageConfirmed?.message !== undefined && (
-          <FormError message={errors.ageConfirmed.message} />
         )}
       </div>
 

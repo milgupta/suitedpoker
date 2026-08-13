@@ -13,13 +13,11 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
-  AGE_CONFIRMATION,
   BLOCKED_COUNTRIES,
   BLOCKED_PAGE,
   DISCLAIMER,
   FORBIDDEN_TERMS,
   isBlockedCountry,
-  MINIMUM_AGE,
 } from "../../src/lib/compliance";
 
 const ROOT = process.cwd();
@@ -125,42 +123,33 @@ describe("the string audit", () => {
   });
 });
 
-describe("the age gate", () => {
-  it("asks in one line", () => {
-    expect(AGE_CONFIRMATION.length).toBeLessThan(40);
-    expect(AGE_CONFIRMATION).toContain("18");
-    expect(MINIMUM_AGE).toBe(18);
-  });
-
-  it("is a required literal in the signup schema, not an optional boolean", async () => {
+describe("signup age / confirm fields", () => {
+  it("does not require an 18+ checkbox or confirm password", async () => {
     const { signupSchema } = await import("../../src/lib/auth-schemas");
 
-    const base = {
-      email: "a@b.com",
-      password: "correct-horse-9",
-      confirmPassword: "correct-horse-9",
-    };
+    expect(
+      signupSchema.safeParse({
+        email: "a@b.com",
+        password: "correct-horse-9",
+      }).success,
+    ).toBe(true);
 
-    // Unchecked must fail. A plain z.boolean() would accept `false` silently,
-    // which is the whole failure mode this guards.
-    expect(signupSchema.safeParse({ ...base, ageConfirmed: false }).success).toBe(false);
-    // Absent must fail too.
-    expect(signupSchema.safeParse(base).success).toBe(false);
-    expect(signupSchema.safeParse({ ...base, ageConfirmed: true }).success).toBe(true);
+    // Extra fields must not be load-bearing — the form no longer collects them.
+    expect(
+      signupSchema.safeParse({
+        email: "a@b.com",
+        password: "correct-horse-9",
+        confirmPassword: "wrong",
+        ageConfirmed: false,
+      }).success,
+    ).toBe(true);
   });
 
   it("does NOT leak into the password-reset schema", async () => {
     /*
-     * It did, and it silently broke password reset.
-     *
-     * The edit that added `ageConfirmed` anchored on a line that appears in
-     * BOTH schemas, so it landed in `resetSchema` too — where the form renders
-     * no checkbox. Validation failed, no error surfaced (the field has no
-     * input to attach one to), and the button simply spun forever. Nobody
-     * resetting a password could get in.
-     *
-     * Password reset has nothing to do with age. Anyone resetting one already
-     * confirmed at signup.
+     * Age confirmation once landed in resetSchema by accident (same edit
+     * anchored on a line shared with signup) and silently broke password
+     * reset. Keep asserting reset only needs what its form renders.
      */
     const { resetSchema } = await import("../../src/lib/auth-schemas");
     const valid = { password: "correct-horse-9", confirmPassword: "correct-horse-9" };
@@ -168,25 +157,14 @@ describe("the age gate", () => {
   });
 
   it("requires nothing the reset or forgot forms do not render", async () => {
-    /*
-     * The general shape of the bug above: a schema field with no input to hold
-     * it fails validation with nowhere to show the error, so the button spins
-     * forever and the user sees nothing at all.
-     *
-     * Checked behaviourally rather than by introspecting Zod's internals — a
-     * schema that accepts exactly what its form can produce is the property
-     * that matters, and it survives a Zod upgrade.
-     */
     const { resetSchema, forgotSchema } = await import("../../src/lib/auth-schemas");
 
-    // Exactly what reset-form.tsx registers.
     expect(
       resetSchema.safeParse({ password: "correct-horse-9", confirmPassword: "correct-horse-9" })
         .success,
       "the reset form cannot satisfy its own schema",
     ).toBe(true);
 
-    // Exactly what forgot-form.tsx registers.
     expect(
       forgotSchema.safeParse({ email: "a@b.com" }).success,
       "the forgot form cannot satisfy its own schema",

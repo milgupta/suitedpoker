@@ -228,19 +228,16 @@ export default function Home() {
                    */}
                   <div className="border-border bg-surface-1 overflow-hidden rounded-lg border">
                     <picture>
-                      <source srcSet={`/screenshots/${step.shot}.avif`} type="image/avif" />
-                      <source srcSet={`/screenshots/${step.shot}.webp`} type="image/webp" />
+                      <source srcSet={`/screenshots/how/${step.shot}.avif`} type="image/avif" />
+                      <source srcSet={`/screenshots/how/${step.shot}.webp`} type="image/webp" />
                       <img
-                        src={`/screenshots/${step.shot}.png`}
+                        src={`/screenshots/how/${step.shot}.png`}
                         alt={step.alt}
-                        width={780}
-                        height={1688}
+                        width={960}
+                        height={600}
                         loading="lazy"
                         decoding="async"
                         className="h-56 w-full object-cover sm:h-64"
-                        style={
-                          step.objectPosition ? { objectPosition: step.objectPosition } : undefined
-                        }
                       />
                     </picture>
                   </div>

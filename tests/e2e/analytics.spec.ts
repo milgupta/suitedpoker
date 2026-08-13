@@ -195,9 +195,6 @@ test.describe("analytics", () => {
     await page.goto("/signup");
     await page.getByLabel("Email").fill(`e2e+ph${Date.now()}@suitedpoker.com`);
     await page.getByLabel("Password", { exact: true }).fill("correct-horse-battery");
-    await page.getByLabel("Confirm password").fill("correct-horse-battery");
-    // 9.6 made the 18+ confirmation required.
-    await page.getByTestId("age-confirm").check();
     await page.getByRole("button", { name: "Create account" }).click();
     await waitForEvent(page, stream, "signup_started");
     await settle(page);

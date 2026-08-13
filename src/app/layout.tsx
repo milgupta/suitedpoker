@@ -41,15 +41,15 @@ export const metadata: Metadata = {
   /**
    * The landing page is the brand alone; every other page is the brand and
    * then what the page is. Brand-first on a subpage, rather than the "%s ·
-   * SuitedPoker" this used to be, so a truncated tab still says who we are.
+   * Suited Poker" this used to be, so a truncated tab still says who we are.
    *
    * A page's own `title` is therefore the SHORT form — "Account", not
-   * "Account — SuitedPoker", and never with an em dash of its own, or the tab
-   * reads "SuitedPoker — Methodology — where the strategy comes from".
+   * "Account — Suited Poker", and never with an em dash of its own, or the tab
+   * reads "Suited Poker — Methodology — where the strategy comes from".
    */
   title: {
-    default: "SuitedPoker",
-    template: "SuitedPoker — %s",
+    default: "Suited Poker",
+    template: "Suited Poker — %s",
   },
   description:
     "A poker training app for beginners. Practise real spots, see the strategy mix, and understand why — explained in plain English.",
