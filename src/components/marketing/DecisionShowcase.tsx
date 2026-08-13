@@ -4,7 +4,8 @@ import { FrequencyBar } from "@/components/poker/FrequencyBar";
 import { PlayingCard } from "@/components/poker/PlayingCard";
 import { GradeBadge } from "@/components/ui/grade-badge";
 import { actionVerb } from "@/lib/action-label";
-import { featuredCombo, type Showcase } from "@/lib/landing-showcase";
+import { featuredCombo } from "@/lib/featured-combo";
+import type { Showcase } from "@/lib/landing-showcase";
 import { marketingContrast } from "@/lib/marketing-contrast";
 
 /**

@@ -11,7 +11,8 @@ import {
 } from "@/components/poker/surface";
 import { HOW, STEPS } from "@/content/landing";
 import { actionLabel } from "@/lib/action-label";
-import { featuredCombo, type Showcase } from "@/lib/landing-showcase";
+import { featuredCombo } from "@/lib/featured-combo";
+import type { Showcase } from "@/lib/landing-showcase";
 import { marketingContrast } from "@/lib/marketing-contrast";
 import { cn } from "@/lib/utils";
 import type { Combo } from "@/poker/range";
