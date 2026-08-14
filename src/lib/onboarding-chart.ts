@@ -28,17 +28,21 @@ export interface ChartSeries {
   readonly points: readonly number[];
 }
 
-export interface ChartAnnotation {
-  /** Index into the untrained series points. */
-  readonly atIndex: number;
-  readonly label: string;
-}
-
-/** Plot padding inside the SVG viewBox — room for axis + end labels. */
+/**
+ * Plot padding inside the SVG viewBox.
+ *
+ * `top` clears the "Win rate" axis label, which sits above the plot rather
+ * than rotated beside it — a rotated label costs 20px of width on a 390px
+ * screen and is the first thing to become unreadable.
+ *
+ * `right` is sized to the LONGEST end label. It was 78 against "same as day
+ * one", which did not fit: the word "one" was clipped by the card edge on a
+ * shipped screen. The labels are short now and the padding still leads them.
+ */
 export const CHART_PAD = {
-  top: 16,
-  right: 78,
-  bottom: 28,
+  top: 30,
+  right: 62,
+  bottom: 26,
   left: 4,
 } as const;
 
@@ -59,28 +63,22 @@ export const CHART_SERIES: readonly ChartSeries[] = [
   {
     id: "trained",
     label: "Studying your leaks",
-    endLabel: "your work",
+    endLabel: "Studying",
     points: [-6.0, -4.8, -3.5, -2.2, -1.0, 0.1, 0.9, 1.6],
   },
   {
     id: "untrained",
     label: "Playing the same way",
-    endLabel: "same as day one",
+    endLabel: "No change",
     points: [-6.0, -5.7, -6.3, -5.9, -6.5, -6.1, -6.6, -6.8],
   },
 ];
 
-/** Moments on the untrained path — the craft that makes the chart a story. */
-export const CHART_ANNOTATIONS: readonly ChartAnnotation[] = [
-  { atIndex: 2, label: "same leak again" },
-  { atIndex: 5, label: "still guessing" },
-];
-
 /** Three x-axis ticks. Sessions, never weeks-to-profit. */
 export const CHART_X_LABELS: readonly { readonly atIndex: number; readonly label: string }[] = [
-  { atIndex: 0, label: "session 1" },
-  { atIndex: 3, label: "session 4" },
-  { atIndex: 7, label: "session 8" },
+  { atIndex: 0, label: "Session 1" },
+  { atIndex: 3, label: "Session 4" },
+  { atIndex: 7, label: "Session 8" },
 ];
 
 export const CHART_HEADING = "Two players, same starting point.";
@@ -88,10 +86,17 @@ export const CHART_HEADING = "Two players, same starting point.";
 export const CHART_SUB =
   "One works on the spots they get wrong. The other keeps playing. This is the gap that opens up.";
 
-/** Title drawn inside the chart card — the reference puts the subject on the card. */
-export const CHART_CARD_TITLE = "win rate";
-
-export const CHART_CARD_META = "bb / 100 hands · illustrative";
+/**
+ * The y-axis label, above the plot.
+ *
+ * It replaced a card header of four stacked pieces — title, "bb / 100 hands ·
+ * illustrative", a red legend row and a blue one — which put more chrome above
+ * the chart than there was chart. The unit and the caveat both moved into the
+ * footnote, which is the line the e2e actually asserts is visible; saying
+ * "illustrative" twice on one screen was belt and braces, and the braces were
+ * costing the whole header.
+ */
+export const CHART_Y_LABEL = "Win rate";
 
 /** The accessible name for the SVG. Must carry the caveat too. */
 export const CHART_CAPTION =
@@ -105,7 +110,7 @@ export const CHART_CAPTION =
  * caught, and it is the same posture the methodology page takes.
  */
 export const CHART_FOOTNOTE =
-  "Illustrative only. Not a prediction, a guarantee, or measured results. Win rate is shown in big blinds per 100 hands.";
+  "Illustrative only — win rate in big blinds per 100 hands, not a prediction or measured results.";
 
 export interface ChartPoint {
   readonly x: number;
@@ -155,13 +160,28 @@ export function chartPath(
   yMax: number,
   pad: typeof CHART_PAD = CHART_PAD,
 ): string {
-  const xy = chartPoints(points, width, height, yMin, yMax, pad);
+  return smoothPath(chartPoints(points, width, height, yMin, yMax, pad));
+}
+
+/**
+ * The same curve, over points that are already placed.
+ *
+ * Split out because the band below has to traverse the lower series RIGHT TO
+ * LEFT, and reversing the value array cannot express that — index still maps
+ * to x left-to-right, so a reversed array draws a mirrored curve rather than
+ * the same curve backwards. Reversing placed points is the only version that
+ * means what it says.
+ *
+ * `continued` omits the leading `M` so the result extends the current subpath
+ * instead of starting a new one, which would leave a fill unclosed.
+ */
+export function smoothPath(xy: readonly ChartPoint[], continued = false): string {
   if (xy.length === 0) return "";
 
   const first = xy[0]!;
-  if (xy.length === 1) return `M ${first.x} ${first.y}`;
+  if (xy.length === 1) return continued ? "" : `M ${round(first.x)} ${round(first.y)}`;
 
-  let d = `M ${round(first.x)} ${round(first.y)}`;
+  let d = continued ? "" : `M ${round(first.x)} ${round(first.y)}`;
   for (let i = 0; i < xy.length - 1; i++) {
     const p0 = xy[Math.max(0, i - 1)]!;
     const p1 = xy[i]!;
@@ -179,8 +199,40 @@ export function chartPath(
 }
 
 /**
+ * The region BETWEEN the two curves — the thing the subhead actually promises.
+ *
+ * "This is the gap that opens up" is a single object, and the screen used to
+ * draw two: one fill under each line, leaving the reader to subtract them. One
+ * closed band starting where both players start makes the divergence the
+ * subject rather than a by-product of two shaded areas.
+ *
+ * Built as the upper curve forward, then the lower curve reversed, so the seam
+ * is exactly the shared starting point rather than the plot floor.
+ */
+export function chartBandPath(
+  upper: readonly number[],
+  lower: readonly number[],
+  width: number,
+  height: number,
+  yMin: number,
+  yMax: number,
+  pad: typeof CHART_PAD = CHART_PAD,
+): string {
+  const upperPts = chartPoints(upper, width, height, yMin, yMax, pad);
+  const lowerPts = chartPoints(lower, width, height, yMin, yMax, pad);
+  if (upperPts.length === 0 || lowerPts.length === 0) return "";
+
+  const forward = smoothPath(upperPts);
+  const backwards = [...lowerPts].reverse();
+  const back = smoothPath(backwards, true);
+  const seam = backwards[0]!;
+
+  return `${forward} L ${round(seam.x)} ${round(seam.y)}${back} Z`;
+}
+
+/**
  * Soft fill under a series: the stroke path, then down to the plot floor and
- * back. Used for the untrained curve so the gap reads as area, not two lines.
+ * back. Kept for any single-series use; the interstitial draws the band above.
  */
 export function chartAreaPath(
   points: readonly number[],

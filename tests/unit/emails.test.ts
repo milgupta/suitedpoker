@@ -231,6 +231,7 @@ describe("dark-mode rendering", () => {
       ["--color-text-primary", palette.textPrimary],
       ["--color-accent-500", palette.accent],
       ["--color-accent-400", palette.accentBright],
+      ["--color-accent-800", palette.accentDeep],
       ["--color-grade-blunder", palette.danger],
       ["--color-on-accent", palette.onAccent],
     ];

@@ -19,6 +19,7 @@ import {
   demoSeedFor,
   demoSpotFor,
   DEMO_INTRO,
+  frequencyPhrase,
   isDemoWorthy,
   MAX_ADDED_SECONDS,
   MAX_DEMO_TOP_FREQ,
@@ -215,7 +216,23 @@ describe("the diagnosis opening line", () => {
     const detail = demoHandDetail(record());
     expect(detail).toContain("raises it 71%");
     expect(detail).toContain("0.2bb");
-    expect(detail).toMatch(/\d+ times an hour/);
+    expect(detail).toMatch(/once an hour|roughly \d+ times an hour/);
+  });
+
+  /**
+   * The old assertion was `/\d+ times an hour/`, which "1 times an hour"
+   * satisfies — a regex that passes on the exact string it should have caught.
+   * This enumerates the counts instead of testing the two that are reachable
+   * from the fixtures today.
+   */
+  it("never says '1 times an hour'", () => {
+    expect(frequencyPhrase(1)).toBe("once an hour");
+    for (const n of [0, 2, 3, 5, 12]) {
+      expect(frequencyPhrase(n)).toBe(`roughly ${n} times an hour`);
+    }
+    for (const n of [0, 1, 2, 3, 5, 12]) {
+      expect(frequencyPhrase(n)).not.toMatch(/\b1 times\b/);
+    }
   });
 
   it("says 'that fold costs', not 'that folded costs'", () => {

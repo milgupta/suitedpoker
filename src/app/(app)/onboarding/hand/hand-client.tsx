@@ -11,7 +11,7 @@ import { DrillSurface, Explanation, Feedback, FrequencyCapsules } from "@/compon
 import { capsuleSegments } from "@/lib/action-grid";
 import { capture } from "@/lib/analytics-client";
 import { fadeUp } from "@/lib/motion";
-import { DEMO_INTRO, DEMO_OUTRO_CTA } from "@/lib/demo-hand";
+import { DEMO_INTRO, demoOutroCta } from "@/lib/demo-hand";
 
 /**
  * The one hand, played before the wall.
@@ -56,8 +56,9 @@ export function HandClient() {
       const response = await fetch("/api/onboarding/hand", { method: "POST" });
 
       if (response.status === 409) {
-        // Already played it — the diagnosis has its evidence.
-        router.replace("/diagnosis");
+        // Already played it. Straight on rather than back through a screen
+        // they have seen — the record is already written.
+        router.replace("/paywall");
         return;
       }
       if (!response.ok) {
@@ -115,17 +116,28 @@ export function HandClient() {
     [spotId, result],
   );
 
+  /**
+   * Straight to the paywall.
+   *
+   * There used to be a `/diagnosis` screen between the two: a full page with a
+   * staged 1.4s reveal, a rating bar, a projection bar and a leak list, all of
+   * it derived from the quiz. It was a page-load of friction at the point in
+   * the funnel where the user has already been told everything and is deciding
+   * whether to pay, and the graded hand above is stronger evidence than any of
+   * it. The personalised content did not die with the page — it renders above
+   * the plan cards on the paywall, on the screen where it argues for something.
+   */
   const finish = useCallback((): void => {
     capture("demo_hand_completed", {
       // The funnel budget for this screen, measured rather than assumed.
       secondsAdded: Math.round((performance.now() - arrivedAt.current) / 1000),
     });
-    router.push("/diagnosis");
+    router.push("/paywall");
   }, [router]);
 
-  // Prefetched during the hand so the diagnosis is instant after the CTA.
+  // Prefetched during the hand so the paywall is instant after the CTA.
   useEffect(() => {
-    router.prefetch("/diagnosis");
+    router.prefetch("/paywall");
   }, [router]);
 
   const segments =
@@ -203,7 +215,7 @@ export function HandClient() {
               result={result}
               ratingDelta={0}
               onNext={finish}
-              nextLabel={DEMO_OUTRO_CTA}
+              nextLabel={demoOutroCta(result.grade)}
               explanation={
                 spotId === null ? undefined : (
                   <Explanation

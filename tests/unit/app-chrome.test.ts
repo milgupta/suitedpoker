@@ -15,7 +15,6 @@ describe("chromeMode", () => {
     expect(chromeMode("/onboarding/hand")).toBe("hidden");
     expect(chromeMode("/paywall")).toBe("hidden");
     expect(chromeMode("/welcome")).toBe("hidden");
-    expect(chromeMode("/diagnosis")).toBe("hidden");
   });
 
   it("compacts immersive sessions", () => {

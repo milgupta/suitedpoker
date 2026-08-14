@@ -52,7 +52,7 @@ export default async function OnboardingPage() {
         // Treat as unpaid so we still advance past a finished quiz.
       }
       if (entitled) redirect(APP_HOME);
-      redirect(demoHand !== null ? "/diagnosis" : "/onboarding/hand");
+      redirect(demoHand !== null ? "/paywall" : "/onboarding/hand");
     }
   }
 

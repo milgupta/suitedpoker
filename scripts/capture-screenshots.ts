@@ -12,7 +12,7 @@
  * DETERMINISM, and its honest limit.
  *
  * The fixture account is wiped and reseeded from fixed data every run, so the
- * dashboard, diagnosis, range grid and lesson come back byte-identical.
+ * dashboard, range grid and lesson come back byte-identical.
  *
  * The three that show a DEALT HAND — drill, the feedback shot, and the table
  * sim — do not, and deliberately should not. Making them reproducible would
@@ -68,16 +68,6 @@ const SHOTS: Shot[] = [
     ready: async (page) => {
       await page.waitForSelector("[data-practice]", { timeout: 30_000 });
       await page.waitForTimeout(500);
-    },
-    fullPage: true,
-  },
-  {
-    name: "diagnosis",
-    path: "/diagnosis",
-    ready: async (page) => {
-      // The reveal is stage-delayed opacity over ~2.4s (7.2). Playwright counts
-      // opacity:0 as visible, so waiting for a selector is not enough.
-      await page.waitForTimeout(3_200);
     },
     fullPage: true,
   },

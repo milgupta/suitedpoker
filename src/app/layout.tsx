@@ -54,7 +54,14 @@ export const metadata: Metadata = {
   description:
     "A poker training app for beginners. Practise real spots, see the strategy mix, and understand why — explained in plain English.",
   openGraph: {
-    title: "SuitedPoker — Learn the strategy behind every decision",
+    /**
+     * The bold line in a shared link — an iMessage bubble, a Slack unfurl, a
+     * tweet card. Short on purpose: iOS truncates around 40 characters and
+     * drops the site name when it already shows the domain underneath, so a
+     * "SuitedPoker — …" prefix spent the whole line saying what the grey text
+     * below the card already said.
+     */
+    title: "Get better at poker.",
     description:
       "Practise real poker spots, see the strategy mix, and understand why. Built for players who are past the rules and stuck on the rest.",
     url: SITE_URL,
@@ -64,7 +71,7 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
   twitter: {
     card: "summary_large_image",
-    title: "SuitedPoker — Learn the strategy behind every decision",
+    title: "Get better at poker.",
     description: "Practise real poker spots, see the strategy mix, and understand why.",
   },
   // "Educational software", stated in the metadata as well as on the page.

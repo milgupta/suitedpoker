@@ -9,7 +9,7 @@ import { adminClient, isConfigured } from "../support/e2e-supabase";
  * Two things need a real server to prove. First, the ABUSE SURFACE: this is the
  * only drill in the product reachable without paying, so "exactly one hand" has
  * to hold against a client that simply asks again. Second, the CARRY-FORWARD:
- * the diagnosis must open with the hand actually played, with numbers matching
+ * the paywall must open with the hand actually played, with numbers matching
  * the stored record — that is the entire reason the screen exists, and a
  * mismatch would make it another horoscope.
  */
@@ -39,8 +39,8 @@ async function makeQuizzedUser(tier = "videos"): Promise<{ id: string; email: st
       skill_tier: tier,
       rating: 1000,
       primary_leak_key: "overfolds_bb",
-      // Every QUESTION_ID must be present, or the diagnosis page sends them
-      // back to /onboarding — a partial diagnosis reads as broken.
+      // Every QUESTION_ID must be present, or the plan band is withheld —
+      // a half-answered questionnaire would have to guess at a plan.
       onboarding: {
         venue: "live_1_2",
         pain: "bleeding_blinds",
@@ -156,9 +156,7 @@ test.describe("the demo hand", () => {
     expect(b.spot.heroPos).toBe(a.spot.heroPos);
   });
 
-  test("THE CARRY-FORWARD — the diagnosis opens with the hand actually played", async ({
-    page,
-  }) => {
+  test("THE CARRY-FORWARD — the paywall opens with the hand actually played", async ({ page }) => {
     const user = await makeQuizzedUser();
     await login(page, user.email);
 
@@ -172,7 +170,7 @@ test.describe("the demo hand", () => {
       data: { spotId: dealt.spotId, action, timeMs: 5_000 },
     });
 
-    // What was stored is what the diagnosis must say.
+    // What was stored is what the paywall's plan band must say.
     const { data: row } = await admin
       .from("profiles")
       .select("onboarding")
@@ -182,10 +180,8 @@ test.describe("the demo hand", () => {
     const stored = (row!.onboarding as { demoHand?: Record<string, unknown> }).demoHand;
     expect(stored, "the hand was never persisted").toBeDefined();
 
-    await page.goto("/diagnosis");
-    // The reveal is stage-delayed opacity (7.2); Playwright counts opacity 0 as
-    // visible, so wait it out rather than trusting the selector.
-    await page.waitForTimeout(3_500);
+    // No staged reveal to wait out any more — the band renders with the page.
+    await page.goto("/paywall");
 
     const headline = await page.locator("[data-demo-headline]").innerText();
     const detail = await page.locator("[data-demo-detail]").innerText();
@@ -201,7 +197,7 @@ test.describe("the demo hand", () => {
       expect(detail).toContain(`${Number(stored!.evLoss).toFixed(1)}bb`);
     }
 
-    console.log(`\n  DIAGNOSIS OPENS WITH:\n    ${headline}\n    ${detail}\n`);
+    console.log(`\n  THE PAYWALL OPENS WITH:\n    ${headline}\n    ${detail}\n`);
 
     /*
      * The demo must never be a PURE spot. A first version shipped saying "a
@@ -218,19 +214,18 @@ test.describe("the demo hand", () => {
     expect(`${headline} ${detail}`).not.toMatch(/\$/);
   });
 
-  test("the diagnosis still renders for someone who never played a hand", async ({ page }) => {
-    // A user who dropped out mid-funnel and came back. The screen degrades to
+  test("the plan band still renders for someone who never played a hand", async ({ page }) => {
+    // A user who dropped out mid-funnel and came back. The band degrades to
     // the questionnaire-only version rather than breaking.
     const user = await makeQuizzedUser();
     await login(page, user.email);
 
-    await page.goto("/diagnosis");
-    await page.waitForTimeout(3_500);
+    await page.goto("/paywall");
 
     await expect(page.locator("[data-demo-hand]")).toHaveCount(0);
-    // The questionnaire diagnosis is still there (rating + path).
-    await expect(page.getByText(/Where you stand/i)).toBeVisible();
-    await expect(page.locator("[data-path]")).toBeVisible();
+    // The questionnaire half is still there.
+    await expect(page.locator("[data-plan-band]")).toBeVisible();
+    await expect(page.locator("[data-plan-summary]")).toBeVisible();
   });
 
   test("the whole screen fits the funnel budget", async ({ page }) => {

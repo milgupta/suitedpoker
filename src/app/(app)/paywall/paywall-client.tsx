@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { ProofMarquee } from "@/components/ProofMarquee";
 import { PROOF_MODE } from "@/content/testimonials";
 import { capture, isAnalyticsConfigured } from "@/lib/analytics-client";
+import { demoHandDetail, demoHandHeadline, type DemoHandRecord } from "@/lib/demo-hand";
+import type { Diagnosis } from "@/lib/diagnosis";
 import {
   formatUsd,
   perMonthCents,
@@ -54,11 +56,17 @@ import { cn } from "@/lib/utils";
  */
 
 export interface PaywallClientProps {
-  /** 7.2 fills this with the diagnosis. Absent until then. */
-  diagnosis?: React.ReactNode;
   /** The user's biggest leak, in bb/100. Shown as loss framing when present. */
   leakBb100?: number | null;
   leakLabel?: string | null;
+  /**
+   * The plan built from their quiz answers. Null when the quiz is unfinished,
+   * when the profile lookup failed, or for a logged-out visitor — all three of
+   * which render the page exactly as it was before this existed.
+   */
+  plan?: Diagnosis | null;
+  /** 7.2b’s graded hand, when they played one. */
+  demoHand?: DemoHandRecord | null;
 }
 
 /**
@@ -77,7 +85,11 @@ const HIGHLIGHTS = ["Unlimited drills", "AI coach", "Full curriculum"];
 // stat. Left plumbed rather than ripped out: the profile lookup that feeds them
 // is 7.3's work, and the leak framing is one line away if the headline changes
 // back. Not destructured, so the unused-variable lint stays quiet.
-export function PaywallClient({ diagnosis }: PaywallClientProps) {
+//
+// The plan band sits ABOVE the plan cards rather than beside them: on a phone a
+// second column lands under the CTA, and there is an e2e asserting the CTA
+// clears 844px at 390px wide.
+export function PaywallClient({ plan = null, demoHand = null }: PaywallClientProps) {
   const params = useSearchParams();
   const cancelled = params.get("cancelled") === "1";
 
@@ -101,11 +113,31 @@ export function PaywallClient({ diagnosis }: PaywallClientProps) {
     abandonReported.current = true;
 
     const raw = params.get("plan");
-    const plan = PLAN_IDS.find((id) => id === raw);
+    const abandonedPlan = PLAN_IDS.find((id) => id === raw);
     // Fall back to the default selection rather than dropping the event: a
     // missing plan is worth less than a missing drop-off.
-    capture("checkout_abandoned", { plan: plan ?? "annual" });
+    capture("checkout_abandoned", { plan: abandonedPlan ?? "annual" });
   }, [cancelled, params]);
+
+  /**
+   * `diagnosis_viewed` and the Meta `ViewContent` used to fire from the
+   * `/diagnosis` page. They fire here now, guarded on the band actually
+   * rendering, because that is the moment the diagnosis is genuinely seen.
+   *
+   * Kept rather than retired: the PostHog funnel in docs/POSTHOG-INSIGHTS.md
+   * counts this step, and a step that silently stops emitting looks like a
+   * collapse in conversion rather than a page that moved. `annualCost` is
+   * reported as 0 — the band deliberately shows no dollar figure, and sending
+   * one for a number nobody was shown would make the property a fiction.
+   */
+  const planReported = useRef(false);
+  useEffect(() => {
+    if (plan === null || planReported.current) return;
+    planReported.current = true;
+
+    trackDeduplicated("ViewContent", { content_name: "diagnosis" });
+    capture("diagnosis_viewed", { primaryLeak: plan.leakKey, annualCost: 0 });
+  }, [plan]);
 
   async function startCheckout(): Promise<void> {
     if (busy) return;
@@ -180,9 +212,17 @@ export function PaywallClient({ diagnosis }: PaywallClientProps) {
        * any of them knowing they are on white. See globals.css.
        */}
       <div className="panel-light rounded-xl p-6 sm:p-10">
-        <div className="flex flex-col gap-12 lg:grid lg:grid-cols-2 lg:items-start lg:gap-14">
-          {/* ── The purchase column ────────────────────────────────────────── */}
-          <section className="flex flex-col gap-6 lg:col-start-2 lg:row-start-1">
+        {/* One centred column, not a two-up with a screenshot beside it.
+            The showcase crop read as a fragment of a screen on a phone — a
+            portrait capture forced into a 3:5 box, cutting the hero's cards in
+            half — and on the one page where the reader is deciding whether to
+            pay, an image of a partial UI argues against the product. There is
+            nothing to replace it with: the proof band below already carries
+            what the product does, in words that cannot crop. */}
+        <div className="mx-auto flex w-full max-w-xl flex-col gap-12">
+          {plan !== null && <PlanBand plan={plan} demoHand={demoHand} />}
+
+          <section className="flex flex-col gap-6">
             <header className="flex flex-col gap-3">
               {/*
                * A PERFORMANCE CLAIM ABOUT CUSTOMERS. It needs substantiation on
@@ -285,25 +325,6 @@ export function PaywallClient({ diagnosis }: PaywallClientProps) {
               </Link>
             </footer>
           </section>
-
-          {/* ── The showcase column ────────────────────────────────────────── */}
-          {/* Centred against the taller purchase column rather than top-aligned:
-            aligned to the top it leaves a column of empty page under it, which
-            reads as something having failed to load. */}
-          <aside className="lg:col-start-1 lg:row-start-1 lg:self-center">
-            {diagnosis === undefined ? (
-              <ProductShot />
-            ) : (
-              /* The diagnosis behind a scrim: they are buying access to something
-               that has already been built for them, not to a promise. */
-              <div className="relative overflow-hidden rounded-lg">
-                <div aria-hidden className="pointer-events-none blur-[6px] select-none">
-                  {diagnosis}
-                </div>
-                <div className="from-canvas absolute inset-0 bg-gradient-to-t via-transparent to-transparent" />
-              </div>
-            )}
-          </aside>
         </div>
       </div>
 
@@ -339,45 +360,83 @@ export function PaywallClient({ diagnosis }: PaywallClientProps) {
 const CARD_ORDER: readonly PlanId[] = [...PLAN_IDS].sort((a) => (a === "annual" ? -1 : 1));
 
 /**
- * One real screen from the product.
+ * What the quiz produced, on the screen where it argues for something.
  *
- * The DRILL shot, not the feedback one. Both are real; this is the one that
- * explains itself with no caption — six seats, who raised, your two cards — and
- * the feedback shot needs the grade panel in frame to make sense, which does
- * not survive a crop. It is also the screen somebody is actually buying.
+ * This is what survives of the `/diagnosis` page. What did NOT survive: the
+ * 1.4s staged reveal, the position bar, the projection bar and the "analysing
+ * your game…" beat. Those earned their place on a page whose whole job was to
+ * feel like a report being written; on a payment screen they are 300px of
+ * animation between the reader and the price, and the same three facts read
+ * faster as three lines than as three animated bars.
  *
- * A 3/5 frame with `object-top` rather than the whole 780x1688 capture: it ends
- * just under the hero's hand, which is where the interesting part of the
- * screenshot stops.
+ * It leads with the FIRST FIX rather than the rating. "Which hands to defend
+ * from the big blind" is a thing they want; "Rating 850 · Beginner" is a
+ * verdict on them, and opening a payment screen by telling someone they are
+ * bad is an odd way to ask for money. The rating still appears — it is what
+ * makes the plan theirs rather than a brochure — just not first.
+ *
+ * No dollar figure, per rule 5: `diagnosis.cost` is deliberately not read here.
  */
-function ProductShot() {
+function PlanBand({ plan, demoHand }: { plan: Diagnosis; demoHand: DemoHandRecord | null }) {
+  const [firstFix, ...rest] = plan.fixFirst;
+
   return (
-    <figure className="mx-auto flex w-full max-w-[22rem] flex-col gap-3">
-      <div className="border-border bg-canvas relative aspect-3/5 overflow-hidden rounded-lg border">
-        <picture>
-          <source srcSet="/screenshots/drill.avif" type="image/avif" />
-          <source srcSet="/screenshots/drill.webp" type="image/webp" />
-          <img
-            src="/screenshots/drill.png"
-            alt="A hand in the drill: six seats round the table, who raised and for how much, and your two cards."
-            width={780}
-            height={1688}
-            loading="lazy"
-            decoding="async"
-            className="h-full w-full object-cover object-top"
-          />
-        </picture>
-        {/* Fades the crop into the panel instead of ending on a cut line. The
-            gradient reads --canvas, which `.panel-light` re-points to white. */}
-        <div
-          aria-hidden
-          className="from-canvas pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t to-transparent"
-        />
-      </div>
-      <figcaption className="text-text-tertiary text-caption text-center">
-        Every hand is graded against the solution, then explained.
-      </figcaption>
-    </figure>
+    <section
+      className="border-border bg-surface-1 flex flex-col gap-3 rounded-lg border p-5"
+      data-plan-band
+    >
+      {/* THE HAND COMES FIRST when one exists — evidence from something the
+          reader did ninety seconds ago beats anything derived from a
+          questionnaire. It is also the only thing on this page that is not a
+          claim: they made the decision, and the percentage is the solution
+          they were graded against. */}
+      {demoHand !== null && (
+        <div className="flex flex-col gap-1" data-demo-hand>
+          <h2 className="text-overline text-text-tertiary uppercase">The hand you just played</h2>
+          <p className="text-heading-md" data-demo-headline>
+            {demoHandHeadline(demoHand)}
+          </p>
+          <p className="text-text-secondary text-body-sm" data-demo-detail>
+            {demoHandDetail(demoHand)}
+          </p>
+        </div>
+      )}
+
+      <h2 className="text-overline text-accent-bright uppercase">Your plan</h2>
+
+      {firstFix !== undefined && (
+        <p className="text-heading-md" data-plan-first-fix>
+          First: {firstFix.charAt(0).toLowerCase() + firstFix.slice(1)}
+        </p>
+      )}
+
+      {rest.length > 0 && (
+        <ul className="flex flex-col gap-1.5">
+          {rest.map((line) => (
+            <li key={line} className="text-body-md text-text-secondary flex items-start gap-2">
+              <span aria-hidden className="text-accent-bright">
+                ✓
+              </span>
+              {line}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* Q6, reflected back. It is the only place the user's own leak picks
+          appear, and without it that question is dead weight in the quiz —
+          which is the specific failure the diagnosis notes warn about. */}
+      {plan.alsoFixing.length > 0 && (
+        <p className="text-text-tertiary text-body-sm" data-plan-also>
+          Also on your list: {plan.alsoFixing.join(", ")}.
+        </p>
+      )}
+
+      <p className="text-text-tertiary text-body-sm" data-plan-summary>
+        {plan.lessons} lessons · {plan.minutesPerDay} min a day · built from your answers at rating{" "}
+        <span className="font-mono tabular-nums">{plan.rating}</span>
+      </p>
+    </section>
   );
 }
 

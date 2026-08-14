@@ -73,9 +73,15 @@ function expandTemplates(paths: string[]): string[] {
 }
 
 /**
- * The paywall shows a product screenshot too, and it is the worse place to
- * break one: a broken image on the landing page costs a click, a broken image
- * on the payment screen costs the sale that click already paid for.
+ * The paywall is still scanned even though it no longer carries an image.
+ *
+ * It is the worse place to break one — a broken image on the landing page
+ * costs a click, a broken image on the payment screen costs the sale that
+ * click already paid for — so the scan stays pointed at the file. What was
+ * dropped is the assertion that it must reference at least one: the showcase
+ * column was removed deliberately, and a floor of 1 would have been asserting
+ * a design decision rather than an invariant. Same reasoning as the landing
+ * page's own floor, directly below.
  */
 const PAYWALL = readFileSync(
   join(process.cwd(), "src/app/(app)/paywall/paywall-client.tsx"),
@@ -103,10 +109,6 @@ describe("landing page assets", () => {
     // design decision rather than an invariant. What still matters, and is
     // checked below, is that every path named here exists on disk.
     expect(referenced.length, "the marketing surface points at no local assets").toBeGreaterThan(0);
-  });
-
-  it("checks the paywall's own screenshot", () => {
-    expect(assetsIn(PAYWALL).length, "the paywall points at no local assets").toBeGreaterThan(0);
   });
 
   it.each(referenced)("%s exists on disk", (path) => {

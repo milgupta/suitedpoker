@@ -212,18 +212,6 @@ const SHOTS: Shot[] = [
     },
   },
   {
-    name: "22-diagnosis",
-    path: "/diagnosis",
-    auth: "entitled",
-    group: "Funnel",
-    fullPage: true,
-    ready: async (page) => {
-      // Stage-delayed opacity (~2.4s). Selector alone is not enough.
-      await page.waitForSelector("h1, [data-diagnosis]", { timeout: 30_000 });
-      await settle(page, 3_200);
-    },
-  },
-  {
     name: "23-paywall",
     path: "/paywall",
     auth: "entitled",
@@ -478,7 +466,7 @@ async function ensureUser(): Promise<void> {
       skill_tier: "videos",
       primary_leak_key: "overfolds_bb",
       timezone: "America/New_York",
-      // Full quiz answers — `complete: true` alone is not enough for /diagnosis
+      // Full quiz answers — `complete: true` alone is not enough for the plan band
       // (resumeIndex walks every required question).
       onboarding: {
         venue: "live_1_2",

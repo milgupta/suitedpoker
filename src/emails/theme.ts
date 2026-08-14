@@ -25,6 +25,15 @@ export const email = {
   textTertiary: "#84868f",
   accent: "#2f68ff",
   accentBright: "#5b8cff",
+  /**
+   * The bottom stop of the brand tile's gradient. --color-accent-800.
+   *
+   * Here rather than read from the SVG because next/og rasterises the social
+   * card without a document and resolves no CSS variable, and the tile has to
+   * match `public/brand/spade-tile.svg` exactly — two marks that are nearly
+   * the same blue is worse than one flat one.
+   */
+  accentDeep: "#1a2f9e",
   danger: "#ef4b4b",
   /** The label on an accent fill. --color-on-accent in globals.css. */
   onAccent: "#ffffff",

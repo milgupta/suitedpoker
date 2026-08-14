@@ -6,7 +6,9 @@ import { createClient } from "@/lib/supabase/server";
 import { getDb } from "@/db";
 import { profiles } from "@/db/schema";
 import { APP_HOME } from "@/lib/app-chrome";
-import { LEAK_BB100, LEAK_HEADLINE } from "@/lib/diagnosis";
+import { buildDiagnosis, LEAK_BB100, LEAK_HEADLINE, type Diagnosis } from "@/lib/diagnosis";
+import { resumeIndex, TOTAL_STEPS, type Answers } from "@/lib/onboarding";
+import type { DemoHandRecord } from "@/lib/demo-hand";
 import { hasActiveSubscription } from "@/lib/entitlement";
 import { SignOutButton } from "../sign-out-button";
 import { TrackView } from "@/components/track-view";
@@ -32,6 +34,8 @@ export default async function PaywallPage() {
   // attached to a poker result is a compliance boundary, not copy.
   let leakBb100: number | null = null;
   let leakLabel: string | null = null;
+  let plan: Diagnosis | null = null;
+  let demoHand: DemoHandRecord | null = null;
 
   const supabase = await createClient();
   const {
@@ -51,7 +55,7 @@ export default async function PaywallPage() {
 
     try {
       const [row] = await getDb()
-        .select({ leak: profiles.primaryLeakKey })
+        .select({ leak: profiles.primaryLeakKey, onboarding: profiles.onboarding })
         .from(profiles)
         .where(eq(profiles.id, user.id))
         .limit(1);
@@ -59,6 +63,22 @@ export default async function PaywallPage() {
         leakBb100 = LEAK_BB100[row.leak] ?? null;
         leakLabel = LEAK_HEADLINE[row.leak]?.toLowerCase() ?? null;
       }
+
+      /**
+       * The plan band, from the same answers the deleted `/diagnosis` page
+       * used. Only when the quiz is FINISHED: a half-answered questionnaire
+       * produces a plan that has to guess, and guessing is the thing this
+       * product refuses to do everywhere else.
+       *
+       * Computed server-side, so the client receives finished numbers and
+       * never the model that produced them — unchanged from the old page.
+       */
+      const answers = (row?.onboarding ?? {}) as Answers;
+      if (resumeIndex(answers) >= TOTAL_STEPS) plan = buildDiagnosis(answers);
+
+      // 7.2b's hand. Null for anyone who skipped it or dropped out and came
+      // back — the band renders the questionnaire half on its own.
+      demoHand = (row?.onboarding as { demoHand?: DemoHandRecord } | null)?.demoHand ?? null;
     } catch {
       // No diagnosis is no reason to hide the paywall.
     }
@@ -92,7 +112,12 @@ export default async function PaywallPage() {
       />
 
       <Suspense fallback={null}>
-        <PaywallClient leakBb100={leakBb100} leakLabel={leakLabel} />
+        <PaywallClient
+          leakBb100={leakBb100}
+          leakLabel={leakLabel}
+          plan={plan}
+          demoHand={demoHand}
+        />
       </Suspense>
 
       <SignOutButton />

@@ -27,7 +27,6 @@ export default function robots(): MetadataRoute.Robots {
         "/welcome",
         "/onboarding",
         "/start",
-        "/diagnosis",
         "/paywall",
         "/auth/",
       ],

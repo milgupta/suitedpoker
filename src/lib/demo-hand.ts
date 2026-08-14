@@ -1,4 +1,5 @@
 import type { SkillTier } from "@/lib/explain-policy";
+import type { GradeName } from "@/poker/grader";
 import type { HeroPosition } from "@/poker/solutions";
 
 /**
@@ -296,16 +297,30 @@ export function positionName(pos: string): string {
   return POSITION_NAMES[pos] ?? pos;
 }
 
+/**
+ * "once an hour", never "1 times an hour".
+ *
+ * `timesPerHour` rounds down and legitimately returns 1 for a spot that needs
+ * both a seat and a villain action, so the singular is the COMMON case on this
+ * screen rather than an edge one — and a grammatical slip in the first
+ * personalised sentence the product ever shows costs more than the sentence
+ * earns. Exported so the test can enumerate every count rather than trusting
+ * the two that happen to be reachable today.
+ */
+export function frequencyPhrase(times: number): string {
+  return times === 1 ? "once an hour" : `roughly ${times} times an hour`;
+}
+
 export function demoHandDetail(record: DemoHandRecord): string {
   const percent = Math.round(record.topFreq * 100);
   const bestVerb = presentTenseOf(record.bestAction);
-  const times = timesPerHour(nodeSeqOf(record.nodeRef));
+  const howOften = frequencyPhrase(timesPerHour(nodeSeqOf(record.nodeRef)));
 
   if (record.evLoss <= 0) {
-    return `A solver ${bestVerb} it ${percent}% of the time. You found it, and you'll face this exact spot roughly ${times} times an hour.`;
+    return `A solver ${bestVerb} it ${percent}% of the time. You found it, and you'll face this exact spot ${howOften}.`;
   }
 
-  return `A solver ${bestVerb} it ${percent}% of the time. That ${nounOf(record.chosenAction)} costs about ${record.evLoss.toFixed(1)}bb every time it happens, and you'll face this exact spot roughly ${times} times an hour.`;
+  return `A solver ${bestVerb} it ${percent}% of the time. That ${nounOf(record.chosenAction)} costs about ${record.evLoss.toFixed(1)}bb every time it happens, and you'll face this exact spot ${howOften}.`;
 }
 
 function nodeSeqOf(nodeRef: string): string {
@@ -362,6 +377,34 @@ export const DEMO_INTRO = {
 
 /** The single way out, after the hand. */
 export const DEMO_OUTRO_CTA = "See what this says about your game";
+
+/**
+ * The CTA under the graded demo hand, which now leads straight to the paywall.
+ *
+ * Two labels, not one, because the sentence a player wants to click differs
+ * entirely by how the hand went. Someone who found the line is owed a forward
+ * step — "here is the plan" — while someone who missed it is owed a repair,
+ * and offering "see my plan" to a player who just got it wrong reads as the
+ * product ignoring what it had literally just graded.
+ *
+ * `sharp` counts as right: it is the recognition band, awarded for finding a
+ * balanced alternative, and telling that player they need fixing is the fastest
+ * way to lose the one who is enjoying themselves most.
+ *
+ * Deliberately NOT a "well done" banner on top of the Feedback panel. That
+ * panel already opens with the grade and a line of why; a second congratulation
+ * directly above it is the same information twice, and on a payment funnel the
+ * duplicated praise is what makes it read as a sales page rather than a grader.
+ */
+const RIGHT_MOVE: readonly GradeName[] = ["best", "sharp"];
+
+export function playedItRight(grade: GradeName): boolean {
+  return RIGHT_MOVE.includes(grade);
+}
+
+export function demoOutroCta(grade: GradeName): string {
+  return playedItRight(grade) ? "See my plan →" : "See how to fix it →";
+}
 
 /** The funnel budget this screen is allowed to spend. */
 export const MAX_ADDED_SECONDS = 45;

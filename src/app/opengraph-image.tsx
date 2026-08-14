@@ -31,16 +31,48 @@ export default function OpengraphImage() {
         fontFamily: "sans-serif",
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          fontSize: 26,
-          letterSpacing: 6,
-          color: palette.textTertiary,
-          fontWeight: 700,
-        }}
-      >
-        SUITEDPOKER
+      {/* The mark and the wordmark together.
+
+          A link preview is often the FIRST time anyone sees this product — in
+          a message thread, next to a domain in grey text. The wordmark alone
+          reads as a caption; the tile is the thing that will be on a home
+          screen later, so the two should be introduced at the same time.
+
+          Drawn rather than <img>-ed: next/og would have to fetch the PNG over
+          the network at render time, which fails in exactly the situation the
+          image matters most — a cold edge render for a crawler. The gradient
+          and the path are the same two values as `public/brand/spade-tile.svg`,
+          and `accentDeep` is pinned to --color-accent-800 by a test. */}
+      <div style={{ display: "flex", alignItems: "center", gap: 22 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 84,
+            height: 84,
+            borderRadius: 20,
+            background: `linear-gradient(180deg, ${palette.accent} 0%, ${palette.accentDeep} 100%)`,
+          }}
+        >
+          <svg width="52" height="52" viewBox="0 0 100 100">
+            <path
+              d="M50 9 C50 9 17 38 17 57 C17 69 26 78 36 78 C41 78 46 76 49 72 C48 83 44 90 36 93 L64 93 C56 90 52 83 51 72 C54 76 59 78 64 78 C74 78 83 69 83 57 C83 38 50 9 50 9 Z"
+              fill={palette.onAccent}
+            />
+          </svg>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            fontSize: 34,
+            letterSpacing: 6,
+            color: palette.textPrimary,
+            fontWeight: 700,
+          }}
+        >
+          SUITEDPOKER
+        </div>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column" }}>

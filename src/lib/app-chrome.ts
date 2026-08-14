@@ -16,7 +16,7 @@ export type ChromeMode = "full" | "compact" | "hidden";
  */
 export const APP_HOME = "/practice" as const;
 
-const FUNNEL_PREFIXES = ["/onboarding", "/diagnosis", "/paywall", "/welcome"] as const;
+const FUNNEL_PREFIXES = ["/onboarding", "/paywall", "/welcome"] as const;
 
 export const APP_NAV = [
   {

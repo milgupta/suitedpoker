@@ -126,9 +126,8 @@ test.describe("meta deduplication", () => {
     await page.goto("/?fbclid=IwAR_meta_dedup&utm_source=meta&utm_medium=paid");
     await login(page, user.email);
 
-    await page.goto("/diagnosis", { waitUntil: "domcontentloaded" });
-    await page.waitForTimeout(2_500);
-
+    // ViewContent used to fire from /diagnosis; it fires from the paywall's
+    // plan band now, so one navigation covers both events.
     await page.goto("/paywall", { waitUntil: "domcontentloaded" });
     await page.getByRole("button", { name: "Start training" }).click();
     // The CAPI call is fire-and-forget and the click navigates to Stripe, so

@@ -57,10 +57,28 @@ export function HubCard({
       )}
       data-hub={title}
     >
+      {/*
+       * A SCREENSHOT KEEPS ITS OWN ASPECT AT EVERY WIDTH; a live preview does
+       * not have to.
+       *
+       * Every file in public/brand/hub is 960x600 — exactly 16:10 — so the
+       * `aspect-square` this used to apply below `sm` asked `object-cover` to
+       * throw away 37.5% of the width. On the table-sim card that crop landed
+       * mid-table: two hole cards at triple size, "Call 1" centred, and the
+       * fold and raise buttons cut off at both edges. A screenshot that has to
+       * be decoded rather than recognised is worse than no screenshot.
+       *
+       * `preview` cards are React components that fill whatever box they are
+       * given, so they keep the taller mobile crop they were designed against.
+       */}
       <div
         className={cn(
           "relative w-full overflow-hidden",
-          featured ? "aspect-[16/10] min-h-[10rem]" : "aspect-square sm:aspect-[16/10]",
+          featured
+            ? "aspect-[16/10] min-h-[10rem]"
+            : imageSrc && !preview
+              ? "aspect-[16/10]"
+              : "aspect-square sm:aspect-[16/10]",
         )}
       >
         {preview ? (

@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
-  CHART_ANNOTATIONS,
-  CHART_CARD_META,
   CHART_FOOTNOTE,
   CHART_SERIES,
   CHART_X_LABELS,
+  CHART_Y_LABEL,
   chartAreaPath,
+  chartBandPath,
   chartPath,
   chartPoints,
 } from "@/lib/onboarding-chart";
@@ -17,19 +17,29 @@ describe("onboarding comparison chart", () => {
     expect(trained.points[0]).toBe(untrained.points[0]);
   });
 
-  it("states the illustrative caveat in both card meta and footnote", () => {
-    expect(CHART_CARD_META.toLowerCase()).toContain("illustrative");
+  /**
+   * The footnote is now the ONLY place the caveat and the unit appear — the
+   * card header that carried a second copy is gone. So both assertions moved
+   * here, and the unit one matters more than it used to: with no "bb / 100" on
+   * the card, a footnote that failed to name the unit would leave the y-axis
+   * an unlabelled quantity.
+   */
+  it("carries the caveat and the unit in the footnote", () => {
     expect(CHART_FOOTNOTE).toMatch(/Illustrative only/i);
     expect(CHART_FOOTNOTE).toMatch(/bb|big blinds/i);
-    expect(`${CHART_FOOTNOTE} ${CHART_CARD_META}`).not.toMatch(/\$|dollar|USD/i);
+    expect(CHART_FOOTNOTE).not.toMatch(/\$|dollar|USD/i);
+  });
+
+  it("labels the y-axis without naming a currency", () => {
+    expect(CHART_Y_LABEL.length).toBeGreaterThan(0);
+    expect(CHART_Y_LABEL).not.toMatch(/\$|dollar|USD/i);
   });
 
   it("never puts a dollar figure on any chart string", () => {
     const blob = [
       ...CHART_SERIES.flatMap((s) => [s.label, s.endLabel]),
-      ...CHART_ANNOTATIONS.map((a) => a.label),
       ...CHART_X_LABELS.map((t) => t.label),
-      CHART_CARD_META,
+      CHART_Y_LABEL,
       CHART_FOOTNOTE,
     ].join(" ");
     expect(blob).not.toMatch(/\$|dollar|USD|profit|won \d/i);
@@ -50,12 +60,27 @@ describe("onboarding comparison chart", () => {
     expect(area).toContain(" L ");
   });
 
-  it("maps annotation indices onto real points", () => {
+  /**
+   * The band is the screen's whole argument, and it is the one shape a reader
+   * cannot check by eye — a mirrored return path still LOOKS like a filled
+   * region, it just fills the wrong one. So: it must close, and its return leg
+   * must actually travel right to left.
+   */
+  it("closes the band between the two curves, travelling back the way it came", () => {
+    const trained = CHART_SERIES.find((s) => s.id === "trained")!;
     const untrained = CHART_SERIES.find((s) => s.id === "untrained")!;
-    for (const note of CHART_ANNOTATIONS) {
-      expect(untrained.points[note.atIndex]).toBeTypeOf("number");
-      expect(note.label.length).toBeGreaterThan(4);
-    }
+    const band = chartBandPath(trained.points, untrained.points, 320, 180, -8, 4);
+
+    expect(band.startsWith("M ")).toBe(true);
+    expect(band.trimEnd().endsWith("Z")).toBe(true);
+
+    // Every x that appears, in order. The first half must ascend and the
+    // second half descend; a mirrored return leg ascends twice.
+    const xs = [...band.matchAll(/[ML,] ?(-?[\d.]+) -?[\d.]+/g)].map((m) => Number(m[1]));
+    const turn = xs.indexOf(Math.max(...xs));
+    expect(turn).toBeGreaterThan(0);
+    expect(turn).toBeLessThan(xs.length - 1);
+    expect(xs[xs.length - 1]).toBeLessThan(xs[turn]!);
   });
 
   it("pads the plot so end labels have room", () => {
