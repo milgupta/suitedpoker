@@ -16,7 +16,7 @@ endpoint are dashboard state, and the app only reads their ids.
 | Field | Value |
 |---|---|
 | Name | SuitedPoker Monthly |
-| Price | `39.99` USD |
+| Price | `24.99` USD |
 | Billing period | Monthly |
 | Type | Recurring |
 

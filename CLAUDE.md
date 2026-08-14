@@ -5,7 +5,7 @@ Read this fully before touching anything.
 ## What this is
 
 A GTO poker trainer for beginners. NLHE, 6-max cash, 100bb. Web app, mobile-first,
-hard paywall at $39.99/mo or $149.99/yr.
+hard paywall at $24.99/mo or $119.99/yr.
 
 It is built in numbered substages from `SUITEDPOKER_BUILD_PLAN.md` — **one substage
 per session**. Start a fresh context for each one. Do not attempt several at once;
@@ -404,7 +404,7 @@ if you add one.
 - **`CARD_ORDER` is derived from `PLAN_IDS`, not typed out** — annual first so
   the ribbon has a card to sit on, but a third plan cannot fall off the page.
 - **The ribbon states the saving as a NUMBER.** "Best value" alone is a
-  superlative every discount banner on the internet has already spent; the 75%
+  superlative every discount banner on the internet has already spent; the 60%
   is arithmetic against the two prices directly under it. It replaced the
   struck-through annualised price that used to sit inside the card.
 - **The headline price is PER MONTH (`perMonthCents`), not per week.** A

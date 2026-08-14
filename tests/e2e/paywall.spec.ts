@@ -70,7 +70,7 @@ test.describe("paywall", () => {
     // Yearly is pre-selected and says the saving as a number.
     await expect(page.locator("[data-plan=annual]")).toHaveAttribute("data-selected", "true");
     await expect(page.locator("[data-plan=monthly]")).toHaveAttribute("data-selected", "false");
-    await expect(page.getByText("Save 75%")).toBeVisible();
+    await expect(page.getByText("Save 60%")).toBeVisible();
 
     // Both the per-MONTH headline and the real billed price. A monthly figure
     // is the one a subscriber can check against their own bank statement;
@@ -100,7 +100,7 @@ test.describe("paywall", () => {
     await page.locator("[data-plan=monthly]").click();
     await expect(page.locator("[data-plan=monthly]")).toHaveAttribute("data-selected", "true");
     await expect(page.locator("[data-plan=annual]")).toHaveAttribute("data-selected", "false");
-    await expect(page.getByText("$39.99 per month", { exact: false }).last()).toBeVisible();
+    await expect(page.getByText("$24.99 per month", { exact: false }).last()).toBeVisible();
   });
 
   test("makes no dollar-denominated claim about poker results", async ({ page }) => {

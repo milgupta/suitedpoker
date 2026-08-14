@@ -30,7 +30,7 @@ export const PLANS: Record<PlanId, Plan> = {
   monthly: {
     id: "monthly",
     label: "Monthly",
-    amountCents: 3999,
+    amountCents: 2499,
     interval: "month",
     intervalLabel: "per month",
     billedLabel: "billed monthly",

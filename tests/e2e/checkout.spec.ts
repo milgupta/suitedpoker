@@ -180,7 +180,7 @@ test.describe("checkout", () => {
     const { sessionId } = await createSession(page, "monthly");
     const session = await stripe.checkout.sessions.retrieve(sessionId, { expand: ["line_items"] });
 
-    expect(session.amount_total).toBe(3999);
+    expect(session.amount_total).toBe(2499);
     const item = session.line_items?.data[0];
     expect(item?.price?.id).toBe(PRICE_MONTHLY);
     expect(item?.price?.recurring?.interval).toBe("month");
@@ -272,7 +272,7 @@ test.describe("checkout", () => {
     test.slow();
 
     for (const [plan, priceId, expected] of [
-      ["monthly", PRICE_MONTHLY, 3999],
+      ["monthly", PRICE_MONTHLY, 2499],
       ["annual", PRICE_ANNUAL, 11999],
     ] as const) {
       const { email } = await makeUser(`buy${plan}`);
