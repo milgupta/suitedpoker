@@ -14,6 +14,7 @@ import { SignOutButton } from "../sign-out-button";
 import { TrackView } from "@/components/track-view";
 import { PaywallClient } from "./paywall-client";
 import { PLANS } from "@/lib/stripe/plans";
+import { landingShowcase } from "@/lib/landing-showcase-server";
 import { ComplianceFooter } from "@/components/ComplianceFooter";
 
 export const metadata: Metadata = { title: "Subscribe", robots: { index: false, follow: false } };
@@ -117,6 +118,7 @@ export default async function PaywallPage() {
           leakLabel={leakLabel}
           plan={plan}
           demoHand={demoHand}
+          showcase={landingShowcase()}
         />
       </Suspense>
 

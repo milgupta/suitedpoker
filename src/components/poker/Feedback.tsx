@@ -165,6 +165,9 @@ export function Feedback({
 
   return (
     <motion.section
+      // Capture hook, in the existing data-* convention: the showcase shot for
+      // the paywall screenshots this element rather than cropping a viewport.
+      data-feedback-panel
       className={cn(
         "border-border bg-surface-1 flex flex-col gap-5 rounded-lg border p-5",
         className,

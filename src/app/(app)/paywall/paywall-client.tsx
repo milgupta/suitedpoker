@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { motion, useReducedMotion } from "motion/react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import posthog from "posthog-js";
@@ -10,6 +11,8 @@ import { PROOF_MODE } from "@/content/testimonials";
 import { capture, isAnalyticsConfigured } from "@/lib/analytics-client";
 import type { DemoHandRecord } from "@/lib/demo-hand";
 import type { Diagnosis } from "@/lib/diagnosis";
+import { DecisionShowcase } from "@/components/marketing/DecisionShowcase";
+import type { Showcase } from "@/lib/landing-showcase";
 import {
   formatUsd,
   perMonthCents,
@@ -20,6 +23,7 @@ import {
 } from "@/lib/stripe/plans";
 import { newEventId, trackDeduplicated } from "@/lib/meta-client";
 import { PURCHASE_EVENT_ID_KEY } from "@/lib/meta-storage";
+import { SPRING } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 /**
@@ -68,6 +72,8 @@ export interface PaywallClientProps {
    * which render the page exactly as it was before this existed.
    */
   plan?: Diagnosis | null;
+  /** One real hand and its real mix, rendered live rather than screenshotted. */
+  showcase?: Showcase | null;
   /** 7.2b’s graded hand, when they played one. */
   demoHand?: DemoHandRecord | null;
 }
@@ -92,7 +98,7 @@ const HIGHLIGHTS = ["Unlimited drills", "AI coach", "Full curriculum"];
 //
 // The plan band sits ABOVE the plan cards, and the CTA has an e2e asserting it
 // clears 844px at 390px wide.
-export function PaywallClient({ plan = null }: PaywallClientProps) {
+export function PaywallClient({ plan = null, showcase = null }: PaywallClientProps) {
   const params = useSearchParams();
   const cancelled = params.get("cancelled") === "1";
 
@@ -214,119 +220,138 @@ export function PaywallClient({ plan = null }: PaywallClientProps) {
        * the plan cards, the radios and the links below render correctly without
        * any of them knowing they are on white. See globals.css.
        */}
-      <div className="panel-light rounded-xl p-6 sm:p-10">
-        {/* One column since the product shot came out. Capped and centred rather
-          than left full-width: the plan cards and the CTA are the only things
-          left in here, and a 60rem-wide radio row reads as an unfinished form. */}
-        <div className="mx-auto flex w-full max-w-[34rem] flex-col gap-12">
-          {/* ── The purchase column ────────────────────────────────────────── */}
-          <div className="flex flex-col gap-6">
-            {plan !== null && <PlanBand plan={plan} />}
-            <section className="flex flex-col gap-6">
-              <header className="flex flex-col gap-3">
-                {/*
-                 * A PERFORMANCE CLAIM ABOUT CUSTOMERS. It needs substantiation on
-                 * file, not just in the copy.
-                 *
-                 * The FTC requires the evidence for a claim like this to exist in
-                 * documented form BEFORE it runs, and a payment page is where it
-                 * is least defensible without one (FTC Act §5; 16 CFR Part 465 is
-                 * the neighbouring rule this codebase already honours in
-                 * `src/content/testimonials.ts`, which refuses any entry with no
-                 * `source`). Milan has confirmed the figure is substantiated.
-                 *
-                 * WHOEVER CHANGES THIS NUMBER: record where it came from — the
-                 * cohort, the window, and the measure of "improved" — in the same
-                 * place the source for a testimonial would go. A percentage that
-                 * nobody can trace back is the one that costs the ad account.
-                 */}
-                <h1 className="text-display-lg text-balance">
-                  {/* --accent-bright, which `.panel-light` re-points to
+      <div className="flex flex-col gap-8 lg:grid lg:grid-cols-2 lg:items-center lg:gap-10">
+        {/* THE WHITE PANEL IS FIRST IN THE DOM, always. There is an e2e
+          asserting the CTA clears 844px at 390px wide, and DOM order is what
+          decides that on a phone. Grid placement moves it right on a wide
+          screen without moving it down on a narrow one. */}
+        <div className="panel-light rounded-xl p-6 sm:p-10 lg:col-start-2 lg:row-start-1">
+          <div className="flex flex-col gap-12">
+            <div className="flex flex-col gap-6">
+              <section className="flex flex-col gap-6">
+                <header className="flex flex-col gap-3">
+                  {/*
+                   * A PERFORMANCE CLAIM ABOUT CUSTOMERS. It needs substantiation on
+                   * file, not just in the copy.
+                   *
+                   * The FTC requires the evidence for a claim like this to exist in
+                   * documented form BEFORE it runs, and a payment page is where it
+                   * is least defensible without one (FTC Act §5; 16 CFR Part 465 is
+                   * the neighbouring rule this codebase already honours in
+                   * `src/content/testimonials.ts`, which refuses any entry with no
+                   * `source`). Milan has confirmed the figure is substantiated.
+                   *
+                   * WHOEVER CHANGES THIS NUMBER: record where it came from — the
+                   * cohort, the window, and the measure of "improved" — in the same
+                   * place the source for a testimonial would go. A percentage that
+                   * nobody can trace back is the one that costs the ad account.
+                   */}
+                  <h1 className="text-display-lg text-balance">
+                    {/* --accent-bright, which `.panel-light` re-points to
                     --accent-700 so it stays legible on white. */}
-                  <span className="text-accent-bright">92%</span> of Suited Poker subscribers
-                  improved their game
-                </h1>
+                    <span className="text-accent-bright">92%</span> of Suited Poker subscribers
+                    improved their game
+                  </h1>
 
-                <p className="text-text-secondary text-body-lg max-w-[42ch]">
-                  Join the best poker trainer available.
-                </p>
-
-                {cancelled && (
-                  <p role="status" className="text-text-tertiary text-body-sm">
-                    No charge was made. Your place is still here when you want it.
+                  <p className="text-text-secondary text-body-lg max-w-[42ch]">
+                    Join the best poker trainer available.
                   </p>
-                )}
-              </header>
 
-              <fieldset className="flex flex-col gap-3">
-                <legend className="sr-only">Choose a plan</legend>
-                {CARD_ORDER.map((id) => (
-                  <PlanCard
-                    key={id}
-                    plan={id}
-                    selected={selected === id}
-                    onSelect={() => setSelected(id)}
-                  />
-                ))}
-              </fieldset>
+                  {cancelled && (
+                    <p role="status" className="text-text-tertiary text-body-sm">
+                      No charge was made. Your place is still here when you want it.
+                    </p>
+                  )}
+                </header>
 
-              {/* Between the plans and the button, where the reference puts them:
+                <fieldset className="flex flex-col gap-3">
+                  <legend className="sr-only">Choose a plan</legend>
+                  {CARD_ORDER.map((id) => (
+                    <PlanCard
+                      key={id}
+                      plan={id}
+                      selected={selected === id}
+                      onSelect={() => setSelected(id)}
+                    />
+                  ))}
+                </fieldset>
+
+                {/* Between the plans and the button, where the reference puts them:
               the last thing read before the price is what the price is for.
               Accent, never the grade green — blue is interface, green-to-red is
               grading, and the two never borrow each other's range. */}
-              <ul className="text-text-secondary text-body-sm flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
-                {HIGHLIGHTS.map((highlight) => (
-                  <li key={highlight} className="flex items-center gap-1.5">
-                    <span aria-hidden className="text-accent-bright">
-                      ✓
-                    </span>
-                    {highlight}
-                  </li>
-                ))}
-              </ul>
+                <ul className="text-text-secondary text-body-sm flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+                  {HIGHLIGHTS.map((highlight) => (
+                    <li key={highlight} className="flex items-center gap-1.5">
+                      <span aria-hidden className="text-accent-bright">
+                        ✓
+                      </span>
+                      {highlight}
+                    </li>
+                  ))}
+                </ul>
 
-              {error !== "" && (
-                <p
-                  role="alert"
-                  className="border-danger-border bg-danger-fill text-danger-bright text-body-md rounded-md border px-3 py-2"
-                >
-                  {error}
-                </p>
-              )}
+                {error !== "" && (
+                  <p
+                    role="alert"
+                    className="border-danger-border bg-danger-fill text-danger-bright text-body-md rounded-md border px-3 py-2"
+                  >
+                    {error}
+                  </p>
+                )}
 
-              <div className="flex flex-col gap-3">
-                <Button
-                  variant="accent"
-                  size="lg"
-                  className="w-full"
-                  loading={busy}
-                  onClick={() => void startCheckout()}
-                >
-                  Start training
-                </Button>
-                <p className="text-text-tertiary text-caption text-center">
-                  Cancel any time. {PLANS[selected].label.toLowerCase()} billing,{" "}
-                  {formatUsd(PLANS[selected].amountCents)} {PLANS[selected].intervalLabel}.
-                </p>
-              </div>
+                <div className="flex flex-col gap-3">
+                  <Button
+                    variant="accent"
+                    size="lg"
+                    className="w-full"
+                    loading={busy}
+                    onClick={() => void startCheckout()}
+                  >
+                    Start training
+                  </Button>
+                  <p className="text-text-tertiary text-caption text-center">
+                    Cancel any time. {PLANS[selected].label.toLowerCase()} billing,{" "}
+                    {formatUsd(PLANS[selected].amountCents)} {PLANS[selected].intervalLabel}.
+                  </p>
+                </div>
 
-              <footer className="text-text-tertiary text-caption flex flex-wrap justify-center gap-x-4 gap-y-2">
-                <Link
-                  href="/terms"
-                  className="hover:text-text-secondary underline underline-offset-4"
-                >
-                  Terms
-                </Link>
-                <Link
-                  href="/privacy"
-                  className="hover:text-text-secondary underline underline-offset-4"
-                >
-                  Privacy
-                </Link>
-              </footer>
-            </section>
+                <footer className="text-text-tertiary text-caption flex flex-wrap justify-center gap-x-4 gap-y-2">
+                  <Link
+                    href="/terms"
+                    className="hover:text-text-secondary underline underline-offset-4"
+                  >
+                    Terms
+                  </Link>
+                  <Link
+                    href="/privacy"
+                    className="hover:text-text-secondary underline underline-offset-4"
+                  >
+                    Privacy
+                  </Link>
+                </footer>
+              </section>
+            </div>
           </div>
         </div>
+
+        {/* ── The showcase column ────────────────────────────────────────── */}
+        {/*
+         * A LIVE COMPONENT, NOT A SCREENSHOT.
+         *
+         * This replaced the "Your plan" band, and a phone screenshot was the
+         * first thing tried in its place. Cropping a 780x1688 capture into a
+         * column gives you the app's HEADER — a nav bar and a progress
+         * counter — because that is what sits at the top of a phone screen.
+         * The interesting part is always in the middle, at a different offset
+         * per shot, so no single crop rule works.
+         *
+         * Rendering the real components instead is rectangular, sharp at any
+         * width, needs no `npm run screenshots` to stay current, and cannot
+         * drift from the strategy: the hand, the split and the sentence all
+         * come from the same solution file the drill grades against.
+         */}
+        {showcase !== null && <ShowcaseCard showcase={showcase} />}
       </div>
 
       {/*
@@ -352,6 +377,57 @@ export function PaywallClient({ plan = null }: PaywallClientProps) {
 }
 
 /**
+ * The showcase, as a card from the app rather than a panel of the page.
+ *
+ * OUTSIDE `.panel-light`, deliberately. Rendering it inside the white panel
+ * meant either living with light-panel colours — which made a poker hand look
+ * like a spreadsheet — or adding a second token scope to undo the first. Moving
+ * it out is simpler than both: on the page's own dark canvas it uses the
+ * ordinary app tokens, so this is literally the same surface treatment as every
+ * card inside the product. That is the point. The reader sees the thing they
+ * are buying next to the price, not an illustration of it.
+ *
+ * ANIMATED ON SCROLL, NOT ON MOUNT. The cards deal in and the frequency bar
+ * fills from zero — both already built into `PlayingCard` and `FrequencyBar`.
+ * On a phone this card sits below the fold, so mounting-time animation plays to
+ * nobody and the reader arrives at a static image. `whileInView` with
+ * `once: true` spends the animation at the moment it is actually seen.
+ *
+ * `key` is bound to the viewport trigger so the children remount and replay
+ * their own entrances; without it the bar is already full by the time the card
+ * scrolls in.
+ */
+function ShowcaseCard({ showcase }: { showcase: Showcase }) {
+  const reduced = useReducedMotion() ?? false;
+  const [seen, setSeen] = useState(false);
+
+  return (
+    <motion.aside
+      className="lg:col-start-1 lg:row-start-1"
+      data-showcase
+      initial={reduced ? { opacity: 1 } : { opacity: 0, y: 16 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.35 }}
+      transition={reduced ? { duration: 0 } : SPRING.smooth}
+      onViewportEnter={() => {
+        setSeen(true);
+      }}
+    >
+      <div className="border-border bg-surface-1 rounded-xl border p-5 sm:p-6">
+        {seen || reduced ? (
+          <DecisionShowcase showcase={showcase} />
+        ) : (
+          <div className="h-[13.5rem]" />
+        )}
+      </div>
+      <p className="text-text-tertiary text-caption mt-3 text-center">
+        One real hand from the trainer, with the strategy it is graded against.
+      </p>
+    </motion.aside>
+  );
+}
+
+/**
  * Best value first.
  *
  * The pre-selected plan leading the list is what the eye lands on, and the
@@ -359,70 +435,6 @@ export function PaywallClient({ plan = null }: PaywallClientProps) {
  * typed out, so a third plan cannot silently fall off the page.
  */
 const CARD_ORDER: readonly PlanId[] = [...PLAN_IDS].sort((a) => (a === "annual" ? -1 : 1));
-
-/**
- * What the quiz produced, on the screen where it argues for something.
- *
- * This is what survives of the `/diagnosis` page. What did NOT survive: the
- * 1.4s staged reveal, the position bar, the projection bar and the "analysing
- * your game…" beat. Those earned their place on a page whose whole job was to
- * feel like a report being written; on a payment screen they are 300px of
- * animation between the reader and the price, and the same three facts read
- * faster as three lines than as three animated bars.
- *
- * It leads with the FIRST FIX rather than the rating. "Which hands to defend
- * from the big blind" is a thing they want; "Rating 850 · Beginner" is a
- * verdict on them, and opening a payment screen by telling someone they are
- * bad is an odd way to ask for money. The rating still appears — it is what
- * makes the plan theirs rather than a brochure — just not first.
- *
- * No dollar figure, per rule 5: `diagnosis.cost` is deliberately not read here.
- */
-function PlanBand({ plan }: { plan: Diagnosis }) {
-  const [firstFix, ...rest] = plan.fixFirst;
-
-  return (
-    <section
-      className="border-border bg-surface-1 flex flex-col gap-3 rounded-lg border p-5"
-      data-plan-band
-    >
-      <h2 className="text-overline text-accent-bright uppercase">Your plan</h2>
-
-      {firstFix !== undefined && (
-        <p className="text-heading-md" data-plan-first-fix>
-          First: {firstFix.charAt(0).toLowerCase() + firstFix.slice(1)}
-        </p>
-      )}
-
-      {rest.length > 0 && (
-        <ul className="flex flex-col gap-1.5">
-          {rest.map((line) => (
-            <li key={line} className="text-body-md text-text-secondary flex items-start gap-2">
-              <span aria-hidden className="text-accent-bright">
-                ✓
-              </span>
-              {line}
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {/* Q6, reflected back. It is the only place the user's own leak picks
-          appear, and without it that question is dead weight in the quiz —
-          which is the specific failure the diagnosis notes warn about. */}
-      {plan.alsoFixing.length > 0 && (
-        <p className="text-text-tertiary text-body-sm" data-plan-also>
-          Also on your list: {plan.alsoFixing.join(", ")}.
-        </p>
-      )}
-
-      <p className="text-text-tertiary text-body-sm" data-plan-summary>
-        {plan.lessons} lessons · {plan.minutesPerDay} min a day · built from your answers at rating{" "}
-        <span className="font-mono tabular-nums">{plan.rating}</span>
-      </p>
-    </section>
-  );
-}
 
 function PlanCard({
   plan,

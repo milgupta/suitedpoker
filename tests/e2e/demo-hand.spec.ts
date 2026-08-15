@@ -279,8 +279,8 @@ test.describe("the demo hand", () => {
     await page.goto("/paywall");
 
     // The questionnaire half is still there.
-    await expect(page.locator("[data-plan-band]")).toBeVisible();
-    await expect(page.locator("[data-plan-summary]")).toBeVisible();
+    // The plan band was removed; the showcase is what the paywall opens with now.
+    await expect(page.locator("[data-showcase]")).toBeVisible();
   });
 
   test("the whole screen fits the funnel budget", async ({ page }) => {

@@ -90,61 +90,65 @@ test.describe("the plan band on the paywall", () => {
     }
   });
 
-  test("renders THEIR plan: first fix, Q6 picks, minutes and rating", async ({ page }) => {
+  test("the showcase renders one real hand, with a real mix", async ({ page }) => {
+    /*
+     * The plan band that used to sit here was removed — a list of things the
+     * product WOULD teach, replaced by the thing itself. What matters now is
+     * that the showcase is a LIVE render of the solution data, not a picture:
+     * a screenshot goes stale silently, and this one cannot.
+     */
     const { email } = await makeUser("mine", FULL_ANSWERS);
     await loginThenPaywall(page, email);
 
-    const band = page.locator("[data-plan-band]");
-    await expect(band).toBeVisible();
+    const showcase = page.locator("[data-showcase]");
+    await expect(showcase).toBeVisible();
 
-    await expect(page.locator("[data-plan-first-fix]")).toContainText(/First:/);
-    // Their Q6 picks, reflected back. Without this the question is dead weight.
-    await expect(page.locator("[data-plan-also]")).toContainText(/defending your blinds/);
-    // Their minutes answer, and the rating the quiz placed them at.
-    await expect(page.locator("[data-plan-summary]")).toContainText("10 min a day");
-    await expect(page.locator("[data-plan-summary]")).toContainText(/\d{3,4}/);
+    const text = await showcase.innerText();
+    // Two frequencies that sum to 100 — the mix IS the argument this makes.
+    const percents = [...text.matchAll(/(\d+)%/g)].map((m) => Number(m[1]));
+    expect(percents.length, `no frequencies in the showcase: ${text}`).toBeGreaterThanOrEqual(2);
+    expect(percents[0]! + percents[1]!).toBe(100);
   });
 
-  test("a play-money user gets a plan with no dollar figure in it", async ({ page }) => {
-    const { email } = await makeUser("playmoney", { ...FULL_ANSWERS, venue: "play_money" });
-    await loginThenPaywall(page, email);
-
-    const band = page.locator("[data-plan-band]");
-    await expect(band).toBeVisible();
-    expect(await band.innerText()).not.toMatch(/\$\d/);
-  });
-
-  test("never frames a figure as winnings inside the band", async ({ page }) => {
+  test("the showcase carries no dollar figure and no winnings framing", async ({ page }) => {
+    // Rule 5, on the highest-traffic pre-purchase screen in the product. Scoped
+    // to the showcase, because the plan PRICES on the same page are legitimately
+    // in dollars — a price is not a result.
     const { email } = await makeUser("clean", FULL_ANSWERS);
     await loginThenPaywall(page, email);
 
-    const text = await page.locator("[data-plan-band]").innerText();
+    const text = await page.locator("[data-showcase]").innerText();
+    expect(text).not.toMatch(/\$\d/);
     for (const claim of [/won \$/i, /win \$/i, /profit/i, /\+\s*\$\d/, /\+\d+%/, /earn/i]) {
-      expect(text, `earnings framing in the plan band: ${claim}`).not.toMatch(claim);
+      expect(text, `earnings framing in the showcase: ${claim}`).not.toMatch(claim);
     }
   });
 
-  test("an unfinished quiz shows no band, and the paywall still sells", async ({ page }) => {
-    const { email } = await makeUser("partial", { venue: "live_1_2", pain: "call_too_much" });
+  test("a play-money user still sees no dollar figure", async ({ page }) => {
+    const { email } = await makeUser("playmoney", { ...FULL_ANSWERS, venue: "play_money" });
     await loginThenPaywall(page, email);
 
-    // A half-answered questionnaire would have to guess at a plan.
-    await expect(page.locator("[data-plan-band]")).toHaveCount(0);
-    // The page still does its job — this is the failure mode that costs money.
-    await expect(page.getByRole("button", { name: /Start training/i })).toBeVisible();
+    await expect(page.locator("[data-showcase]")).toBeVisible();
+    expect(await page.locator("[data-showcase]").innerText()).not.toMatch(/\$\d/);
   });
 
-  test("no onboarding at all shows no band, and the paywall still sells", async ({ page }) => {
+  test("no onboarding at all still sells", async ({ page }) => {
     const { email } = await makeUser("none", null);
     await loginThenPaywall(page, email);
 
-    await expect(page.locator("[data-plan-band]")).toHaveCount(0);
+    // The showcase does not depend on the quiz, so it renders for everybody —
+    // which is the point of replacing the personalised band with it.
+    await expect(page.locator("[data-showcase]")).toBeVisible();
     await expect(page.getByRole("button", { name: /Start training/i })).toBeVisible();
   });
 
-  test("the CTA still clears 844px at 390px wide with the band above it", async ({ page }) => {
-    // The band is new content ABOVE the purchase column, which is exactly the
-    // kind of addition that pushes a CTA below the fold on a phone.
+  test("the CTA still clears 844px at 390px wide", async ({ page }) => {
+    /*
+     * The showcase is a second grid column on desktop and a block BELOW the
+     * purchase column on a phone, so it must not push the CTA down. This is the
+     * assertion that keeps the DOM order (purchase first) load-bearing rather
+     * than incidental.
+     */
     await page.setViewportSize({ width: 390, height: 844 });
     const { email } = await makeUser("fold", FULL_ANSWERS);
     await loginThenPaywall(page, email);
