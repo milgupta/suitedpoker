@@ -95,7 +95,7 @@ function looksLikeEmail(v: string): string | null {
  *
  * Update these if the prices are ever recreated.
  */
-const LIVE_PRICE_MONTHLY = "price_1U1Z5uLmVAUdxDexCBspIJUP";
+const LIVE_PRICE_MONTHLY = "price_1U4F9PLmVAUdxDexeIV7EmBU";
 const LIVE_PRICE_ANNUAL = "price_1U1Z5uLmVAUdxDexKlALo6Ol";
 
 const livePrice =
