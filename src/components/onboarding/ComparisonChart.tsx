@@ -49,6 +49,15 @@ import {
  * The drawing is SVG stroke-dashoffset rather than a chart library: two paths
  * do not justify a dependency in the highest-traffic pre-purchase route, and a
  * library would arrive after hydration and shift the layout.
+ *
+ * THE ROOT IS NOT `justify-center`, DELIBERATELY. Every question step stacks
+ * from the top of the same flex column, so centring this one dropped its
+ * heading ~190px below the heading the user was reading a tap earlier. Eight
+ * steps are supposed to read as one screen changing; a heading that jumps down
+ * the page mid-run reads as a different page, and the back button stops feeling
+ * like it goes back. The CTA pins to the bottom with `mt-auto`, matching
+ * MultiSelect's Continue, so the two steps that have a button put it in the
+ * same place.
  */
 
 const VIEW_W = 320;
@@ -79,7 +88,7 @@ export function ComparisonChart({ onContinue }: { onContinue: () => void }) {
     : { duration: 0.35, delay: 1.15, ease: "easeOut" as const };
 
   return (
-    <div className="flex flex-1 flex-col justify-center gap-5" data-chart="comparison">
+    <div className="flex flex-1 flex-col gap-5" data-chart="comparison">
       <div className="flex flex-col gap-2">
         <h1 className="text-display-md">{CHART_HEADING}</h1>
         <p className="text-text-secondary text-body-lg">{CHART_SUB}</p>
@@ -114,12 +123,15 @@ export function ComparisonChart({ onContinue }: { onContinue: () => void }) {
           {CHART_X_LABELS.map((tick) => {
             const pt = untrainedPts[tick.atIndex];
             if (pt === undefined) return null;
+            const lastIndex = untrainedPts.length - 1;
             return (
               <text
                 key={tick.label}
                 x={pt.x}
                 y={VIEW_H - 8}
-                textAnchor={tick.atIndex === 0 ? "start" : tick.atIndex === 7 ? "end" : "middle"}
+                textAnchor={
+                  tick.atIndex === 0 ? "start" : tick.atIndex === lastIndex ? "end" : "middle"
+                }
                 fill="var(--color-text-tertiary)"
                 fontSize="11"
                 fontWeight="500"
@@ -211,9 +223,11 @@ export function ComparisonChart({ onContinue }: { onContinue: () => void }) {
 
       <p className="text-text-tertiary text-caption">{CHART_FOOTNOTE}</p>
 
-      <Button variant="accent" size="lg" className="w-full" onClick={onContinue}>
-        Keep going
-      </Button>
+      <div className="mt-auto pt-4">
+        <Button variant="accent" size="lg" className="w-full" onClick={onContinue}>
+          Keep going
+        </Button>
+      </div>
     </div>
   );
 }

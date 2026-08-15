@@ -4,6 +4,7 @@ import { InfoIcon } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { amountFromBb } from "@/lib/units";
 
 export interface HandContext {
   /** "BTN opens 2.5bb, BB calls" */
@@ -50,7 +51,7 @@ export function HandContextChip({
           <dt className="text-text-tertiary">Preflop</dt>
           <dd>{context.preflopAction}</dd>
           <dt className="text-text-tertiary">Effective</dt>
-          <dd className="font-mono tabular-nums">{context.effectiveStackBb.toFixed(0)}bb</dd>
+          <dd className="font-mono tabular-nums">{amountFromBb(context.effectiveStackBb)}</dd>
           <dt className="text-text-tertiary">Pot type</dt>
           <dd>{context.potType}</dd>
         </dl>

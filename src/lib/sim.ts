@@ -1,6 +1,7 @@
 import type { BotId } from "@/poker/bots";
 import { botNamesFor } from "@/poker/bot-names";
 import type { GameState, HandEvent, LegalAction, SidePot, Street } from "@/poker/gamestate";
+import { amountFromBb, amountFromChips } from "@/lib/units";
 
 /**
  * The table simulator's shared vocabulary: presets, the serialisable session,
@@ -382,9 +383,9 @@ export function describeBotAction(botName: string, event: HandEvent): string {
     case "call":
       return `${botName} calls`;
     case "bet":
-      return `${botName} bets ${event.amount / 2}bb`;
+      return `${botName} bets ${amountFromChips(event.amount)}`;
     case "raise":
-      return `${botName} raises to ${event.amount / 2}bb`;
+      return `${botName} raises to ${amountFromChips(event.amount)}`;
   }
 }
 
@@ -413,12 +414,12 @@ export function resultLineFor(
 ): string {
   if (foldedPreflop) return "Folded preflop";
   if (netBb > 0) {
-    if (!wonAtShowdown) return `Won ${netBb.toFixed(1)}bb`;
+    if (!wonAtShowdown) return `Won ${amountFromBb(netBb)}`;
     const phrase = winningHandLabel === null ? undefined : HAND_PHRASES[winningHandLabel];
     return phrase === undefined
-      ? `Won ${netBb.toFixed(1)}bb at showdown`
-      : `Won ${netBb.toFixed(1)}bb with ${phrase}`;
+      ? `Won ${amountFromBb(netBb)} at showdown`
+      : `Won ${amountFromBb(netBb)} with ${phrase}`;
   }
-  if (netBb < 0) return `Lost ${Math.abs(netBb).toFixed(1)}bb`;
+  if (netBb < 0) return `Lost ${amountFromBb(Math.abs(netBb))}`;
   return "Chopped";
 }

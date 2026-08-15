@@ -11,14 +11,15 @@ import { actionVerb, betAmountOf, committedChips } from "../../src/lib/bet-chip"
 
 describe("betAmountOf", () => {
   it("reads a simple open", () => {
-    expect(betAmountOf("opens 2.5bb")).toBe("2.5bb");
+    expect(betAmountOf("opens 5")).toBe("5");
   });
 
   it("takes the LAST figure, not the first", () => {
-    // "3bets to 11bb" contains a 3. A chip reading 3bb in front of somebody who
-    // just made it eleven misprices the call for the player being asked.
-    expect(betAmountOf("3bets to 11bb")).toBe("11bb");
-    expect(betAmountOf("4bets to 22bb")).toBe("22bb");
+    // "3bets to 22" contains a 3. A chip reading 3 in front of somebody who
+    // just made it twenty-two misprices the call for the player being asked.
+    // Without the old "bb" suffix this is the regex's whole job.
+    expect(betAmountOf("3bets to 22")).toBe("22");
+    expect(betAmountOf("4bets to 44")).toBe("44");
   });
 
   it("puts no chip on an action that committed nothing", () => {
@@ -28,18 +29,21 @@ describe("betAmountOf", () => {
     }
   });
 
-  it("ignores a bare number with no unit", () => {
-    // Percentage sizings — "bets 66%" — are not big blinds and must not be
-    // printed as though they were.
+  it("ignores a figure glued to a word", () => {
+    // Percentage sizings — "bets 66%" — are not chip amounts, and the digits in
+    // "3bets" are part of the verb. Neither may reach a chip.
     expect(betAmountOf("bets 66%")).toBeNull();
+    expect(betAmountOf("3bets")).toBeNull();
+    expect(betAmountOf("4bets")).toBeNull();
   });
 
-  it("is case-insensitive about the unit", () => {
-    expect(betAmountOf("opens 2.5BB")).toBe("2.5bb");
+  it("reads an amount at the end of the line or mid-sentence alike", () => {
+    expect(betAmountOf("raises to 18")).toBe("18");
+    expect(betAmountOf("bets 12 into 20")).toBe("20");
   });
 
   it("agrees with committedChips", () => {
-    for (const action of ["opens 2.5bb", "3bets to 11bb", "checks", "calls"]) {
+    for (const action of ["opens 5", "3bets to 22", "checks", "calls"]) {
       expect(committedChips(action)).toBe(betAmountOf(action) !== null);
     }
   });
@@ -47,9 +51,9 @@ describe("betAmountOf", () => {
 
 describe("actionVerb", () => {
   it("strips the figure the chip already carries", () => {
-    expect(actionVerb("opens 2.5bb")).toBe("opens");
-    expect(actionVerb("3bets to 11bb")).toBe("3bets");
-    expect(actionVerb("4bets to 22bb")).toBe("4bets");
+    expect(actionVerb("opens 5")).toBe("opens");
+    expect(actionVerb("3bets to 22")).toBe("3bets");
+    expect(actionVerb("4bets to 44")).toBe("4bets");
   });
 
   it("leaves an action that has no figure alone", () => {
@@ -59,15 +63,15 @@ describe("actionVerb", () => {
   });
 
   it("never returns an empty badge", () => {
-    // A bare "11bb" would strip to nothing and render an empty pill, which
+    // A bare "22" would strip to nothing and render an empty pill, which
     // reads as a rendering bug rather than as an action.
-    expect(actionVerb("11bb")).toBe("11bb");
+    expect(actionVerb("22")).toBe("22");
   });
 
   it("keeps the verb and the amount in step", () => {
     // The pair is the contract: whatever the badge drops, the chip shows.
-    const action = "3bets to 11bb";
+    const action = "3bets to 22";
     expect(actionVerb(action)).toBe("3bets");
-    expect(betAmountOf(action)).toBe("11bb");
+    expect(betAmountOf(action)).toBe("22");
   });
 });

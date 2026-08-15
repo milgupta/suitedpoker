@@ -107,7 +107,9 @@ describe("pot sizes match the state exactly", () => {
       const pots = potByStreet(hand);
 
       const inFlight = state.players.reduce((sum, p) => sum + p.committedThisStreet, 0);
-      const expected = (state.pot + inFlight) / hand.bigBlind;
+      // potByStreet reports CHIPS now, so no division — still the engine's
+      // own number rather than a re-implementation of the arithmetic.
+      const expected = state.pot + inFlight;
 
       expect(pots.showdown, `hand ${i}`).toBeCloseTo(expected, 6);
     }
@@ -173,7 +175,7 @@ describe("20 generated hands render sanely", () => {
       const inFlight = state.players.reduce((sum, p) => sum + p.committedThisStreet, 0);
 
       expect(pots.showdown, `hand ${i} pot disagrees with the engine`).toBeCloseTo(
-        (state.pot + inFlight) / hand.bigBlind,
+        state.pot + inFlight,
         6,
       );
     }

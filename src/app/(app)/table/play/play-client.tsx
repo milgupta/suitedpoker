@@ -23,6 +23,7 @@ import { handStrength } from "@/poker/hand-strength";
 import type { Card } from "@/poker/cards";
 import { evColor } from "@/lib/ev-color";
 import { cn } from "@/lib/utils";
+import { amountFromBb, rateFromBb100, rateValueFromBb100, RATE_LABEL } from "@/lib/units";
 
 /**
  * The session, on the game surface (DESIGN.md §6): opponents strip, board
@@ -664,7 +665,7 @@ function Hud({ state }: { state: ClientSimState }) {
     <div className="border-border bg-surface-1 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border px-4 py-2.5">
       <HudStat label="Hand" value={`${state.handNumber}/${state.totalHands}`} />
       <HudStat
-        label="Net bb"
+        label="Net"
         value={
           <span style={{ color: state.netBbTotal < 0 ? "var(--color-grade-mistake)" : undefined }}>
             <AnimatedNumber value={state.netBbTotal} decimals={1} />
@@ -674,7 +675,10 @@ function Hud({ state }: { state: ClientSimState }) {
       {/* Only once the sample can carry it — a per-100 rate over a dozen
           hands swings hundreds of bb and reads as the grader being broken. */}
       {state.handsPlayed >= 50 && (
-        <HudStat label="bb/100" value={<AnimatedNumber value={bb100} decimals={1} />} />
+        <HudStat
+          label={RATE_LABEL}
+          value={<AnimatedNumber value={rateValueFromBb100(bb100)} decimals={0} />}
+        />
       )}
     </div>
   );
@@ -745,8 +749,8 @@ function SessionSummary({ state }: { state: ClientSimState }) {
       <h2 className="text-display-md">Session over</h2>
       <div className="grid grid-cols-3 gap-4">
         <HudStat label="Hands" value={state.handsPlayed} />
-        <HudStat label="Net bb" value={state.netBbTotal.toFixed(1)} />
-        <HudStat label="bb/100" value={state.handsPlayed >= 50 ? bb100.toFixed(1) : "—"} />
+        <HudStat label="Net" value={amountFromBb(state.netBbTotal)} />
+        <HudStat label={RATE_LABEL} value={state.handsPlayed >= 50 ? rateFromBb100(bb100) : "—"} />
       </div>
       <div className="flex gap-3">
         <Button variant="accent" size="lg" asChild>

@@ -50,6 +50,8 @@ describe("onboarding comparison chart", () => {
       expect(tick.label.toLowerCase()).toContain("session");
       expect(tick.label.toLowerCase()).not.toContain("week");
     }
+    expect(CHART_X_LABELS[0]?.label).toBe("Session 1");
+    expect(CHART_X_LABELS[CHART_X_LABELS.length - 1]?.label).toBe("Session 100");
   });
 
   it("builds a closed area path under the untrained series", () => {
@@ -87,7 +89,12 @@ describe("onboarding comparison chart", () => {
     const trained = CHART_SERIES.find((s) => s.id === "trained")!;
     const pts = chartPoints(trained.points, 320, 196, -8, 4);
     const last = pts[pts.length - 1]!;
-    expect(last.x).toBeLessThan(320 - 40);
+    const longest = Math.max(...CHART_SERIES.map((s) => s.endLabel.length));
+    // 12px end labels sit 9px past the last point. ~7px/char is Inter at
+    // that size; 6px more is the gutter so the last letter is not the
+    // viewBox edge. A pad that only cleared "Studying" clipped "No change".
+    const needed = 9 + longest * 7 + 6;
+    expect(320 - last.x).toBeGreaterThanOrEqual(needed);
     expect(chartPath(trained.points, 320, 196, -8, 4).length).toBeGreaterThan(20);
   });
 });

@@ -27,6 +27,7 @@ import {
 import { parsePreflopNode, type PreflopNode } from "@/poker/solutions";
 import { HAND_KEYS } from "@/poker/range";
 import { bandFor } from "@/poker/grader";
+import { evFromBb } from "../../src/lib/units";
 
 function loadNode(file: string): PreflopNode {
   const path = resolve(process.cwd(), "src/content/solutions/preflop", file);
@@ -93,7 +94,7 @@ describe("the landing showcase", () => {
     const band = bandFor(alternative!.evLoss);
     expect(
       ["best", "solid"],
-      `the second line at ${NODE.ref} ${SHOWCASE_HAND} bands as "${band}" (${alternative!.evLoss.toFixed(2)}bb) — the hero copy calls it "not a mistake"`,
+      `the second line at ${NODE.ref} ${SHOWCASE_HAND} bands as "${band}" (${evFromBb(alternative!.evLoss)}) — the hero copy calls it "not a mistake"`,
     ).toContain(band);
 
     console.log(
@@ -165,7 +166,7 @@ describe("the landing showcase", () => {
     expect(byPos.get("BTN")?.betBb).toBe(2.5);
     expect(byPos.get("SB")?.folded).toBe(true);
 
-    expect(table.history).toBe("BTN opens 2.5bb");
+    expect(table.history).toBe("BTN opens 5");
     expect(table.situationLine).toMatch(/button/i);
     expect(table.situationLine).toMatch(/big blind/i);
     expect(table.strengthLabel).toBe("High card");

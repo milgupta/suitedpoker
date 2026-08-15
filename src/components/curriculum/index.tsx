@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { PlayingCard } from "@/components/poker";
 import { cardsFromString } from "@/poker/cards";
+import { amountFromBb } from "@/lib/units";
 
 /**
  * The lesson vocabulary: every custom component MDX may use.
@@ -84,7 +85,7 @@ export function TableExample({
     >
       <div className="text-text-tertiary text-caption flex justify-between font-mono">
         <span>You are {hero}</span>
-        <span>pot {pot.toFixed(1)}bb</span>
+        <span>pot {amountFromBb(pot)}</span>
       </div>
       <ul className="flex flex-col gap-1">
         {lines.map((line) => (

@@ -1,6 +1,7 @@
 import { isPlayedFrequency, type Grade } from "@/poker/grader";
 import { isNoviceTier, type SkillTier } from "@/lib/explain-policy";
 import { actionLabel, actionPhrase } from "@/lib/action-label";
+import { evFromBb } from "@/lib/units";
 
 /**
  * The structural enforcement of "the AI never determines strategy".
@@ -137,7 +138,7 @@ export function templateExplanation(grade: Grade, tier: SkillTier = "never"): st
 
   const cost = novice
     ? `${actionLabel(grade.chosenAction)} costs ${grade.evLoss.toFixed(2)} big blinds against it.`
-    : `${actionLabel(grade.chosenAction)} gives up ${grade.evLoss.toFixed(2)}bb against it.`;
+    : `${actionLabel(grade.chosenAction)} gives up ${evFromBb(grade.evLoss)} against it.`;
 
   // A blunder leads with the strategy, not the criticism. It is the same two
   // facts in the other order, and the order is what stops a beginner quitting.

@@ -13,7 +13,13 @@ import { grade as gradePreflop } from "@/poker/grader";
 import { nodeRefOf, type PreflopActionName } from "@/poker/solutions";
 import { spotConfigSchema } from "@/lib/arena-preset";
 import type { DemoHandRecord } from "@/lib/demo-hand";
+import { DEMO_VERDICT, type DemoAction } from "@/lib/demo-script";
 import { SPOT_TTL_SECONDS } from "../../../drills/next/route";
+
+/** Narrows a submitted action to one the written table covers. */
+function isDemoAction(action: string): action is DemoAction {
+  return action === "fold" || action === "call" || action === "raise";
+}
 
 const bodySchema = z.object({
   spotId: z.string().min(1),
@@ -28,6 +34,8 @@ interface StoredSpot {
   config: z.infer<typeof spotConfigSchema>;
   answered: boolean;
   demo?: boolean;
+  /** True when the deal route served the FIXED hand, which has written copy. */
+  scripted?: boolean;
 }
 
 /**
@@ -140,5 +148,20 @@ export const POST = withAuth(async (request, auth) => {
     console.error(`[demo-hand] could not persist for ${auth.userId}: ${String(error)}`);
   }
 
-  return NextResponse.json({ ...result, demo: true });
+  /**
+   * The written verdict, keyed on what they PRESSED.
+   *
+   * Sent from the server rather than looked up client-side for one reason: the
+   * verdict names the strategy, and a client that holds the whole verdict table
+   * before answering holds a map from action to "this is the one the solver
+   * never takes". That is the same leak the drill payload exists to prevent, so
+   * only the verdict for the action actually taken crosses the wire, and only
+   * after it has been graded.
+   */
+  const verdict =
+    stored.scripted === true && isDemoAction(parsed.data.action)
+      ? DEMO_VERDICT[parsed.data.action]
+      : null;
+
+  return NextResponse.json({ ...result, demo: true, verdict, scripted: stored.scripted === true });
 });

@@ -215,7 +215,7 @@ describe("the diagnosis opening line", () => {
   it("states what a solver does, how often, and what the difference costs", () => {
     const detail = demoHandDetail(record());
     expect(detail).toContain("raises it 71%");
-    expect(detail).toContain("0.2bb");
+    expect(detail).toContain("0.4");
     expect(detail).toMatch(/once an hour|roughly \d+ times an hour/);
   });
 

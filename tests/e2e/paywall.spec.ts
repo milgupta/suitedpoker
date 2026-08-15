@@ -2,6 +2,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { expect, test, type Page } from "@playwright/test";
 import { loadLocalEnv } from "../support/load-local-env";
 import { adminClient, isConfigured } from "../support/e2e-supabase";
+// Derived, never pinned: a price change should be one edit in plans.ts, not a
+// hunt through the suite for every literal that quoted it.
+import { formatUsd, perMonthCents, PLANS, savingPercent } from "../../src/lib/stripe/plans";
 
 /**
  * The paywall itself.
@@ -70,13 +73,17 @@ test.describe("paywall", () => {
     // Yearly is pre-selected and says the saving as a number.
     await expect(page.locator("[data-plan=annual]")).toHaveAttribute("data-selected", "true");
     await expect(page.locator("[data-plan=monthly]")).toHaveAttribute("data-selected", "false");
-    await expect(page.getByText("Save 75%")).toBeVisible();
+    await expect(page.getByText(`Save ${savingPercent()}%`)).toBeVisible();
 
     // Both the per-MONTH headline and the real billed price. A monthly figure
     // is the one a subscriber can check against their own bank statement;
     // per-week reads smaller and is the standard trick.
-    await expect(page.getByText("$10.00", { exact: false })).toBeVisible();
-    await expect(page.getByText("$119.99", { exact: false }).first()).toBeVisible();
+    await expect(
+      page.getByText(formatUsd(perMonthCents("annual")), { exact: false }),
+    ).toBeVisible();
+    await expect(
+      page.getByText(formatUsd(PLANS.annual.amountCents), { exact: false }).first(),
+    ).toBeVisible();
     await expect(page.getByText("billed yearly", { exact: false })).toBeVisible();
 
     // Every card carries a real radio, not just a border weight.
@@ -100,7 +107,13 @@ test.describe("paywall", () => {
     await page.locator("[data-plan=monthly]").click();
     await expect(page.locator("[data-plan=monthly]")).toHaveAttribute("data-selected", "true");
     await expect(page.locator("[data-plan=annual]")).toHaveAttribute("data-selected", "false");
-    await expect(page.getByText("$39.99 per month", { exact: false }).last()).toBeVisible();
+    await expect(
+      page
+        .getByText(`${formatUsd(PLANS.monthly.amountCents)} ${PLANS.monthly.intervalLabel}`, {
+          exact: false,
+        })
+        .last(),
+    ).toBeVisible();
   });
 
   test("makes no dollar-denominated claim about poker results", async ({ page }) => {

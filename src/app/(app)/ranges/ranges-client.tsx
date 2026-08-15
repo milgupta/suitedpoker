@@ -8,6 +8,7 @@ import { RangeGrid, type RangeStrategy } from "@/components/poker";
 import { actionLabel } from "@/lib/action-label";
 import { buildArenaLink } from "@/lib/arena-preset";
 import { HERO_POSITIONS } from "@/poker/solutions";
+import { amountFromBb } from "@/lib/units";
 
 interface NodeSummary {
   nodeRef: string;
@@ -136,8 +137,8 @@ export function RangesClient() {
       ) : (
         <>
           <div className="text-text-tertiary text-caption flex flex-wrap gap-x-4 font-mono">
-            <span>Pot {selected.potBb}bb</span>
-            <span>{selected.effStackBb}bb effective</span>
+            <span>Pot {amountFromBb(selected.potBb)}</span>
+            <span>{amountFromBb(selected.effStackBb)} effective</span>
           </div>
 
           <div className="flex flex-wrap gap-3">

@@ -7,12 +7,13 @@
  */
 
 import type { HeroPosition } from "./solutions";
+import { CHIPS_PER_BB } from "@/lib/units";
 
 /** Six-max preflop order. Nothing in the product deals a different table. */
 export const PREFLOP_ORDER: readonly HeroPosition[] = ["UTG", "MP", "CO", "BTN", "SB", "BB"];
 
 export interface SeatActivity {
-  /** Their most recent action, without the position prefix: "opens 2.5bb". */
+  /** Their most recent action, without the position prefix: "opens 5". */
   readonly action: string | null;
   /** Never acted and cannot any more: everyone who passed before the hero. */
   readonly folded: boolean;
@@ -23,7 +24,7 @@ export interface SeatActivity {
 const EMPTY: SeatActivity = { action: null, folded: false, toAct: false };
 
 /**
- * Split "BTN opens 2.5bb" into the seat and what it did.
+ * Split "BTN opens 5" into the seat and what it did.
  *
  * Lines that name no position — "folded to hero" is the generator's own phrase
  * for an unopened pot — carry no seat and are skipped. They are still shown in
@@ -43,18 +44,27 @@ function parseLine(line: string): { position: HeroPosition; action: string } | n
 }
 
 /**
- * The last big-blind figure in an action line, as a number.
+ * The last figure in an action line, as a number of big blinds.
  *
- * Last, not first: "3bets to 11bb" contains a 3, and a chip of 3bb in front of
- * someone who made it eleven misprices the pot.
+ * Last, not first: "3bets to 22" contains a 3, and 3 chips in front of someone
+ * who made it twenty-two misprices the pot.
+ *
+ * Action lines are written in CHIPS ("opens 5", "3bets to 22"); the seat
+ * quantities they feed are still big blinds, so this divides on the way in.
+ *
+ * The digits must be their own word. The old pattern leaned on the "bb" suffix
+ * to tell an amount from an incidental digit — with the suffix gone, a bare
+ * `\d+` matches the 3 in "3bets", and a seat that made it twenty-two would
+ * report 1.5bb committed. Same rule, and same reason, as `AMOUNT` in
+ * `src/lib/bet-chip.ts`.
  */
 export function parseActionBb(action: string | null): number | null {
   if (action === null) return null;
-  const matches = [...action.matchAll(/(\d+(?:\.\d+)?)\s*bb\b/gi)];
+  const matches = [...action.matchAll(/(?:^|\s)(?:to\s+)?(\d+(?:\.\d+)?)(?=$|\s)/g)];
   const last = matches.at(-1)?.[1];
   if (last === undefined) return null;
   const value = Number(last);
-  return Number.isFinite(value) ? value : null;
+  return Number.isFinite(value) ? value / CHIPS_PER_BB : null;
 }
 
 /**

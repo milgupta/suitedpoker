@@ -10,6 +10,7 @@ import { DURATION, SPRING } from "@/lib/motion";
 import { actionLabel, actionPhrase, actionVerb } from "@/lib/action-label";
 import { FrequencyBar, type FrequencySegment } from "./FrequencyBar";
 import { cn } from "@/lib/utils";
+import { evFromBb } from "@/lib/units";
 
 export interface FeedbackProps {
   result: Grade;
@@ -101,7 +102,7 @@ function whyLine(result: Grade): string {
     return `${actionLabel(result.bestAction)} wins the most in the long run here, taken ${topPct}% of the time.`;
   }
 
-  return `${actionLabel(result.bestAction)} wins the most in the long run here (${topPct}% of the time); ${actionPhrase(result.chosenAction)} gives up ${result.evLoss.toFixed(2)}bb.`;
+  return `${actionLabel(result.bestAction)} wins the most in the long run here (${topPct}% of the time); ${actionPhrase(result.chosenAction)} gives up ${evFromBb(result.evLoss)}.`;
 }
 
 function RatingDelta({ delta }: { delta: number }) {
@@ -180,12 +181,12 @@ export function Feedback({
         </span>
         <GradeBadge grade={result.grade} />
         {/*
-          Only print EV given up when there is some. "0.00bb" next to Best is
+          Only print EV given up when there is some. "0.0" next to Best is
           true and empty — the badge already said they found the top line, and
           a zero loss reads as a missing figure rather than a clean result.
         */}
         {result.evLoss > 0 && (
-          <span className="text-body-md font-mono tabular-nums">−{result.evLoss.toFixed(2)}bb</span>
+          <span className="text-body-md font-mono tabular-nums">−{evFromBb(result.evLoss)}</span>
         )}
         <RatingDelta delta={ratingDelta} />
       </div>

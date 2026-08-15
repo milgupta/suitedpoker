@@ -10,7 +10,7 @@ export {
 export { GameSurface, type GameSurfaceProps } from "./GameSurface";
 export {
   clampSize,
-  formatBb,
+  formatAmount,
   sizePresets,
   SIZE_STEP_BB,
   type ActionDockSizing,

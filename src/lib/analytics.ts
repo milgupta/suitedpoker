@@ -33,6 +33,15 @@ export interface EventMap {
   demo_hand_shown: Record<string, never>;
   demo_hand_answered: { grade: string; evLoss: number; timeMs: number };
   demo_hand_completed: { secondsAdded: number };
+  /**
+   * A question asked of the scripted demo coach.
+   *
+   * `question` is the WRITTEN answer's id, or "unmatched" — never the user's
+   * own text. Free-typed questions are personal input and do not belong in an
+   * analytics property; what the funnel needs is which of the four beginners
+   * reach for, and how often none of them fit.
+   */
+  demo_hand_question_asked: { question: string; source: "chip" | "typed" };
   diagnosis_viewed: { primaryLeak: string; annualCost: number };
   paywall_viewed: { annualCost: number };
   checkout_started: { plan: Plan };
@@ -81,6 +90,7 @@ export const EVENT_NAMES = [
   "demo_hand_shown",
   "demo_hand_answered",
   "demo_hand_completed",
+  "demo_hand_question_asked",
   "diagnosis_viewed",
   "paywall_viewed",
   "checkout_started",

@@ -5,7 +5,7 @@ import type { Card } from "@/poker/cards";
 import { cn } from "@/lib/utils";
 import { PlayingCard } from "../PlayingCard";
 import { SeatAvatar } from "../SeatAvatar";
-import { formatBb } from "./sizing";
+import { formatAmount } from "./sizing";
 
 /**
  * The top band of the game surface — DESIGN.md §6.1.
@@ -111,7 +111,7 @@ function OpponentSeatColumn({
             {seat.position}
           </span>
           <span className="text-text-secondary text-caption font-mono font-semibold tabular-nums">
-            {formatBb(seat.stackBb)}
+            {formatAmount(seat.stackBb)}
           </span>
         </span>
       </span>
@@ -121,7 +121,7 @@ function OpponentSeatColumn({
           className="border-border bg-surface-2 text-text-secondary text-caption rounded-full border px-2 py-0.5 font-mono font-semibold whitespace-nowrap tabular-nums"
           data-bet
         >
-          {formatBb(seat.betBb)}
+          {formatAmount(seat.betBb)}
         </span>
       )}
 

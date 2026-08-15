@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Wordmark } from "@/components/Wordmark";
 import { getUser } from "@/lib/supabase/server";
 import { StartClient } from "./start-client";
+import { START_CONTINUE_PATH } from "@/lib/start-answers";
 
 export const metadata: Metadata = {
   title: "Find your leak",
@@ -19,7 +20,7 @@ export const metadata: Metadata = {
  */
 export default async function StartPage() {
   const user = await getUser();
-  if (user !== null) redirect("/onboarding");
+  if (user !== null) redirect(START_CONTINUE_PATH);
 
   return (
     <div className="ambient-host flex min-h-screen flex-col">

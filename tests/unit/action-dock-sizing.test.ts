@@ -8,7 +8,12 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { clampSize, formatBb, sizePresets, SIZE_STEP_BB } from "@/components/poker/surface/sizing";
+import {
+  clampSize,
+  formatAmount,
+  sizePresets,
+  SIZE_STEP_BB,
+} from "@/components/poker/surface/sizing";
 
 describe("clampSize", () => {
   it("rounds to the half-bb step", () => {
@@ -85,10 +90,10 @@ describe("sizePresets", () => {
   });
 });
 
-describe("formatBb", () => {
-  it("drops the decimal on whole numbers and keeps it on halves", () => {
-    expect(formatBb(12)).toBe("12bb");
-    expect(formatBb(2.5)).toBe("2.5bb");
-    expect(formatBb(0.5)).toBe("0.5bb");
+describe("formatAmount", () => {
+  it("prints chips, always whole — a half a big blind is one chip", () => {
+    expect(formatAmount(12)).toBe("24");
+    expect(formatAmount(2.5)).toBe("5");
+    expect(formatAmount(0.5)).toBe("1");
   });
 });

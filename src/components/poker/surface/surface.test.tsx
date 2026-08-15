@@ -111,7 +111,7 @@ describe("ActionDock", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Choose a bet size" }));
-    expect(screen.getByRole("slider", { name: "Bet size in big blinds" })).toBeInTheDocument();
+    expect(screen.getByRole("slider", { name: "Bet size in chips" })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /Pot|Min|All-in/ })).toHaveLength(6);
     expect(screen.queryByRole("button", { name: "Check" })).not.toBeInTheDocument();
 
@@ -119,7 +119,7 @@ describe("ActionDock", () => {
     expect(screen.getByRole("button", { name: "Check" })).toBeInTheDocument();
   });
 
-  it("confirms the slider amount as a TO-amount in bb", () => {
+  it("confirms the slider amount as a TO-amount, in chips", () => {
     const confirmed: number[] = [];
     render(
       <ActionDock
@@ -131,7 +131,7 @@ describe("ActionDock", () => {
       />,
     );
 
-    const slider = screen.getByRole("slider", { name: "Bet size in big blinds" });
+    const slider = screen.getByRole("slider", { name: "Bet size in chips" });
     fireEvent.change(slider, { target: { value: "8.5" } });
     fireEvent.click(screen.getByRole("button", { name: /Confirm bet/ }));
     expect(confirmed).toEqual([8.5]);
@@ -149,7 +149,7 @@ describe("ActionDock", () => {
     );
 
     const slider = () =>
-      screen.getByRole("slider", { name: "Bet size in big blinds" }) as HTMLInputElement;
+      screen.getByRole("slider", { name: "Bet size in chips" }) as HTMLInputElement;
 
     fireEvent.click(screen.getByRole("button", { name: "½ Pot" }));
     expect(slider().value).toBe("6");
@@ -180,8 +180,8 @@ describe("OpponentStrip", () => {
     const { container } = render(<OpponentStrip seats={FIVE_SEATS} />);
     const badges = container.querySelectorAll("[data-bet]");
     expect(badges).toHaveLength(2);
-    expect(screen.getByText("5bb")).toBeInTheDocument();
-    expect(screen.getByText("0.5bb")).toBeInTheDocument();
+    expect(screen.getByText("10")).toBeInTheDocument();
+    expect(screen.getByText("1")).toBeInTheDocument();
   });
 
   it("shows revealed cards and the hand-name chip on the winner at showdown", () => {
@@ -222,7 +222,7 @@ describe("BoardBand", () => {
   it("labels the pot and carries the bb unit", () => {
     render(<BoardBand board={[]} potBb={1.5} />);
     expect(screen.getByText("Pot")).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "1.5bb" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "3" })).toBeInTheDocument();
   });
 
   it("dims every face-up card outside the highlight set and none inside it", () => {
@@ -249,7 +249,7 @@ describe("HeroDock", () => {
     );
     expect(screen.getByText("Flush")).toBeInTheDocument();
     expect(container.querySelectorAll("[data-best-five] [role='img']")).toHaveLength(5);
-    expect(screen.getByText("97bb")).toBeInTheDocument();
+    expect(screen.getByText("194")).toBeInTheDocument();
   });
 
   it("carries the accent halo only when the hero is to act", () => {

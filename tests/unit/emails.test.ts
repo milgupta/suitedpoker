@@ -51,9 +51,9 @@ const FIXTURES: { [K in TransactionalTemplate]: TemplateData[K] } = {
     invoiceUrl: "https://invoice.stripe.com/i/acct_1/test",
     nextBillingDate: "August 6, 2027",
   },
-  payment_failed: { amount: "$39.99", updateUrl: `${SITE}/account` },
+  payment_failed: { amount: "$24.99", updateUrl: `${SITE}/account` },
   payment_failed_reminder: {
-    amount: "$39.99",
+    amount: "$24.99",
     updateUrl: `${SITE}/account`,
     streakDays: 41,
     rating: 1187,
@@ -61,7 +61,7 @@ const FIXTURES: { [K in TransactionalTemplate]: TemplateData[K] } = {
     lessonsCompleted: 9,
   },
   payment_failed_final: {
-    amount: "$39.99",
+    amount: "$24.99",
     updateUrl: `${SITE}/account`,
     accessEndsOn: "August 12, 2026",
   },
@@ -259,7 +259,7 @@ describe("the copy says something", () => {
     // Rule 5. Prices are fine — those are prices. A RESULT in dollars is an
     // ad-account and compliance boundary.
     const { text } = await renderEmail("welcome", FIXTURES.welcome);
-    expect(text).toContain("bb/100");
+    expect(text).toContain("chips/100");
     expect(text).not.toMatch(/\$\d+.*(won|win|profit|earn)/i);
   });
 
@@ -300,7 +300,7 @@ describe("the copy says something", () => {
   it("survives a user with no stats at all in dunning #2", async () => {
     // A brand-new subscriber whose first charge failed. Printing "0 days" and
     // "rating 0" would be worse than saying nothing.
-    const { text } = await renderEmail("payment_failed_reminder", { amount: "$39.99" });
+    const { text } = await renderEmail("payment_failed_reminder", { amount: "$24.99" });
     expect(text).not.toContain("0 days");
     expect(text.toLowerCase()).toContain("only just started");
   });

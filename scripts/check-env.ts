@@ -89,7 +89,7 @@ function looksLikeEmail(v: string): string | null {
  *
  * Shape alone cannot catch this: a test-mode price id and a live one both read
  * `price_…`, so a copied `.env.local` sails through every check and then sells
- * a $39.99 subscription against a price that does not exist in live mode.
+ * a $24.99 subscription against a price that does not exist in live mode.
  * Price ids are not interchangeable between modes — that is the single most
  * repeated warning in `docs/STRIPE-SETUP.md`.
  *

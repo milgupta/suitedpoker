@@ -24,6 +24,7 @@ import { GRADES } from "@/lib/grade";
 import { actionLabel } from "@/lib/action-label";
 import { capsuleSegments } from "@/lib/action-grid";
 import { evColor } from "@/lib/ev-color";
+import { CHIPS_PER_BB, RATE_LABEL } from "@/lib/units";
 
 interface Answered {
   spot: ClientSpot;
@@ -350,7 +351,7 @@ export function ArenaClient() {
             {/* bb lost and Sharp sit in the secondary line — three above the fold
                 on 390px, the rest available without crowding the table. */}
             <span className="text-text-tertiary flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[0.9em]">
-              <Hud label="bb lost" value={bbLost} decimals={2} />
+              <Hud label="chips lost" value={bbLost * CHIPS_PER_BB} decimals={1} />
               <Hud label="Sharp" value={sharpCount} />
             </span>
           </>
@@ -552,7 +553,7 @@ function SessionSummary({
         <Hud label="Hands" value={hands} />
         <Hud label="Accuracy" value={accuracy} decimals={0} suffix="%" />
         {/* bb/100 and accuracy only — never a dollar figure. */}
-        <Hud label="bb lost /100" value={per100} decimals={1} />
+        <Hud label={`${RATE_LABEL} lost`} value={per100 * CHIPS_PER_BB} decimals={0} />
       </div>
 
       <div>

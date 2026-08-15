@@ -5,6 +5,7 @@ import { cardsToString } from "@/poker/cards";
 import type { SkillTier } from "@/lib/explain-policy";
 import { actionLabel } from "@/lib/action-label";
 import { PREFLOP_ORDER, seatActivity } from "@/lib/spot-seats";
+import { evFromBb } from "@/lib/units";
 
 /**
  * The context block handed to the model.
@@ -84,10 +85,10 @@ export function buildCoachContext(
     .join(", ");
 
   const evs = [
-    `${actionLabel(grade.bestAction)} ${grade.bestEv.toFixed(2)}bb (best)`,
+    `${actionLabel(grade.bestAction)} ${evFromBb(grade.bestEv)} (best)`,
     ...grade.alternativeActions
       .slice(0, 3)
-      .map((a) => `${actionLabel(a.action)} ${a.ev.toFixed(2)}bb`),
+      .map((a) => `${actionLabel(a.action)} ${evFromBb(a.ev)}`),
   ].join(", ");
 
   const villain = villainOf(spot.nodeRef);
@@ -135,7 +136,7 @@ export function buildCoachContext(
     neverPlayed.length > 0 ? `Never played here: ${neverPlayed.join(", ")}.` : "",
     ``,
     `WHAT THE USER DID`,
-    `Chose: ${actionLabel(grade.chosenAction)}. Grade: ${grade.grade}. EV given up: ${grade.evLoss.toFixed(2)}bb.`,
+    `Chose: ${actionLabel(grade.chosenAction)}. Grade: ${grade.grade}. EV given up: ${evFromBb(grade.evLoss)}.`,
     grade.isBalancedAlternative
       ? `Their action IS a real part of the mixed strategy. Say so — do not treat it as an error.`
       : "",

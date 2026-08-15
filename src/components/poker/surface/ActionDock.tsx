@@ -4,7 +4,13 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { actionGridClass } from "@/lib/action-grid";
 import { cn } from "@/lib/utils";
-import { clampSize, formatBb, sizePresets, SIZE_STEP_BB, type ActionDockSizing } from "./sizing";
+import {
+  clampSize,
+  formatAmount,
+  sizePresets,
+  SIZE_STEP_BB,
+  type ActionDockSizing,
+} from "./sizing";
 
 /**
  * The action bar — DESIGN.md §6.4.
@@ -91,7 +97,7 @@ function SizingPanel({ sizing, onClose }: { sizing: ActionDockSizing; onClose: (
           className="text-text-primary text-body-lg w-[4.5rem] shrink-0 text-center font-mono font-semibold tabular-nums"
           data-sizing-amount
         >
-          {formatBb(amountBb)}
+          {formatAmount(amountBb)}
         </span>
         <input
           type="range"
@@ -100,8 +106,8 @@ function SizingPanel({ sizing, onClose }: { sizing: ActionDockSizing; onClose: (
           max={sizing.maxTo}
           step={SIZE_STEP_BB}
           value={amountBb}
-          aria-label="Bet size in big blinds"
-          aria-valuetext={`${formatBb(amountBb)}`}
+          aria-label="Bet size in chips"
+          aria-valuetext={`${formatAmount(amountBb)}`}
           onChange={(event) =>
             setAmountBb(clampSize(Number(event.target.value), sizing.minTo, sizing.maxTo))
           }
@@ -118,7 +124,7 @@ function SizingPanel({ sizing, onClose }: { sizing: ActionDockSizing; onClose: (
         <Button
           variant="primary"
           size="icon-lg"
-          aria-label={`Confirm bet of ${formatBb(amountBb)}`}
+          aria-label={`Confirm bet of ${formatAmount(amountBb)}`}
           data-sizing-confirm
           onClick={() => {
             sizing.onConfirm(amountBb);

@@ -9,6 +9,7 @@ import { evColor } from "@/lib/ev-color";
 import { MIN_HANDS_FOR_LEAKS, MIN_HANDS_FOR_STATS } from "@/lib/dashboard";
 import type { DashboardData } from "@/lib/dashboard-server";
 import { cn } from "@/lib/utils";
+import { RATE_LABEL } from "@/lib/units";
 
 /**
  * Progress — the numbers that used to live under the fold on Home.
@@ -131,7 +132,7 @@ export function ProgressView({ data }: ProgressViewProps) {
               <StatTile label="VPIP" value={data.vpip * 100} suffix="%" stat="vpip" />
               <StatTile label="PFR" value={data.pfr * 100} suffix="%" stat="pfr" />
               <StatTile
-                label="bb/100 lost"
+                label={`${RATE_LABEL} lost`}
                 value={data.evLostPer100}
                 decimals={1}
                 stat="ev-loss"
@@ -178,7 +179,7 @@ export function ProgressView({ data }: ProgressViewProps) {
                 decimals={0}
               />
               <WeekStat
-                label="bb/100 lost"
+                label={`${RATE_LABEL} lost`}
                 value={data.thisWeek.evLostPer100}
                 previous={data.lastWeek.evLostPer100}
                 decimals={1}

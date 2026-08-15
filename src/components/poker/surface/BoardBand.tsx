@@ -4,6 +4,7 @@ import type { Card } from "@/poker/cards";
 import { AnimatedNumber } from "@/components/motion";
 import { cn } from "@/lib/utils";
 import { PlayingCard } from "../PlayingCard";
+import { chipsFromBb } from "@/lib/units";
 
 /**
  * The center band — DESIGN.md §6.2.
@@ -102,9 +103,8 @@ export function BoardBand({ board, potBb, highlight = null, className }: BoardBa
       <div className="flex items-baseline justify-end gap-1.5">
         <span className="text-overline text-text-tertiary uppercase">Pot</span>
         <AnimatedNumber
-          value={potBb}
-          decimals={1}
-          suffix="bb"
+          value={chipsFromBb(potBb)}
+          decimals={0}
           className="text-text-primary text-heading-md font-mono font-semibold tabular-nums"
         />
       </div>

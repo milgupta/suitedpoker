@@ -3,6 +3,8 @@ import Stripe from "stripe";
 import { expect, test, type Page } from "@playwright/test";
 import { loadLocalEnv } from "../support/load-local-env";
 import { adminClient, isConfigured } from "../support/e2e-supabase";
+// Derived, never pinned — see the note in paywall.spec.ts.
+import { PLANS } from "../../src/lib/stripe/plans";
 
 /**
  * Checkout, against real Stripe in test mode.
@@ -164,7 +166,7 @@ test.describe("checkout", () => {
     expect(session.cancel_url).toContain("/paywall?cancelled=1");
 
     // The correct amount and interval, read back from Stripe.
-    expect(session.amount_total).toBe(11999);
+    expect(session.amount_total).toBe(PLANS.annual.amountCents);
     expect(session.currency).toBe("usd");
     const item = session.line_items?.data[0];
     expect(item?.price?.id).toBe(PRICE_ANNUAL);
@@ -180,7 +182,7 @@ test.describe("checkout", () => {
     const { sessionId } = await createSession(page, "monthly");
     const session = await stripe.checkout.sessions.retrieve(sessionId, { expand: ["line_items"] });
 
-    expect(session.amount_total).toBe(3999);
+    expect(session.amount_total).toBe(PLANS.monthly.amountCents);
     const item = session.line_items?.data[0];
     expect(item?.price?.id).toBe(PRICE_MONTHLY);
     expect(item?.price?.recurring?.interval).toBe("month");
@@ -272,8 +274,8 @@ test.describe("checkout", () => {
     test.slow();
 
     for (const [plan, priceId, expected] of [
-      ["monthly", PRICE_MONTHLY, 3999],
-      ["annual", PRICE_ANNUAL, 11999],
+      ["monthly", PRICE_MONTHLY, PLANS.monthly.amountCents],
+      ["annual", PRICE_ANNUAL, PLANS.annual.amountCents],
     ] as const) {
       const { email } = await makeUser(`buy${plan}`);
       await login(page, email);

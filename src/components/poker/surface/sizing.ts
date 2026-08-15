@@ -5,8 +5,11 @@
  *
  * Every amount here is a TO-amount in big blinds — the total the bet is made
  * to, never the increment — matching the engine's convention so neither side
- * ever adds a committed amount twice.
+ * ever adds a committed amount twice. Big blinds are the INTERNAL unit only;
+ * `formatAmount` below is the boundary where an amount becomes chips on screen.
  */
+
+import { amountFromBb } from "@/lib/units";
 
 export interface ActionDockSizing {
   /** Smallest legal TO-amount, in bb. */
@@ -53,8 +56,14 @@ export function sizePresets(
   ];
 }
 
-/** "12bb", "2.5bb" — a whole number never carries a decimal it does not need. */
-export function formatBb(amountBb: number): string {
-  const rounded = Math.round(amountBb * 10) / 10;
-  return `${Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1)}bb`;
+/**
+ * "24", "5" — a table amount in chips, always whole.
+ *
+ * Was `formatBb`, printing "12bb" and "2.5bb". Renamed rather than left alone:
+ * a function called `formatBb` that returns chips is the kind of lie the next
+ * bug is built on. The argument is still `amountBb` because that is what the
+ * generator hands us; `src/lib/units.ts` owns the conversion.
+ */
+export function formatAmount(amountBb: number): string {
+  return amountFromBb(amountBb);
 }

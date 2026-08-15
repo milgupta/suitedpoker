@@ -4,10 +4,12 @@ import { actionLabel, actionPhrase } from "@/lib/action-label";
 import { positionName } from "@/lib/demo-hand";
 import type { Grade } from "@/lib/grade";
 import { formatActionHistory, situationLine } from "@/lib/spot-situation";
+import { actionHistoryFor } from "@/poker/generator";
 import { bandFor } from "@/poker/grader";
 import type { HandKey } from "@/poker/range";
 import { committedBbOf, PREFLOP_ORDER, seatActivity } from "@/poker/seat-activity";
 import type { PreflopNode } from "@/poker/solutions";
+import { evFromBb } from "@/lib/units";
 
 /**
  * The one hand and the one range the landing page shows, DERIVED from the
@@ -222,7 +224,7 @@ export function mixExplanation(segments: readonly FrequencySegment[]): string {
     return `This spot is a genuine mix: ${parts}. Both lines are worth the same, which is the only reason to split a hand at all.`;
   }
 
-  return `This spot is a genuine mix: ${parts}. Taking the second line gives up ${alternative.evLoss.toFixed(2)}bb — a different line, not a mistake.`;
+  return `This spot is a genuine mix: ${parts}. Taking the second line gives up ${evFromBb(alternative.evLoss)} — a different line, not a mistake.`;
 }
 
 export function buildShowcase(node: PreflopNode, hand: HandKey = SHOWCASE_HAND): Showcase {
@@ -246,18 +248,15 @@ export function buildShowcase(node: PreflopNode, hand: HandKey = SHOWCASE_HAND):
 }
 
 /**
- * Same walk `generateSpot` uses, so the marketing table and a real drill of
- * this node cannot disagree about who folded.
+ * THE generator's own walk, imported rather than repeated.
+ *
+ * This was a byte-for-byte copy, under a comment promising the marketing table
+ * and a real drill of the same node could not disagree about who folded — a
+ * promise a second copy cannot keep. The unit switch proved it: the sizings
+ * here would have stayed in big blinds while the drill moved to chips, and the
+ * landing page would have advertised a table the product no longer draws.
  */
-function actionHistoryOf(node: PreflopNode): readonly string[] {
-  if (node.actionSeq === "rfi") return ["folded to hero"];
-  const opponent = node.actionSeq.split("_").pop() ?? "";
-  if (node.actionSeq.startsWith("vs_rfi_")) return [`${opponent} opens 2.5bb`];
-  if (node.actionSeq.startsWith("vs_3bet_")) {
-    return [`${node.heroPos} opens 2.5bb`, `${opponent} 3bets to 11bb`];
-  }
-  return [`${opponent} opens 2.5bb`, `${node.heroPos} 3bets to 11bb`, `${opponent} 4bets to 22bb`];
-}
+const actionHistoryOf = actionHistoryFor;
 
 function tableOf(node: PreflopNode, hand: HandKey): ShowcaseTable {
   const history = actionHistoryOf(node);

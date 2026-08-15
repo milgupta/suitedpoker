@@ -17,7 +17,7 @@ import {
   type Question,
 } from "@/lib/onboarding";
 import { ComparisonChart } from "@/components/onboarding/ComparisonChart";
-import { saveStartAnswers } from "@/lib/start-answers-client";
+import { saveStartAnswers, commitStartAnswers } from "@/lib/start-answers-client";
 import { cn } from "@/lib/utils";
 
 /**
@@ -67,6 +67,25 @@ export function OnboardingClient({ initialAnswers, mode = "api" }: OnboardingCli
       if (advanceTimer.current !== null) clearTimeout(advanceTimer.current);
     };
   }, [mode]);
+
+  // Ads-funnel safety net. `/onboarding/continue` is the real commit, but a
+  // signed-in user can still land here (organic signup, a failed continue).
+  // If the local quiz is sitting in localStorage, pick it up rather than
+  // making them answer eight questions a second time.
+  useEffect(() => {
+    if (mode !== "api") return;
+    if (Object.keys(initialAnswers).length > 0) return;
+    let cancelled = false;
+    void (async () => {
+      const result = await commitStartAnswers();
+      if (!cancelled && result === "committed") {
+        router.replace("/onboarding/hand");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, initialAnswers, router]);
 
   const persist = useCallback(
     async (next: Answers, complete = false): Promise<void> => {

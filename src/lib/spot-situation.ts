@@ -9,6 +9,7 @@
 
 import type { HeroPosition } from "@/poker/solutions";
 import { betAmountOf } from "@/lib/bet-chip";
+import { amountFromBb } from "@/lib/units";
 import type { SeatActivity } from "@/lib/spot-seats";
 
 /** Spelled-out seat names. Abbreviations stay on the pills; prose spells them. */
@@ -169,10 +170,9 @@ export function missingActionTip(legalActions: readonly string[]): string | null
 export const TRAINER_ACTIONS_CAPTION =
   "Actions in this spot — the plays this chart allows. On an open, Call means limping the big blind.";
 
-/** Print a server `committedBb` the way BetChip expects. */
+/** Print a server `committedBb` the way BetChip expects — in chips. */
 export function formatCommittedBb(committedBb: number): string {
-  if (Number.isInteger(committedBb)) return `${committedBb}bb`;
-  return `${committedBb}bb`;
+  return amountFromBb(committedBb);
 }
 
 /**
@@ -190,8 +190,9 @@ export function blindChipAmount(
   if (activity.folded) return null;
   // A real action with a size replaces the blind chip.
   if (betAmountOf(activity.action) !== null) return null;
-  if (position === "SB") return "0.5bb";
-  if (position === "BB") return "1bb";
+  // The posted blinds ARE the chip unit's definition: SB 1, BB 2.
+  if (position === "SB") return amountFromBb(0.5);
+  if (position === "BB") return amountFromBb(1);
   return null;
 }
 

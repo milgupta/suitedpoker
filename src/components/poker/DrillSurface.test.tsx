@@ -49,7 +49,7 @@ function seatView(over: Partial<SeatView> & Pick<SeatView, "seat" | "position">)
 function sampleSpot(over: Partial<DrillSpotView> = {}): DrillSpotView {
   return {
     seats: [
-      seatView({ seat: 0, position: "UTG", action: "opens 2.5bb", committedBb: 2.5 }),
+      seatView({ seat: 0, position: "UTG", action: "opens 5", committedBb: 2.5 }),
       seatView({ seat: 1, position: "MP", folded: true }),
       seatView({ seat: 2, position: "CO", folded: true }),
       seatView({ seat: 3, position: "BTN", isHero: true, toAct: true }),
@@ -61,7 +61,7 @@ function sampleSpot(over: Partial<DrillSpotView> = {}): DrillSpotView {
     board: [],
     potBb: 4,
     effStackBb: 100,
-    actionHistory: ["UTG opens 2.5bb"],
+    actionHistory: ["UTG opens 5"],
     legalActions: ["fold", "call", "raise_small"],
     ...over,
   };
@@ -114,7 +114,7 @@ describe("DrillSurface", () => {
     expect(container.querySelector("[data-situation]")?.textContent).toContain(
       "under the gun (UTG) opened",
     );
-    expect(container.querySelector("[data-history]")?.textContent).toContain("UTG opens 2.5bb");
+    expect(container.querySelector("[data-history]")?.textContent).toContain("UTG opens 5");
     expect(container.querySelector("[data-coach-tip]")?.textContent).toContain("Someone opened");
     expect(screen.getByText(TRAINER_ACTIONS_CAPTION)).toBeInTheDocument();
     // The ring's aria summary survives as prose.
@@ -153,14 +153,14 @@ describe("DrillSurface", () => {
     const dock = container.querySelector("[data-hero-dock]");
     expect(dock?.getAttribute("data-to-act")).toBe("true");
     expect(container.querySelector("[data-strength-label]")?.textContent).toBe("Pair");
-    expect(container.querySelector("[data-hero-stack]")?.textContent).toBe("100bb");
+    expect(container.querySelector("[data-hero-stack]")?.textContent).toBe("200");
   });
 
   it("shows the hero's own committed chips as the dock bet badge", () => {
     const spot = sampleSpot();
     const seats = spot.seats.map((seat) => (seat.isHero ? { ...seat, committedBb: 2.5 } : seat));
     const { container } = render(<DrillSurface spot={{ ...spot, seats }} onAction={noop} />);
-    expect(container.querySelector("[data-hero-bet]")?.textContent).toBe("2.5bb");
+    expect(container.querySelector("[data-hero-bet]")?.textContent).toBe("5");
   });
 
   it("answered: buttons disable, the chart's action is outlined, the glow drops, the gap tip appears", () => {

@@ -44,6 +44,7 @@ import { StatTile } from "@/components/ui/stat-tile";
 import { Streak } from "@/components/ui/streak";
 import { GRADES } from "@/lib/grade";
 import { evColor } from "@/lib/ev-color";
+import { RATE_LABEL } from "@/lib/units";
 
 const BUTTON_VARIANTS = [
   "primary",
@@ -323,7 +324,7 @@ export function ComponentsLab() {
               label="EV lost"
               value={2.4}
               decimals={1}
-              suffix=" bb/100"
+              suffix={` ${RATE_LABEL}`}
               stat="ev-loss"
               delta={-1.2}
               higherIsBetter={false}

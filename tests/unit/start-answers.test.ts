@@ -6,6 +6,7 @@ import {
   START_ANSWERS_KEY,
   START_CONTINUE_PATH,
 } from "../../src/lib/start-answers";
+import { authOnlyRedirect } from "../../src/lib/auth-only-redirect";
 import type { Answers } from "../../src/lib/onboarding";
 
 const COMPLETE: Answers = {
@@ -22,6 +23,19 @@ describe("start-answers", () => {
   it("keeps the continue path under the entitlement-exempt /onboarding prefix", () => {
     expect(START_CONTINUE_PATH.startsWith("/onboarding")).toBe(true);
     expect(START_ANSWERS_KEY).toContain("start-answers");
+  });
+
+  /**
+   * The bug this pins: after /start → signup, the new session is still on
+   * /signup when middleware runs. Sending that to /practice skips the demo
+   * hand, and with DEV_BYPASS_ENTITLEMENT it skips the paywall too.
+   */
+  it("sends an unpaid signup to the continue bridge, not practice", () => {
+    expect(authOnlyRedirect("/signup", false)).toBe(START_CONTINUE_PATH);
+    expect(authOnlyRedirect("/signup/", false)).toBe(START_CONTINUE_PATH);
+    expect(authOnlyRedirect("/login", false)).toBe("/practice");
+    expect(authOnlyRedirect("/signup", true)).toBe("/practice");
+    expect(authOnlyRedirect("/forgot", false)).toBe("/practice");
   });
 
   it("coerces only known question fields", () => {

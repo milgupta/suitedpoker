@@ -2,6 +2,7 @@
 
 import { motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
+import { RATE_LABEL } from "@/lib/units";
 import {
   AnimatedNumber,
   FadeUp,
@@ -196,7 +197,7 @@ export function MotionLab() {
               </button>
             </div>
             <p className="text-display-md mt-4 font-mono">
-              <AnimatedNumber value={statValue} decimals={1} signed suffix=" bb/100" />
+              <AnimatedNumber value={statValue} decimals={1} signed suffix={` ${RATE_LABEL}`} />
             </p>
             <p className="text-text-tertiary text-caption mt-1">
               Springs between values with tabular numerals, so the layout does not jitter.

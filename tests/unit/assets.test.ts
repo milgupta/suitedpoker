@@ -73,15 +73,15 @@ function expandTemplates(paths: string[]): string[] {
 }
 
 /**
- * The paywall is still scanned even though it no longer carries an image.
+ * The paywall carries NO product screenshot any more — the showcase column was
+ * removed and the panel is a single purchase column.
  *
- * It is the worse place to break one — a broken image on the landing page
- * costs a click, a broken image on the payment screen costs the sale that
- * click already paid for — so the scan stays pointed at the file. What was
- * dropped is the assertion that it must reference at least one: the showcase
- * column was removed deliberately, and a floor of 1 would have been asserting
- * a design decision rather than an invariant. Same reasoning as the landing
- * page's own floor, directly below.
+ * The file is still scanned rather than dropped from the suite, because the
+ * rule that mattered was never "the paywall has an image", it was "every asset
+ * the paywall names exists on disk". If a shot is ever put back, it is covered
+ * the moment it lands instead of the day somebody remembers to re-add the test.
+ * A broken image on the landing page costs a click; on the payment screen it
+ * costs the sale that click already paid for.
  */
 const PAYWALL = readFileSync(
   join(process.cwd(), "src/app/(app)/paywall/paywall-client.tsx"),
@@ -111,6 +111,15 @@ describe("landing page assets", () => {
     expect(referenced.length, "the marketing surface points at no local assets").toBeGreaterThan(0);
   });
 
+  it("checks every asset the paywall names, however many that is", () => {
+    // No floor: zero is the correct count now that the showcase is gone. The
+    // per-path existence check below is what this file is actually for.
+    for (const path of assetsIn(PAYWALL)) {
+      const file = join(PUBLIC, path.replace(/^\//, ""));
+      expect(existsSync(file), `${path} is referenced by the paywall but missing`).toBe(true);
+    }
+  });
+
   it.each(referenced)("%s exists on disk", (path) => {
     const file = join(PUBLIC, path.replace(/^\//, ""));
     expect(existsSync(file), `${path} is referenced but missing from public/`).toBe(true);
@@ -127,7 +136,25 @@ describe("landing page assets", () => {
     const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as {
       shots: { name: string }[];
     };
-    expect(manifest.shots.length).toBe(7);
+
+    /*
+     * Counted against the CAPTURE SCRIPT, not against a number typed here.
+     *
+     * This asserted 7 and the script produces 6 — the diagnosis shot went when
+     * that page was deleted, and the hardcoded count went stale. It stayed
+     * green for months only because nobody re-ran `npm run screenshots`, so the
+     * old manifest was still on disk; the moment the set was regenerated the
+     * test failed on a change that was correct. A count that only fails when
+     * you do the right thing is worse than no count.
+     */
+    const script = readFileSync(join(process.cwd(), "scripts/capture-screenshots.ts"), "utf8");
+    const declared = new Set([...script.matchAll(/name:\s*"([a-z0-9-]+)"/g)].map((m) => m[1]));
+    const captured = new Set(manifest.shots.map((shot) => shot.name));
+
+    expect(captured.size, "the manifest is empty — run npm run screenshots").toBeGreaterThan(0);
+    for (const name of captured) {
+      expect(declared, `${name} is in the manifest but not in the capture script`).toContain(name);
+    }
 
     const missing: string[] = [];
     for (const shot of manifest.shots) {

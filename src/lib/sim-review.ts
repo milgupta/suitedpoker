@@ -2,6 +2,7 @@ import type { HandHistory, HandEvent, Street } from "@/poker/gamestate";
 import type { Attempt, Leak } from "@/poker/grader";
 import type { HandClass } from "@/poker/handclass";
 import type { SimDecision } from "@/lib/sim";
+import { amountFromChips, evFromBb } from "@/lib/units";
 
 /**
  * The review's arithmetic: session stats, replay steps, and the attempts fed
@@ -405,8 +406,9 @@ function streetLabel(street: Street, board: string): string {
   return `${street.charAt(0).toUpperCase()}${street.slice(1)}: ${board}`;
 }
 
+/** Replay amounts arrive from the engine already in chips. */
 function bb(chips: number): string {
-  return `${chips / 2}bb`;
+  return amountFromChips(chips);
 }
 
 /* ── Plain-English leak lines ────────────────────────────────────────────── */
@@ -436,7 +438,7 @@ export function describeLeak(leak: Leak): string {
                 ? `facing a 3-bet in the ${leak.position}`
                 : `facing a 4-bet in the ${leak.position}`;
 
-  return `You're ${verb} ${where} — costing about ${leak.meanEvLoss.toFixed(1)}bb each time, over ${leak.sampleSize} samples.`;
+  return `You're ${verb} ${where} — costing about ${evFromBb(leak.meanEvLoss)} each time, over ${leak.sampleSize} samples.`;
 }
 
 function round1(value: number): number {

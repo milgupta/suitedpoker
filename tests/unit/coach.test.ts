@@ -95,7 +95,7 @@ describe("the template fallback", () => {
 
     const studied = templateExplanation(makeGrade(), "solver");
     expect(studied).toContain("highest-EV");
-    expect(studied).toContain("0.80bb");
+    expect(studied).toContain("1.6");
   });
 
   it("explains a mix as a mix rather than as an error", () => {

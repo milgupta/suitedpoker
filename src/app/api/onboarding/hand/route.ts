@@ -19,6 +19,7 @@ import {
   pickMixedHand,
   type DemoHandRecord,
 } from "@/lib/demo-hand";
+import { FIXED_DEMO, FIXED_DEMO_NODE_REF } from "@/lib/demo-script";
 import { SPOT_TTL_SECONDS } from "../../drills/next/route";
 
 /**
@@ -71,8 +72,43 @@ export const POST = withAuth(async (_request, auth) => {
    */
   let spot: ReturnType<typeof generateSpot> | null = null;
   let choice = demoSpotFor(auth.userId, tier);
+  let scripted = false;
 
-  for (const candidate of demoSpotCandidates(auth.userId, tier)) {
+  /**
+   * THE FIXED HAND FIRST. Everyone gets T9o in the big blind against a button
+   * open, so the words under it can be written rather than generated — see
+   * `src/lib/demo-script.ts` for why that hand.
+   *
+   * The per-tier shortlist below is kept as a FALLBACK, not deleted: if the
+   * node is ever quarantined or the hand repaired out of the strategy, the
+   * screen has to degrade to a different real spot with template copy rather
+   * than to "Couldn't deal a hand", which is what a beginner would otherwise
+   * see as the first thing this product ever showed them.
+   */
+  const fixedNode = data.preflop.find((n) => n.ref === FIXED_DEMO_NODE_REF);
+  if (fixedNode !== undefined && fixedNode.strategy[FIXED_DEMO.handKey] !== undefined) {
+    spot = generateSpot(
+      {
+        type: "preflop",
+        heroPos: FIXED_DEMO.heroPos,
+        actionSeq: FIXED_DEMO.actionSeq,
+        difficulty: FIXED_DEMO.difficulty,
+        forceHandKey: FIXED_DEMO.handKey as HandKey,
+      },
+      data,
+      seed,
+    );
+    choice = {
+      id: "fixed-bb-vs-btn",
+      heroPos: FIXED_DEMO.heroPos,
+      actionSeq: FIXED_DEMO.actionSeq,
+      difficulty: FIXED_DEMO.difficulty,
+      teaches: "the most common decision in 6-max: defending the big blind against a button open",
+    };
+    scripted = true;
+  }
+
+  for (const candidate of spot === null ? demoSpotCandidates(auth.userId, tier) : []) {
     const ref = nodeRefOf(candidate.heroPos, candidate.actionSeq);
     const node = data.preflop.find((n) => n.ref === ref);
     if (node === undefined) continue;
@@ -119,9 +155,13 @@ export const POST = withAuth(async (_request, auth) => {
       },
       answered: false,
       demo: true,
+      scripted,
     },
     SPOT_TTL_SECONDS,
   );
 
-  return NextResponse.json({ spotId, spot: toClientSpot(spot), spotKind: choice.id });
+  // `scripted` tells the client it may show the written verdict and open the
+  // mini chat. It carries no strategy — the client still cannot tell what the
+  // right answer is until it has answered and the server has graded.
+  return NextResponse.json({ spotId, spot: toClientSpot(spot), spotKind: choice.id, scripted });
 });

@@ -1,6 +1,7 @@
 import { Link, Text } from "@react-email/components";
 import { CtaButton, EmailLayout, Heading, Paragraph, StatRow } from "./layout";
 import { email, link, SUPPORT_EMAIL, type } from "./theme";
+import { rateFromBb100, RATE_LABEL } from "@/lib/units";
 
 /**
  * The eight transactional emails.
@@ -51,7 +52,7 @@ export function WelcomeEmail({
             value={
               leakBb100 == null
                 ? leakLabel
-                : `${leakLabel} — costing ${leakBb100.toFixed(1)} bb/100`
+                : `${leakLabel} — costing ${rateFromBb100(leakBb100)} ${RATE_LABEL}`
             }
           />
           <Paragraph>That is what the first lesson is about.</Paragraph>

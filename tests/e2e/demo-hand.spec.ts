@@ -156,7 +156,80 @@ test.describe("the demo hand", () => {
     expect(b.spot.heroPos).toBe(a.spot.heroPos);
   });
 
-  test("THE CARRY-FORWARD — the paywall opens with the hand actually played", async ({ page }) => {
+  test("THE FIXED HAND — every tier is dealt T9o in the big blind vs a button open", async ({
+    page,
+  }) => {
+    /*
+     * The hand is fixed so the words under it can be WRITTEN rather than
+     * generated. If tier selection ever crept back in, the verdict copy would
+     * start describing a hand nobody was dealt — and it would still render,
+     * because nothing about a wrong explanation looks like an error.
+     */
+    for (const tier of ["never", "videos", "charts", "solver"]) {
+      const user = await makeQuizzedUser(tier);
+      // A signed-in visitor to /login is redirected straight back out, so the
+      // second iteration would wait forever on an email field that never
+      // renders. Each tier needs a clean session.
+      await page.context().clearCookies();
+      await login(page, user.email);
+
+      const dealt = (await (await page.request.post("/api/onboarding/hand")).json()) as {
+        spot: { heroPos: string; actionHistory: string[] };
+        scripted?: boolean;
+      };
+
+      expect(dealt.scripted, `${tier} was not served the scripted hand`).toBe(true);
+      expect(dealt.spot.heroPos, tier).toBe("BB");
+      expect(dealt.spot.actionHistory.join(" "), tier).toContain("BTN opens");
+    }
+  });
+
+  test("THE MINI CHAT answers in writing, and never leaks the strategy early", async ({ page }) => {
+    const user = await makeQuizzedUser();
+    await login(page, user.email);
+
+    await page.goto("/onboarding/hand");
+    await page.getByTestId("deal-me-in").click();
+    await page.locator("[data-action]").first().waitFor({ timeout: 30_000 });
+
+    /*
+     * BEFORE answering, the page must not contain the verdict for any action.
+     * The written table names which line the solver never takes, so shipping
+     * the whole table to the client would hand over the answer — the same leak
+     * the drill payload exists to prevent, reintroduced as copy.
+     */
+    const beforeAnswer = await page.content();
+    expect(beforeAnswer).not.toContain("Raising is the one thing this hand");
+    expect(beforeAnswer).not.toContain("four times out of five");
+
+    await page.locator("[data-action='fold']").click();
+    await expect(page.locator("[data-demo-coach]")).toBeVisible({ timeout: 30_000 });
+
+    // The verdict is the one for what they actually pressed.
+    await expect(page.locator("[data-verdict-headline]")).toContainText("Folding is fine");
+
+    // A written question, answered from the written table.
+    await page.locator("[data-chat-chip='why-not-always']").click();
+    const answer = page.locator("[data-chat-answer]").first();
+    await expect(answer).toBeVisible();
+    await expect(answer).toHaveAttribute("data-matched", "true");
+
+    // Anything off-topic falls back rather than inventing.
+    await page.locator("[data-chat-input]").fill("what stakes should I play?");
+    await page.getByRole("button", { name: "Ask" }).click();
+    const last = page.locator("[data-chat-answer]").last();
+    await expect(last).toHaveAttribute("data-matched", "false");
+
+    const texts = await page.locator("[data-chat-answer]").allInnerTexts();
+    console.log(`\n  DEMO CHAT:\n${texts.map((t) => `    - ${t}`).join("\n")}\n`);
+
+    // Rule 5 holds on the unpaid surface too.
+    for (const text of texts) expect(text).not.toMatch(/\$/);
+  });
+
+  test("THE RECORD — the hand played is persisted, and it is never a pure spot", async ({
+    page,
+  }) => {
     const user = await makeQuizzedUser();
     await login(page, user.email);
 
@@ -170,7 +243,6 @@ test.describe("the demo hand", () => {
       data: { spotId: dealt.spotId, action, timeMs: 5_000 },
     });
 
-    // What was stored is what the paywall's plan band must say.
     const { data: row } = await admin
       .from("profiles")
       .select("onboarding")
@@ -179,39 +251,23 @@ test.describe("the demo hand", () => {
 
     const stored = (row!.onboarding as { demoHand?: Record<string, unknown> }).demoHand;
     expect(stored, "the hand was never persisted").toBeDefined();
-
-    // No staged reveal to wait out any more — the band renders with the page.
-    await page.goto("/paywall");
-
-    const headline = await page.locator("[data-demo-headline]").innerText();
-    const detail = await page.locator("[data-demo-detail]").innerText();
-
-    // Specific about what they did — not a horoscope.
-    expect(headline).toContain(String(stored!.handKey));
-    expect(headline.toLowerCase()).toContain(pastTense(String(stored!.chosenAction)));
-
-    // And the numbers match the record exactly.
-    const percent = Math.round(Number(stored!.topFreq) * 100);
-    expect(detail).toContain(`${percent}%`);
-    if (Number(stored!.evLoss) > 0) {
-      expect(detail).toContain(`${Number(stored!.evLoss).toFixed(1)}bb`);
-    }
-
-    console.log(`\n  THE PAYWALL OPENS WITH:\n    ${headline}\n    ${detail}\n`);
+    expect(String(stored!.chosenAction)).toBe(action);
 
     /*
+     * The paywall no longer RENDERS this record — the "hand you just played"
+     * recap was removed from the plan band. The record itself still has to be
+     * right: it is what proves the graded hand happened, and it is one prop
+     * away from being shown again.
+     *
      * The demo must never be a PURE spot. A first version shipped saying "a
      * solver raises it 100% of the time", which demonstrates a right/wrong app
-     * — the thing this whole screen exists to disprove.
+     * — the thing the demo hand exists to disprove.
      */
     expect(Number(stored!.topFreq), "the demo served a pure spot").toBeLessThanOrEqual(0.8);
-    expect(detail, "the demo served a pure spot").not.toContain("100% of the time");
 
-    // And it reads as English.
-    expect(detail).not.toMatch(/that (folded|called|raised|checked|shoved) costs/);
-
-    // Rule 5, on the highest-traffic pre-purchase screen in the product.
-    expect(`${headline} ${detail}`).not.toMatch(/\$/);
+    console.log(
+      `\n  STORED: ${String(stored!.handKey)} · ${String(stored!.chosenAction)} · topFreq ${String(stored!.topFreq)}\n`,
+    );
   });
 
   test("the plan band still renders for someone who never played a hand", async ({ page }) => {
@@ -222,7 +278,6 @@ test.describe("the demo hand", () => {
 
     await page.goto("/paywall");
 
-    await expect(page.locator("[data-demo-hand]")).toHaveCount(0);
     // The questionnaire half is still there.
     await expect(page.locator("[data-plan-band]")).toBeVisible();
     await expect(page.locator("[data-plan-summary]")).toBeVisible();
@@ -237,22 +292,20 @@ test.describe("the demo hand", () => {
     await page.getByTestId("deal-me-in").click();
     await page.waitForSelector("[data-action]", { timeout: 30_000 });
     await page.locator("[data-action]").first().click();
-    await page.getByRole("button", { name: /See what this says/i }).waitFor({ timeout: 25_000 });
+    /*
+     * The real CTA, which is grade-dependent — `demoOutroCta()` returns "See my
+     * plan →" when they found the line and "See how to fix it →" when they did
+     * not. This waited on `DEMO_OUTRO_CTA`, a constant nothing had rendered
+     * since the diagnosis page was removed, so the test could only ever time
+     * out. `tests/unit/e2e-selectors.test.ts` did not catch it because it scans
+     * string names and this one was a regex.
+     */
+    await page
+      .getByRole("button", { name: /See my plan|See how to fix it/i })
+      .waitFor({ timeout: 25_000 });
     const elapsed = (Date.now() - startedAt) / 1000;
 
     console.log(`  demo hand added ${elapsed.toFixed(1)}s to the funnel (budget 45s)`);
     expect(elapsed, "the demo hand costs more than its 45s budget").toBeLessThan(45);
   });
 });
-
-function pastTense(action: string): string {
-  const map: Record<string, string> = {
-    fold: "folded",
-    call: "called",
-    raise: "raised",
-    check: "checked",
-    bet: "bet",
-    allin: "shoved",
-  };
-  return map[action] ?? action;
-}

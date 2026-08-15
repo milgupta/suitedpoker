@@ -1,6 +1,7 @@
 import type { SkillTier } from "@/lib/explain-policy";
 import type { GradeName } from "@/poker/grader";
 import type { HeroPosition } from "@/poker/solutions";
+import { evFromBb } from "@/lib/units";
 
 /**
  * The one hand played before the paywall.
@@ -320,7 +321,7 @@ export function demoHandDetail(record: DemoHandRecord): string {
     return `A solver ${bestVerb} it ${percent}% of the time. You found it, and you'll face this exact spot ${howOften}.`;
   }
 
-  return `A solver ${bestVerb} it ${percent}% of the time. That ${nounOf(record.chosenAction)} costs about ${record.evLoss.toFixed(1)}bb every time it happens, and you'll face this exact spot ${howOften}.`;
+  return `A solver ${bestVerb} it ${percent}% of the time. That ${nounOf(record.chosenAction)} costs about ${evFromBb(record.evLoss)} every time it happens, and you'll face this exact spot ${howOften}.`;
 }
 
 function nodeSeqOf(nodeRef: string): string {
@@ -374,9 +375,6 @@ export const DEMO_INTRO = {
   cta: "Deal me in",
   skip: "Skip this",
 } as const;
-
-/** The single way out, after the hand. */
-export const DEMO_OUTRO_CTA = "See what this says about your game";
 
 /**
  * The CTA under the graded demo hand, which now leads straight to the paywall.

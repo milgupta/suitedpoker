@@ -13,6 +13,7 @@ import { landingShowcase } from "@/lib/landing-showcase-server";
 import { provenanceHeadline } from "@/lib/methodology";
 import { methodologyFacts } from "@/lib/methodology-server";
 import { PLANS } from "@/lib/stripe/plans";
+import { amountFromBb } from "@/lib/units";
 
 /**
  * THE LANDING PAGE.
@@ -260,7 +261,7 @@ export default function Home() {
               </div>
 
               <dl className="border-border grid grid-cols-3 gap-px overflow-hidden rounded-lg border">
-                <Fact label="Game" value={`6-max, ${facts.effStackBb}bb`} />
+                <Fact label="Game" value={`6-max, ${amountFromBb(facts.effStackBb)}`} />
                 <Fact label="Preflop spots" value={String(facts.preflopNodes)} />
                 <Fact label="Postflop templates" value={String(facts.postflopTemplates)} />
               </dl>

@@ -6,6 +6,7 @@ import { contentViolation } from "@/lib/ai/redact";
 import { cacheGet, cacheSet } from "@/lib/redis";
 import type { Leak } from "@/poker/grader";
 import { describeLeak, type GradedDecision, type SessionStats } from "@/lib/sim-review";
+import { evFromBb, rateFromBb100, RATE_LABEL } from "@/lib/units";
 
 /**
  * The AI session summary: ONE model call for the whole session, whatever the
@@ -37,7 +38,7 @@ export function buildSummaryPrompt(
       .slice(0, 5)
       .map(
         (d) =>
-          `Hand ${d.handNumber}: chose ${d.chosenAction}, graded ${d.grade}, gave up ${d.evLoss.toFixed(2)}bb.`,
+          `Hand ${d.handNumber}: chose ${d.chosenAction}, graded ${d.grade}, gave up ${evFromBb(d.evLoss)}.`,
       ),
     ``,
     `DETECTED LEAKS`,
@@ -66,10 +67,10 @@ export function templateSummary(
 
   const worstOne = worst[0];
   if (worstOne !== undefined) {
-    return `Over ${stats.hands} hands you ran at ${stats.bb100}bb/100 with a VPIP of ${stats.vpip}%. Your most expensive moment was hand ${worstOne.handNumber}, where ${worstOne.chosenAction} gave up ${worstOne.evLoss.toFixed(2)}bb — open that replay and walk through it once. One reviewed mistake is worth more than ten new hands.`;
+    return `Over ${stats.hands} hands you ran at ${rateFromBb100(stats.bb100)} ${RATE_LABEL} with a VPIP of ${stats.vpip}%. Your most expensive moment was hand ${worstOne.handNumber}, where ${worstOne.chosenAction} gave up ${evFromBb(worstOne.evLoss)} — open that replay and walk through it once. One reviewed mistake is worth more than ten new hands.`;
   }
 
-  return `Over ${stats.hands} hands you ran at ${stats.bb100}bb/100 with a VPIP of ${stats.vpip}% and a PFR of ${stats.pfr}%. No decision crossed the grading threshold — keep the sample growing and the numbers will start pointing somewhere.`;
+  return `Over ${stats.hands} hands you ran at ${rateFromBb100(stats.bb100)} ${RATE_LABEL} with a VPIP of ${stats.vpip}% and a PFR of ${stats.pfr}%. No decision crossed the grading threshold — keep the sample growing and the numbers will start pointing somewhere.`;
 }
 
 export async function generateSessionSummary(

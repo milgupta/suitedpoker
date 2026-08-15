@@ -37,7 +37,7 @@ export {
   HeroDock,
   OpponentStrip,
   clampSize,
-  formatBb,
+  formatAmount,
   sizePresets,
   SIZE_STEP_BB,
   type ActionDockProps,

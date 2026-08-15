@@ -35,7 +35,7 @@ export const FEATURE_ROWS: readonly FeatureRow[] = [
   {
     tag: "Grading",
     title: "See the whole strategy, not a tick",
-    body: "Answer a spot and the full mix opens up: how often the chart takes each action, and what yours costs in big blinds against the best one. A reasonable line is never marked wrong.",
+    body: "Answer a spot and the full mix opens up: how often the chart takes each action, and what yours costs in chips against the best one. A reasonable line is never marked wrong.",
     points: [
       "Width is how often, colour is what it costs",
       "Graded on expected value lost, not right or wrong",
@@ -78,7 +78,7 @@ export const FEATURE_ROWS: readonly FeatureRow[] = [
     points: [
       "Practice weighted toward your worst spots",
       "Five hands a day, about three minutes",
-      "Accuracy and bb/100 — never a dollar figure",
+      "Accuracy and chips per 100 hands — never a dollar figure",
     ],
     shot: "dashboard",
     route: "suitedpoker.com/practice",

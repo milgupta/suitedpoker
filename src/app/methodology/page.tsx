@@ -3,6 +3,7 @@ import Link from "next/link";
 import { methodologyFacts } from "@/lib/methodology-server";
 import { isFullySolverVerified, METHODOLOGY_SECTIONS, provenanceHeadline } from "@/lib/methodology";
 import { ComplianceFooter } from "@/components/ComplianceFooter";
+import { amountFromBb } from "@/lib/units";
 
 export const metadata: Metadata = {
   // Short, because the root template prefixes "Suited Poker — " to it. The
@@ -31,7 +32,7 @@ export default function MethodologyPage() {
 
       <dl className="border-border mt-10 grid grid-cols-2 gap-px overflow-hidden rounded-lg border sm:grid-cols-4">
         <Fact label="Game" value={`${facts.game}, ${facts.tableSize}-max`} />
-        <Fact label="Stack depth" value={`${facts.effStackBb}bb`} />
+        <Fact label="Stack depth" value={amountFromBb(facts.effStackBb)} />
         <Fact label="Preflop spots" value={String(facts.preflopNodes)} />
         <Fact label="Postflop templates" value={String(facts.postflopTemplates)} />
       </dl>

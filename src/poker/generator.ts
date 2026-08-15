@@ -272,14 +272,30 @@ function seatsFor(
   });
 }
 
-function actionHistoryFor(node: PreflopNode): string[] {
+/**
+ * Sizings in CHIPS, the engine's own unit at 2 per big blind.
+ *
+ * These were "2.5bb", "11bb" and "22bb". Written as chips they are 5, 22 and
+ * 44 — the identical sizings, with no decimal to round and no unit a beginner
+ * has to be taught before they can read the line. See `src/lib/units.ts` for
+ * why the whole product moved off big blinds.
+ */
+const OPEN_CHIPS = 5;
+const THREE_BET_CHIPS = 22;
+const FOUR_BET_CHIPS = 44;
+
+export function actionHistoryFor(node: PreflopNode): string[] {
   if (node.actionSeq === "rfi") return ["folded to hero"];
   const opponent = node.actionSeq.split("_").pop() ?? "";
-  if (node.actionSeq.startsWith("vs_rfi_")) return [`${opponent} opens 2.5bb`];
+  if (node.actionSeq.startsWith("vs_rfi_")) return [`${opponent} opens ${OPEN_CHIPS}`];
   if (node.actionSeq.startsWith("vs_3bet_")) {
-    return [`${node.heroPos} opens 2.5bb`, `${opponent} 3bets to 11bb`];
+    return [`${node.heroPos} opens ${OPEN_CHIPS}`, `${opponent} 3bets to ${THREE_BET_CHIPS}`];
   }
-  return [`${opponent} opens 2.5bb`, `${node.heroPos} 3bets to 11bb`, `${opponent} 4bets to 22bb`];
+  return [
+    `${opponent} opens ${OPEN_CHIPS}`,
+    `${node.heroPos} 3bets to ${THREE_BET_CHIPS}`,
+    `${opponent} 4bets to ${FOUR_BET_CHIPS}`,
+  ];
 }
 
 export interface SolutionData {

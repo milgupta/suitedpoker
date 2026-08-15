@@ -885,9 +885,28 @@ if you add one.
   routes, so PostHog's automatic pageview fires once and never again.
 - **`purchase_completed` must be captured SERVER-side** with the user's id.
   Attributed to an anonymous id, revenue-by-source is silently wrong.
-- ⚠️ **`NEXT_PUBLIC_POSTHOG_KEY` is empty**, so the client never initialises and
-  the six event-stream e2e tests skip. Add the key and run
-  `npx playwright test tests/e2e/analytics.spec.ts` to verify the real stream.
+- ✅ **RESOLVED — the key is set and the stream is live.** This read
+  "`NEXT_PUBLIC_POSTHOG_KEY` is empty, so the client never initialises". It
+  points at the **Suited Poker** project (`546559`, token `phc_wbkyGSzV…`) and
+  **26 of 26 event types have received data** — verified 2026-08-13 against the
+  PostHog API. The whole ads funnel fires: `$pageview` → `onboarding_started` →
+  `onboarding_question_answered` → `signup_*` → `$identify` → `demo_hand_*` →
+  `paywall_viewed` → `checkout_started` → `purchase_completed`.
+- **There are THREE projects on the account** — `Default project`, `Hootly` and
+  `Suited Poker`. `Default project` belongs to a different app (a stretching
+  product) and is full of its events. Anything querying the API must name the
+  project id; taking `results[0]` reads the wrong one and reports a healthy
+  funnel as completely dead.
+- ⚠️ **Only `demo_hand_question_asked` and `checkout_abandoned` have never
+  fired.** The first is new (the scripted demo coach); the second needs someone
+  to press back on Stripe's own page. Neither is a fault.
+- 🔴 **POSTHOG IS NOT ENVIRONMENT-GATED, unlike Meta.** `initAnalytics()` checks
+  only that the key is non-empty, so **every local dev page load, e2e run and
+  `npm run screenshots` writes into the same project the ad funnel is measured
+  from** — the exact contamination `metaDelivery()` exists to prevent for the
+  pixel (see the Meta environment-gate section). It has not cost anything yet
+  because there is no ad traffic to dilute; it will the day there is. The fix is
+  the same shape: gate on `VERCEL_ENV`, fail closed.
 - Insight configurations are in `docs/POSTHOG-INSIGHTS.md`.
 
 **What 3.2 left you.**

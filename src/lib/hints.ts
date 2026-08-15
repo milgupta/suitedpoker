@@ -1,4 +1,5 @@
 import type { HandClass } from "@/poker/handclass";
+import { amountFromBb } from "@/lib/units";
 
 /**
  * The hint system's rules and its deterministic fallback.
@@ -144,7 +145,7 @@ export function templateHintLevel1(spot: HintSpotView): string {
   }
 
   if (spot.effStackBb < 40) {
-    return `Stacks are ${spot.effStackBb.toFixed(0)}bb against a ${spot.potBb.toFixed(1)}bb pot. Think about how many more decisions are left in this hand.`;
+    return `Stacks are ${amountFromBb(spot.effStackBb)} against a pot of ${amountFromBb(spot.potBb)}. Think about how many more decisions are left in this hand.`;
   }
 
   if (spot.street === "river") {

@@ -6,6 +6,7 @@ import type { SeatView } from "@/poker/generator";
 import type { HeroPosition } from "@/poker/solutions";
 import { handStrength } from "@/poker/hand-strength";
 import { actionLabel } from "@/lib/action-label";
+import { amountFromBb } from "@/lib/units";
 import {
   formatActionHistory,
   missingActionTip,
@@ -160,7 +161,7 @@ export function DrillSurface({
             {/* The ring's role="img" summary, kept as prose for screen readers
                 now that the seats themselves are readable text. */}
             <p className="sr-only" data-surface-summary>
-              {`Six-handed table. You are in ${spot.heroPos}. ${situation} Pot ${spot.potBb.toFixed(1)} big blinds, ${spot.effStackBb.toFixed(0)} big blinds effective.`}
+              {`Six-handed table. You are in ${spot.heroPos}. ${situation} Pot ${amountFromBb(spot.potBb)} chips, ${amountFromBb(spot.effStackBb)} chips effective.`}
             </p>
             <OpponentStrip seats={opponents} />
           </div>

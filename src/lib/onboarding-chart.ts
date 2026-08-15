@@ -35,13 +35,14 @@ export interface ChartSeries {
  * than rotated beside it — a rotated label costs 20px of width on a 390px
  * screen and is the first thing to become unreadable.
  *
- * `right` is sized to the LONGEST end label. It was 78 against "same as day
- * one", which did not fit: the word "one" was clipped by the card edge on a
- * shipped screen. The labels are short now and the padding still leads them.
+ * `right` is sized to the LONGEST end label plus the 9px offset the SVG
+ * draws it at. "No change" at 12px is ~64px; 62 left the final "e" clipped
+ * by the viewBox (and the card's overflow-hidden). 80 covers the string,
+ * the offset, and a few pixels of gutter.
  */
 export const CHART_PAD = {
   top: 30,
-  right: 62,
+  right: 80,
   bottom: 26,
   left: 4,
 } as const;
@@ -77,8 +78,8 @@ export const CHART_SERIES: readonly ChartSeries[] = [
 /** Three x-axis ticks. Sessions, never weeks-to-profit. */
 export const CHART_X_LABELS: readonly { readonly atIndex: number; readonly label: string }[] = [
   { atIndex: 0, label: "Session 1" },
-  { atIndex: 3, label: "Session 4" },
-  { atIndex: 7, label: "Session 8" },
+  { atIndex: 3, label: "Session 50" },
+  { atIndex: 7, label: "Session 100" },
 ];
 
 export const CHART_HEADING = "Two players, same starting point.";

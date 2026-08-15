@@ -63,7 +63,7 @@ describe("formatStat", () => {
   it("applies the entry's decimals and unit", () => {
     const ev = getGlossaryEntry("ev-loss");
     if (ev === undefined) throw new Error("missing entry");
-    expect(formatStat(ev, 2.44)).toBe("2.4 bb/100");
+    expect(formatStat(ev, 2.44)).toBe("2.4 chips/100");
 
     const vpip = getGlossaryEntry("vpip");
     if (vpip === undefined) throw new Error("missing entry");

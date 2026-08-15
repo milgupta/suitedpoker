@@ -78,11 +78,11 @@ export const GLOSSARY: readonly GlossaryEntry[] = [
   {
     id: "ev-loss",
     name: "EV lost",
-    unit: " bb/100",
+    unit: " chips/100",
     decimals: 1,
-    what: "How much value your decisions gave up, measured in big blinds per hundred hands. Zero means you played the spot as well as it can be played.",
+    what: "How much value your decisions gave up, measured in chips per hundred hands. Zero means you played the spot as well as it can be played.",
     improve:
-      "Aim to keep this under 3 bb/100. The fastest gain is usually the single spot type you lose most in — the review screen ranks them for you.",
+      "Aim to keep this under 6 chips/100. The fastest gain is usually the single spot type you lose most in — the review screen ranks them for you.",
     bands: [
       { upTo: 3, word: "Tight lines" },
       { upTo: 8, word: "Leaking" },

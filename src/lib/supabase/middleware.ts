@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isEntitled } from "@/lib/entitlement-rule";
+import { authOnlyRedirect } from "@/lib/auth-only-redirect";
 import {
   ATTRIBUTION_COOKIE,
   ATTRIBUTION_COOKIE_OPTIONS,
@@ -203,8 +204,28 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
 
   if (user !== null && isMatch(pathname, AUTH_ONLY_PREFIXES)) {
     const redirect = request.nextUrl.clone();
-    redirect.pathname = "/practice";
     redirect.search = "";
+
+    // Paid-ness for this hop ignores the entitlement bypass: a local /start
+    // test with DEV_BYPASS_ENTITLEMENT=true must still reach the demo hand.
+    let paid = false;
+    if (pathname === "/signup" || pathname.startsWith("/signup/")) {
+      const { data } = await supabase
+        .from("subscriptions")
+        .select("status, current_period_end, past_due_since")
+        .eq("user_id", user.id)
+        .order("current_period_end", { ascending: false })
+        .limit(5);
+      paid = (data ?? []).some((row) =>
+        isEntitled({
+          status: row.status as string | null,
+          currentPeriodEnd: row.current_period_end as string | null,
+          pastDueSince: row.past_due_since as string | null,
+        }),
+      );
+    }
+
+    redirect.pathname = authOnlyRedirect(pathname, paid);
     return applyAttribution(NextResponse.redirect(redirect));
   }
 

@@ -48,12 +48,23 @@ export async function commitStartAnswers(): Promise<CommitStartResult> {
   if (Object.keys(answers).length === 0) return "none";
   if (!answersAreComplete(answers)) return "incomplete";
 
-  try {
-    const response = await fetch("/api/onboarding", {
+  const post = () =>
+    fetch("/api/onboarding", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ answers, complete: true }),
     });
+
+  try {
+    let response = await post();
+
+    // Signup writes the session cookie and navigates in the same tick. The
+    // first POST can beat the cookie and 401; one retry is cheaper than
+    // dumping a finished quiz back on question one.
+    if (response.status === 401) {
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      response = await post();
+    }
 
     if (!response.ok) return "failed";
 

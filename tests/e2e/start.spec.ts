@@ -123,7 +123,10 @@ test.describe("start funnel (commit)", () => {
     await page.getByRole("button", { name: "Log in" }).click();
     await expect(page).toHaveURL(/\/(onboarding|paywall|practice)/, { timeout: 30_000 });
 
-    await page.goto("/onboarding/continue");
+    // The session now exists on a page that is not the continue bridge —
+    // the same state as "I just created an account and /signup refreshed".
+    // Middleware must send unpaid /signup here, not to /practice.
+    await page.goto("/signup");
     await expect(page).toHaveURL(/\/onboarding\/hand/, { timeout: 30_000 });
 
     const { data: profile } = await admin

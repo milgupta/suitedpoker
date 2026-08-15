@@ -12,6 +12,8 @@ import { capsuleSegments } from "@/lib/action-grid";
 import { capture } from "@/lib/analytics-client";
 import { fadeUp } from "@/lib/motion";
 import { DEMO_INTRO, demoOutroCta } from "@/lib/demo-hand";
+import type { DemoVerdict } from "@/lib/demo-script";
+import { DemoCoach } from "@/components/onboarding/DemoCoach";
 
 /**
  * The one hand, played before the wall.
@@ -37,6 +39,8 @@ export function HandClient() {
   const [spot, setSpot] = useState<ClientSpot | null>(null);
   const [result, setResult] = useState<Grade | null>(null);
   const [answeredAction, setAnsweredAction] = useState<string | null>(null);
+  const [scripted, setScripted] = useState(false);
+  const [verdict, setVerdict] = useState<DemoVerdict | null>(null);
   const [error, setError] = useState("");
 
   const startedAt = useRef(0);
@@ -66,9 +70,14 @@ export function HandClient() {
         return;
       }
 
-      const data = (await response.json()) as { spotId: string; spot: ClientSpot };
+      const data = (await response.json()) as {
+        spotId: string;
+        spot: ClientSpot;
+        scripted?: boolean;
+      };
       setSpotId(data.spotId);
       setSpot(data.spot);
+      setScripted(data.scripted === true);
       setPhase("playing");
       startedAt.current = performance.now();
       capture("demo_hand_shown", {});
@@ -99,8 +108,11 @@ export function HandClient() {
           return;
         }
 
-        const graded = (await response.json()) as Grade;
+        const graded = (await response.json()) as Grade & {
+          verdict?: DemoVerdict | null;
+        };
         setResult(graded);
+        setVerdict(graded.verdict ?? null);
         setAnsweredAction(action);
         setPhase("answered");
 
@@ -217,7 +229,17 @@ export function HandClient() {
               onNext={finish}
               nextLabel={demoOutroCta(result.grade)}
               explanation={
-                spotId === null ? undefined : (
+                /*
+                 * The FIXED hand gets written words and a written Q&A; anything
+                 * the fallback served gets the real streamed explanation.
+                 *
+                 * Not both. Two explanations of one decision, one hand-written
+                 * and one generated, is the screen disagreeing with itself in
+                 * front of somebody deciding whether to pay.
+                 */
+                scripted && verdict !== null ? (
+                  <DemoCoach verdict={verdict} action={answeredAction ?? ""} />
+                ) : spotId === null ? undefined : (
                   <Explanation
                     key={spotId}
                     spotId={spotId}

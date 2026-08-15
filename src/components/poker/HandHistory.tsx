@@ -3,6 +3,7 @@
 import { cardsFromString, rankCharOf, suitCharOf, type Card, type Suit } from "@/poker/cards";
 import type { HandHistory as HandHistoryData, Street } from "@/poker/gamestate";
 import { cn } from "@/lib/utils";
+import { amountFromChips } from "@/lib/units";
 
 export interface HandHistoryProps {
   hand: HandHistoryData;
@@ -60,7 +61,6 @@ interface Line {
  */
 export function historyLines(hand: HandHistoryData, heroSeat: number): Line[] {
   const lines: Line[] = [];
-  const bb = hand.bigBlind;
   const name = (seat: number): string =>
     seat === heroSeat ? "Hero" : (hand.positions[seat] ?? `Seat ${seat}`);
 
@@ -68,7 +68,9 @@ export function historyLines(hand: HandHistoryData, heroSeat: number): Line[] {
     if (event.kind !== "action") continue;
 
     const who = name(event.seat);
-    const amountBb = (event.amount / bb).toFixed(event.amount % bb === 0 ? 0 : 1);
+    // `event.amount` is already the engine's chip count — the amount IS the
+    // display unit now, so there is no conversion left to do here.
+    const amount = amountFromChips(event.amount);
 
     const text =
       event.action === "fold"
@@ -76,10 +78,10 @@ export function historyLines(hand: HandHistoryData, heroSeat: number): Line[] {
         : event.action === "check"
           ? `${who} checks.`
           : event.action === "call"
-            ? `${who} calls ${amountBb}bb.`
+            ? `${who} calls ${amount}.`
             : event.action === "bet"
-              ? `${who} bets ${amountBb}bb.`
-              : `${who} raises to ${amountBb}bb.`;
+              ? `${who} bets ${amount}.`
+              : `${who} raises to ${amount}.`;
 
     lines.push({ street: event.street, text, isHero: event.seat === heroSeat });
   }
@@ -95,8 +97,8 @@ export function historyLines(hand: HandHistoryData, heroSeat: number): Line[] {
  * the small blind's post when they call, overstating every preflop pot by half
  * a blind. So this tracks per-seat commitment and adds only the delta.
  */
+/** Returns CHIPS — the engine's own unit, which is also what is displayed. */
 export function potByStreet(hand: HandHistoryData): Record<Street, number> {
-  const bb = hand.bigBlind;
   const pots: Record<Street, number> = {
     preflop: 0,
     flop: 0,
@@ -118,13 +120,13 @@ export function potByStreet(hand: HandHistoryData): Record<Street, number> {
       running += delta;
       committed.set(event.seat, already + delta);
     } else if (event.kind === "street") {
-      pots[event.street] = running / bb;
+      pots[event.street] = running;
       // Commitments reset each street; the chips are already in the pot.
       committed = new Map();
     }
   }
 
-  pots.showdown = running / bb;
+  pots.showdown = running;
   return pots;
 }
 
@@ -178,7 +180,7 @@ export function HandHistory({ hand, heroSeat, trailOff = false, className }: Han
         return (
           <div key={street}>
             <p className="text-text-tertiary font-mono tabular-nums">
-              {STREET_LABEL[street]} ({pots[street].toFixed(1)}bb)
+              {STREET_LABEL[street]} ({amountFromChips(pots[street])})
               <BoardCards cards={cards} />
             </p>
             {streetLines.map((line, i) => (

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ProofMarquee } from "@/components/ProofMarquee";
 import { PROOF_MODE } from "@/content/testimonials";
 import { capture, isAnalyticsConfigured } from "@/lib/analytics-client";
-import { demoHandDetail, demoHandHeadline, type DemoHandRecord } from "@/lib/demo-hand";
+import type { DemoHandRecord } from "@/lib/demo-hand";
 import type { Diagnosis } from "@/lib/diagnosis";
 import {
   formatUsd,
@@ -25,10 +25,13 @@ import { cn } from "@/lib/utils";
 /**
  * The paywall.
  *
- * Two columns above `lg`, one below, and the PURCHASE COLUMN COMES FIRST IN THE
- * DOM. That is not a detail: most arrivals are on a phone, and the e2e asserts
- * the CTA sits above 844px at 390px wide. Grid placement moves the showcase to
- * the left on a wide screen without moving it up on a narrow one.
+ * ONE COLUMN, capped and centred. It was a two-column grid with a product
+ * screenshot on the left; the shot came out, and a lone purchase column left
+ * in a 60rem grid reads as a form with something missing beside it.
+ *
+ * The CTA still has an e2e asserting it sits above 844px at 390px wide — that
+ * was the reason the purchase column came first in the DOM, and it is the
+ * reason nothing may be added above the plan cards without re-running it.
  *
  * Decisions worth keeping from the first version:
  *
@@ -80,16 +83,16 @@ export interface PaywallClientProps {
  */
 const HIGHLIGHTS = ["Unlimited drills", "AI coach", "Full curriculum"];
 
-// `leakBb100` and `leakLabel` are still supplied by the page and still on the
-// props above, but nothing reads them since the headline became the subscriber
-// stat. Left plumbed rather than ripped out: the profile lookup that feeds them
-// is 7.3's work, and the leak framing is one line away if the headline changes
-// back. Not destructured, so the unused-variable lint stays quiet.
+// `leakBb100`, `leakLabel` and `demoHand` are still supplied by the page and
+// still on the props above, but nothing reads them: the headline became the
+// subscriber stat, and the graded-hand recap was removed from the plan band.
+// Left plumbed rather than ripped out — the profile lookup that feeds them is
+// already paid for, and each is one line away if the copy changes back. Not
+// destructured, so the unused-variable lint stays quiet.
 //
-// The plan band sits ABOVE the plan cards rather than beside them: on a phone a
-// second column lands under the CTA, and there is an e2e asserting the CTA
+// The plan band sits ABOVE the plan cards, and the CTA has an e2e asserting it
 // clears 844px at 390px wide.
-export function PaywallClient({ plan = null, demoHand = null }: PaywallClientProps) {
+export function PaywallClient({ plan = null }: PaywallClientProps) {
   const params = useSearchParams();
   const cancelled = params.get("cancelled") === "1";
 
@@ -212,119 +215,117 @@ export function PaywallClient({ plan = null, demoHand = null }: PaywallClientPro
        * any of them knowing they are on white. See globals.css.
        */}
       <div className="panel-light rounded-xl p-6 sm:p-10">
-        {/* One centred column, not a two-up with a screenshot beside it.
-            The showcase crop read as a fragment of a screen on a phone — a
-            portrait capture forced into a 3:5 box, cutting the hero's cards in
-            half — and on the one page where the reader is deciding whether to
-            pay, an image of a partial UI argues against the product. There is
-            nothing to replace it with: the proof band below already carries
-            what the product does, in words that cannot crop. */}
-        <div className="mx-auto flex w-full max-w-xl flex-col gap-12">
-          {plan !== null && <PlanBand plan={plan} demoHand={demoHand} />}
-
-          <section className="flex flex-col gap-6">
-            <header className="flex flex-col gap-3">
-              {/*
-               * A PERFORMANCE CLAIM ABOUT CUSTOMERS. It needs substantiation on
-               * file, not just in the copy.
-               *
-               * The FTC requires the evidence for a claim like this to exist in
-               * documented form BEFORE it runs, and a payment page is where it
-               * is least defensible without one (FTC Act §5; 16 CFR Part 465 is
-               * the neighbouring rule this codebase already honours in
-               * `src/content/testimonials.ts`, which refuses any entry with no
-               * `source`). Milan has confirmed the figure is substantiated.
-               *
-               * WHOEVER CHANGES THIS NUMBER: record where it came from — the
-               * cohort, the window, and the measure of "improved" — in the same
-               * place the source for a testimonial would go. A percentage that
-               * nobody can trace back is the one that costs the ad account.
-               */}
-              <h1 className="text-display-lg text-balance">
-                {/* --accent-bright, which `.panel-light` re-points to
+        {/* One column since the product shot came out. Capped and centred rather
+          than left full-width: the plan cards and the CTA are the only things
+          left in here, and a 60rem-wide radio row reads as an unfinished form. */}
+        <div className="mx-auto flex w-full max-w-[34rem] flex-col gap-12">
+          {/* ── The purchase column ────────────────────────────────────────── */}
+          <div className="flex flex-col gap-6">
+            {plan !== null && <PlanBand plan={plan} />}
+            <section className="flex flex-col gap-6">
+              <header className="flex flex-col gap-3">
+                {/*
+                 * A PERFORMANCE CLAIM ABOUT CUSTOMERS. It needs substantiation on
+                 * file, not just in the copy.
+                 *
+                 * The FTC requires the evidence for a claim like this to exist in
+                 * documented form BEFORE it runs, and a payment page is where it
+                 * is least defensible without one (FTC Act §5; 16 CFR Part 465 is
+                 * the neighbouring rule this codebase already honours in
+                 * `src/content/testimonials.ts`, which refuses any entry with no
+                 * `source`). Milan has confirmed the figure is substantiated.
+                 *
+                 * WHOEVER CHANGES THIS NUMBER: record where it came from — the
+                 * cohort, the window, and the measure of "improved" — in the same
+                 * place the source for a testimonial would go. A percentage that
+                 * nobody can trace back is the one that costs the ad account.
+                 */}
+                <h1 className="text-display-lg text-balance">
+                  {/* --accent-bright, which `.panel-light` re-points to
                     --accent-700 so it stays legible on white. */}
-                <span className="text-accent-bright">92%</span> of Suited Poker subscribers improved
-                their game
-              </h1>
+                  <span className="text-accent-bright">92%</span> of Suited Poker subscribers
+                  improved their game
+                </h1>
 
-              <p className="text-text-secondary text-body-lg max-w-[42ch]">
-                Join the best poker trainer available.
-              </p>
-
-              {cancelled && (
-                <p role="status" className="text-text-tertiary text-body-sm">
-                  No charge was made. Your place is still here when you want it.
+                <p className="text-text-secondary text-body-lg max-w-[42ch]">
+                  Join the best poker trainer available.
                 </p>
-              )}
-            </header>
 
-            <fieldset className="flex flex-col gap-3">
-              <legend className="sr-only">Choose a plan</legend>
-              {CARD_ORDER.map((id) => (
-                <PlanCard
-                  key={id}
-                  plan={id}
-                  selected={selected === id}
-                  onSelect={() => setSelected(id)}
-                />
-              ))}
-            </fieldset>
+                {cancelled && (
+                  <p role="status" className="text-text-tertiary text-body-sm">
+                    No charge was made. Your place is still here when you want it.
+                  </p>
+                )}
+              </header>
 
-            {/* Between the plans and the button, where the reference puts them:
+              <fieldset className="flex flex-col gap-3">
+                <legend className="sr-only">Choose a plan</legend>
+                {CARD_ORDER.map((id) => (
+                  <PlanCard
+                    key={id}
+                    plan={id}
+                    selected={selected === id}
+                    onSelect={() => setSelected(id)}
+                  />
+                ))}
+              </fieldset>
+
+              {/* Between the plans and the button, where the reference puts them:
               the last thing read before the price is what the price is for.
               Accent, never the grade green — blue is interface, green-to-red is
               grading, and the two never borrow each other's range. */}
-            <ul className="text-text-secondary text-body-sm flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
-              {HIGHLIGHTS.map((highlight) => (
-                <li key={highlight} className="flex items-center gap-1.5">
-                  <span aria-hidden className="text-accent-bright">
-                    ✓
-                  </span>
-                  {highlight}
-                </li>
-              ))}
-            </ul>
+              <ul className="text-text-secondary text-body-sm flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+                {HIGHLIGHTS.map((highlight) => (
+                  <li key={highlight} className="flex items-center gap-1.5">
+                    <span aria-hidden className="text-accent-bright">
+                      ✓
+                    </span>
+                    {highlight}
+                  </li>
+                ))}
+              </ul>
 
-            {error !== "" && (
-              <p
-                role="alert"
-                className="border-danger-border bg-danger-fill text-danger-bright text-body-md rounded-md border px-3 py-2"
-              >
-                {error}
-              </p>
-            )}
+              {error !== "" && (
+                <p
+                  role="alert"
+                  className="border-danger-border bg-danger-fill text-danger-bright text-body-md rounded-md border px-3 py-2"
+                >
+                  {error}
+                </p>
+              )}
 
-            <div className="flex flex-col gap-3">
-              <Button
-                variant="accent"
-                size="lg"
-                className="w-full"
-                loading={busy}
-                onClick={() => void startCheckout()}
-              >
-                Start training
-              </Button>
-              <p className="text-text-tertiary text-caption text-center">
-                Cancel any time. {PLANS[selected].label.toLowerCase()} billing,{" "}
-                {formatUsd(PLANS[selected].amountCents)} {PLANS[selected].intervalLabel}.
-              </p>
-            </div>
+              <div className="flex flex-col gap-3">
+                <Button
+                  variant="accent"
+                  size="lg"
+                  className="w-full"
+                  loading={busy}
+                  onClick={() => void startCheckout()}
+                >
+                  Start training
+                </Button>
+                <p className="text-text-tertiary text-caption text-center">
+                  Cancel any time. {PLANS[selected].label.toLowerCase()} billing,{" "}
+                  {formatUsd(PLANS[selected].amountCents)} {PLANS[selected].intervalLabel}.
+                </p>
+              </div>
 
-            <footer className="text-text-tertiary text-caption flex flex-wrap justify-center gap-x-4 gap-y-2">
-              <Link
-                href="/terms"
-                className="hover:text-text-secondary underline underline-offset-4"
-              >
-                Terms
-              </Link>
-              <Link
-                href="/privacy"
-                className="hover:text-text-secondary underline underline-offset-4"
-              >
-                Privacy
-              </Link>
-            </footer>
-          </section>
+              <footer className="text-text-tertiary text-caption flex flex-wrap justify-center gap-x-4 gap-y-2">
+                <Link
+                  href="/terms"
+                  className="hover:text-text-secondary underline underline-offset-4"
+                >
+                  Terms
+                </Link>
+                <Link
+                  href="/privacy"
+                  className="hover:text-text-secondary underline underline-offset-4"
+                >
+                  Privacy
+                </Link>
+              </footer>
+            </section>
+          </div>
         </div>
       </div>
 
@@ -377,7 +378,7 @@ const CARD_ORDER: readonly PlanId[] = [...PLAN_IDS].sort((a) => (a === "annual" 
  *
  * No dollar figure, per rule 5: `diagnosis.cost` is deliberately not read here.
  */
-function PlanBand({ plan, demoHand }: { plan: Diagnosis; demoHand: DemoHandRecord | null }) {
+function PlanBand({ plan }: { plan: Diagnosis }) {
   const [firstFix, ...rest] = plan.fixFirst;
 
   return (
@@ -385,23 +386,6 @@ function PlanBand({ plan, demoHand }: { plan: Diagnosis; demoHand: DemoHandRecor
       className="border-border bg-surface-1 flex flex-col gap-3 rounded-lg border p-5"
       data-plan-band
     >
-      {/* THE HAND COMES FIRST when one exists — evidence from something the
-          reader did ninety seconds ago beats anything derived from a
-          questionnaire. It is also the only thing on this page that is not a
-          claim: they made the decision, and the percentage is the solution
-          they were graded against. */}
-      {demoHand !== null && (
-        <div className="flex flex-col gap-1" data-demo-hand>
-          <h2 className="text-overline text-text-tertiary uppercase">The hand you just played</h2>
-          <p className="text-heading-md" data-demo-headline>
-            {demoHandHeadline(demoHand)}
-          </p>
-          <p className="text-text-secondary text-body-sm" data-demo-detail>
-            {demoHandDetail(demoHand)}
-          </p>
-        </div>
-      )}
-
       <h2 className="text-overline text-accent-bright uppercase">Your plan</h2>
 
       {firstFix !== undefined && (

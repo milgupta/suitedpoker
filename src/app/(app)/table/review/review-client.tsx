@@ -13,6 +13,7 @@ import { actionLabel, actionPhrase } from "@/lib/action-label";
 import { evColor } from "@/lib/ev-color";
 import type { GradedDecision, ReplayStep, SessionStats } from "@/lib/sim-review";
 import type { GradeName } from "@/poker/grader";
+import { amountFromBb, RATE_LABEL } from "@/lib/units";
 
 /**
  * The review: the session as a lesson.
@@ -136,12 +137,12 @@ export function ReviewClient() {
       {/* 1 · The numbers */}
       <section className="border-border bg-surface-1 grid grid-cols-3 gap-4 rounded-lg border p-4 sm:grid-cols-6">
         <Stat label="Hands" value={String(stats.hands)} />
-        <Stat label="Net bb" value={stats.netBb.toFixed(1)} />
+        <Stat label="Net" value={amountFromBb(stats.netBb)} />
         {/* bb/100 over a short session is pure variance — a good player
             running bad reads "−180" and concludes the grader is broken. Below
             50 hands the figure is withheld, not dressed up. */}
         <Stat
-          label="bb/100"
+          label={RATE_LABEL}
           value={stats.hands >= 50 ? stats.bb100.toFixed(1) : "—"}
           hint={stats.hands >= 50 ? undefined : "Needs 50+ hands to mean anything"}
         />

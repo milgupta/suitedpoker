@@ -3,7 +3,7 @@
 import type { Card } from "@/poker/cards";
 import { cn } from "@/lib/utils";
 import { PlayingCard } from "../PlayingCard";
-import { formatBb } from "./sizing";
+import { formatAmount } from "./sizing";
 
 /**
  * The bottom band's left half — DESIGN.md §6.3.
@@ -118,7 +118,7 @@ export function HeroDock({
               className="border-border bg-surface-3 text-text-secondary text-caption rounded-full border px-2 py-0.5 font-mono font-semibold whitespace-nowrap tabular-nums"
               data-hero-bet
             >
-              {formatBb(betBb)}
+              {formatAmount(betBb)}
             </span>
           )}
         </div>
@@ -137,7 +137,7 @@ export function HeroDock({
             className="text-text-secondary text-body-sm font-mono font-semibold tabular-nums"
             data-hero-stack
           >
-            {formatBb(stackBb)}
+            {formatAmount(stackBb)}
           </span>
         </div>
       </div>

@@ -130,13 +130,13 @@ describe("the client view for the game surface", () => {
 
 describe("resultLineFor storytelling", () => {
   it("names the winning hand at showdown when a label is supplied", () => {
-    expect(resultLineFor(12.5, true, false, "Flush")).toBe("Won 12.5bb with a flush");
-    expect(resultLineFor(3, true, false, "Two pair")).toBe("Won 3.0bb with two pair");
+    expect(resultLineFor(12.5, true, false, "Flush")).toBe("Won 25 with a flush");
+    expect(resultLineFor(3, true, false, "Two pair")).toBe("Won 6 with two pair");
     // High card wins stay plain — "with high card" reads as mockery.
-    expect(resultLineFor(2, true, false, "High card")).toBe("Won 2.0bb at showdown");
-    expect(resultLineFor(2, true, false, null)).toBe("Won 2.0bb at showdown");
+    expect(resultLineFor(2, true, false, "High card")).toBe("Won 4 at showdown");
+    expect(resultLineFor(2, true, false, null)).toBe("Won 4 at showdown");
     // Non-showdown wins never name a hand nobody saw.
-    expect(resultLineFor(4, false, false, "Flush")).toBe("Won 4.0bb");
-    expect(resultLineFor(-4, false, false, null)).toBe("Lost 4.0bb");
+    expect(resultLineFor(4, false, false, "Flush")).toBe("Won 8");
+    expect(resultLineFor(-4, false, false, null)).toBe("Lost 8");
   });
 });

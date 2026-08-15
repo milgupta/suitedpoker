@@ -27,7 +27,10 @@ export function SignupFromStart() {
       footer={
         <>
           Already have an account?{" "}
-          <Link href="/login" className="text-accent-bright hover:underline">
+          <Link
+            href={fromStart ? `/login?next=${encodeURIComponent(START_CONTINUE_PATH)}` : "/login"}
+            className="text-accent-bright hover:underline"
+          >
             Log in
           </Link>
         </>
