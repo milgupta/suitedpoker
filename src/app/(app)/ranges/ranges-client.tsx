@@ -40,8 +40,27 @@ function describeScenario(actionSeq: string): string {
   if (actionSeq.startsWith("vs_rfi")) return `vs ${seatWord} open`;
   if (actionSeq.startsWith("vs_3bet")) return `vs ${seatWord} 3-bet`;
   if (actionSeq.startsWith("vs_4bet")) return `vs ${seatWord} 4-bet`;
+  if (actionSeq.startsWith("vs_limp_")) return `vs ${seatWord} limp`;
+  if (actionSeq.startsWith("vs_open_call_")) {
+    // The last segment is the CALLER here, not the only opponent — this is the
+    // one scenario with two of them, which is the whole point of the node.
+    const [, , , opener, caller] = actionSeq.split("_");
+    const openerWord = POSITION_LABELS[opener ?? ""]?.toLowerCase() ?? opener ?? "";
+    const callerWord = POSITION_LABELS[caller ?? ""]?.toLowerCase() ?? caller ?? "";
+    return `vs ${openerWord} open + ${callerWord} call`;
+  }
+  /*
+   * Never reached for a served node, and it must not become reachable quietly.
+   * The multiway nodes shipped while this fell through to a `_`-stripped
+   * identifier, so the scenario picker offered "vs open call UTG MP" — a raw
+   * actionSeq on screen, in a product that claims to explain poker in plain
+   * English. `describeScenario` is covered by a test that walks every served
+   * node for exactly this reason.
+   */
   return actionSeq.replace(/_/g, " ");
 }
+
+export const __testing = { describeScenario };
 
 export function RangesClient() {
   const [nodes, setNodes] = useState<NodeSummary[] | null>(null);

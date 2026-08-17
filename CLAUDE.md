@@ -154,11 +154,64 @@ sessions.
 | 5.1 Curriculum content system | done — 14 lessons, prose measured |
 | 5.2 Lesson player and progress | done — server-side lock verified, 20 e2e green |
 | 5.3 Dashboard | done — four data states, numbers hand-verified, LCP 128ms |
+| Poker-maths quiz (`/quiz`) | done — exact odds, 7 families, 7 e2e green, migration applied to both projects |
 
 **Every substage in `SUITEDPOKER_BUILD_PLAN.md` is now done.** Update this table
 if you add one.
 
-**What the content-depth pass left you.**
+**What the poker-maths quiz left you.**
+
+- 🔴 **`src/poker/odds.ts` IS THE ONLY EXACT DATA IN THE PRODUCT.** Every
+  strategy file says `authored-approximation` and will until 2.10 runs; these
+  are counting problems over 52 cards with one right answer. So the quiz panel
+  says "counted, not estimated" and means it — it is the one screen allowed to
+  state a number flatly. Exact combinatorics only: no simulation, no floats, no
+  rule of four. **`ruleOfFourAndTwo` exists ONLY to be offered as a wrong
+  answer**, and a test asserts it never equals the exact figure.
+- 🛑 **THE QUIZ DELIBERATELY DOES NOT TOUCH ACCURACY OR THE GLICKO RATING.**
+  `questions.ts` says every question type grades through the EV-loss grader so
+  one accuracy number stays comparable — but a percentage is exactly right or
+  wrong, and forcing it through `gradeDecision` would mean INVENTING an EV loss
+  for a wrong answer. Separate table (`quiz_attempts`), separate metric, own
+  section on /progress. Milan's call, made explicitly.
+- ✅ **MIGRATION `0004_quiz_attempts.sql` IS APPLIED TO BOTH PROJECTS.** Verified
+  by querying each database directly rather than by trusting the dashboard:
+  table present, RLS on, 8 columns, the FK to `auth.users`, both indexes, and
+  **exactly two policies (SELECT + INSERT) with no UPDATE or DELETE** — that
+  table is insert-and-read only, because a client that can rewrite its own
+  answers can manufacture a perfect record. `docs/APPLY-MIGRATION-0004.md`
+  holds the paste-ready prompt, and a unit test pins its SQL to the migration
+  so the copy cannot drift.
+- 🔴 **THE PERSISTENCE TEST COULD NOT EXIST BEFORE THE MIGRATION, AND THAT IS
+  THE INTERESTING PART.** The insert is best-effort and LOGS rather than
+  throwing, so while the table was missing the ENTIRE quiz loop went green with
+  nothing being written — right failure mode for a user, exactly wrong one for
+  a suite. `tests/e2e/quiz.spec.ts` now asserts on the ROW: family, chosen
+  index, timing, the stored payload, and that `correct` equals the verdict the
+  user was shown. If those two can disagree, the /progress breakdown is fiction.
+- **`npm run test:rls` passes but proves nothing about this table** — that suite
+  predates it. The direct database check above is what verified it.
+- **The distractors are the teaching, and they are designed.** Each wrong option
+  is a nameable mistake: the one-card figure when two cards are coming, the
+  streets added without removing the overlap, "12 outs" read as 12%. A test
+  enforces a 7-point minimum gap between options — three answers reading 31, 34
+  and 35 are one answer and two typos.
+- 🔴 **THE DRAW SCENARIOS ARE HELD AGAINST THE REAL CLASSIFIER.** A prompt
+  saying "you flopped the open-ender" over a hand that is not one is the same
+  defect as the coach describing a board it never saw. `9h8h on 7h 5c 2h` was
+  authored as a combo draw and is only a gutshot plus a flush draw; the test
+  caught it, not me.
+- **`tests/unit/rls-policy.test.ts` now scans EVERY migration**, not just 0001.
+  It assumed all user-scoped tables were created there, which stopped being true
+  the moment one was added later.
+- ⚠️ **AD 3's "67%" IS WRONG.** `AK misses the flop` is 67.571%, which rounds to
+  **68**. The ad offers 41/55/67, so its own correct answer disagrees with the
+  app. `STATIC-AD-PROMPTS.md` rule 5 says every number in an ad must be true —
+  fix the creative, not the maths.
+- **Three of the five ad creatives advertise this mode**, which did not exist
+  when they were written. It does now; the message match is real.
+
+**What the content-depth pass left you.
 
 - 🔴 **POSTFLOP WAS 130 ANSWERS AND IS NOW KEYED ON THE COMBO.**
   `gradePostflop` graded `(template, handClass)` and nothing else, so `AhKh` on
@@ -1486,10 +1539,23 @@ if you add one.
 
 **What the e2e isolation pass left you.**
 
-- ⚠️ **THE SECOND SUPABASE PROJECT STILL DOES NOT EXIST.** Everything around it
-  is now built and verified; the ten minutes in the Supabase dashboard are
-  Milan's, and until they happen every full e2e run still puts ~60 users in the
-  production `auth.users` table. `docs/E2E-DATABASE.md` is the checklist.
+- ✅ **RESOLVED — THE SECOND SUPABASE PROJECT EXISTS AND THE GUARD IS LIVE.**
+  This read "THE SECOND SUPABASE PROJECT STILL DOES NOT EXIST" and was stale.
+  `E2E_SUPABASE_URL` points at `shsbbpmexbwdingtgqsh`; production is
+  `mavyvyhytbdutdfpjnvm`. Verified the only way that means anything: a dev
+  server started from `.env.local` was left running on 3100, and
+  `tests/e2e/global-setup.ts` REFUSED the run — naming both refs and pointing at
+  `docs/E2E-DATABASE.md` — rather than quietly seeding production. Kept as a ✅
+  rather than deleted because it was a loud warning, and a silent disappearance
+  reads as an oversight.
+- ⚠️ **`reuseExistingServer` IS STILL THE TRAP IT ALWAYS WAS.** A server already
+  on the port is used exactly as it was started, so a dev server you left
+  running is a PRODUCTION-pointed server under test. The guard catches it; the
+  fix is to stop the server and let Playwright start its own.
+- ⚠️ **EVERY NEW MIGRATION MUST BE APPLIED TO BOTH PROJECTS.** Two databases now,
+  and nothing in the build checks either one. A migration applied only to
+  production passes every test and then fails the e2e suite; applied only to
+  e2e, it passes CI and breaks live.
 - 🔴 **ISOLATING `adminClient()` WAS ONLY HALF OF IT, AND THE OTHER HALF WAS
   MISSING.** `playwright.config.ts` had no `webServer.env`, so the server under
   test read `.env.local` and pointed at production no matter what the `E2E_*`

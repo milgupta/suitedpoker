@@ -66,6 +66,13 @@ export interface EventMap {
   module_completed: { moduleId: string };
   sim_session_started: { tableType: string };
   sim_session_ended: { hands: number; netBb: number };
+  quiz_started: Record<string, never>;
+  /**
+   * `correct` rather than a grade, because a maths answer has no EV loss and
+   * no six-grade band. Kept out of the drill funnel for the same reason it is
+   * kept out of the rating.
+   */
+  quiz_answered: { family: string; correct: boolean; timeMs: number };
   coach_hint_requested: { level: number; source: string };
   coach_explanation_viewed: Record<string, never>;
   coach_chat_message: Record<string, never>;
@@ -107,6 +114,8 @@ export const EVENT_NAMES = [
   "module_completed",
   "sim_session_started",
   "sim_session_ended",
+  "quiz_started",
+  "quiz_answered",
   "coach_hint_requested",
   "coach_explanation_viewed",
   "coach_chat_message",

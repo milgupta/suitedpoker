@@ -16,7 +16,7 @@ import { getRedis } from "@/lib/redis";
  * "optimise" the userId argument away.
  */
 
-export type SessionKind = "drill" | "table" | "diagnosis";
+export type SessionKind = "drill" | "table" | "diagnosis" | "quiz";
 
 interface Envelope<T> {
   /** The owner. Compared on every read. */

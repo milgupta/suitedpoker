@@ -9,7 +9,7 @@
  * enabled is wide open and fails silently.
  */
 
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { READ_ONLY_TABLES, USER_SCOPED_TABLES } from "../../src/db/schema";
@@ -18,6 +18,22 @@ const migration = readFileSync(
   resolve(process.cwd(), "supabase/migrations/0001_auth_fks_rls.sql"),
   "utf8",
 );
+
+/**
+ * Every migration, concatenated.
+ *
+ * The per-table checks below used to read 0001 alone, which quietly assumed
+ * every user-scoped table was created in it. That held until a table was added
+ * later — `quiz_attempts` in 0004 — at which point the audit demanded its
+ * policy appear in a file written months earlier. A migration history is
+ * append-only; what matters is that the policy exists SOMEWHERE in it.
+ */
+const MIGRATIONS_DIR = resolve(process.cwd(), "supabase/migrations");
+const allMigrations = readdirSync(MIGRATIONS_DIR)
+  .filter((f) => f.endsWith(".sql"))
+  .sort()
+  .map((f) => readFileSync(resolve(MIGRATIONS_DIR, f), "utf8"))
+  .join("\n");
 const schemaSource = readFileSync(resolve(process.cwd(), "src/db/schema.ts"), "utf8");
 
 /** Every table name declared with pgTable in the schema. */
@@ -30,8 +46,8 @@ function declaredTables(): string[] {
 describe("RLS coverage", () => {
   const tables = declaredTables();
 
-  it("declares the 21 tables of the data model", () => {
-    expect(tables.length).toBe(21);
+  it("declares the 22 tables of the data model", () => {
+    expect(tables.length).toBe(22);
   });
 
   it.each(tables)("enables row level security on %s", (table) => {
@@ -41,7 +57,12 @@ describe("RLS coverage", () => {
       migration.indexOf("-- ── Enable RLS everywhere"),
       migration.indexOf("-- ── User-scoped tables"),
     );
-    expect(enableBlock).toContain(`'${table}'`);
+    // Either inside 0001's generated list, or enabled by its own later
+    // migration — both are the table having RLS on.
+    const enabledLater = allMigrations.includes(
+      `alter table public.${table} enable row level security`,
+    );
+    expect(enableBlock.includes(`'${table}'`) || enabledLater).toBe(true);
   });
 
   it("keeps the user-scoped list in step with the tables that have a user_id", () => {
@@ -70,7 +91,9 @@ describe("user-scoped policies", () => {
   );
 
   it.each(USER_SCOPED_TABLES)("covers %s", (table) => {
-    expect(policyBlock).toContain(`'${table}'`);
+    // In 0001's generated loop, or in its own migration's explicit policy.
+    const ownPolicy = allMigrations.includes(`create policy ${table}_select_own`);
+    expect(policyBlock.includes(`'${table}'`) || ownPolicy).toBe(true);
   });
 
   it("scopes every one of them with auth.uid() = user_id", () => {
@@ -86,8 +109,8 @@ describe("user-scoped policies", () => {
     expect(policyBlock).not.toContain("for delete");
   });
 
-  it("has no DELETE policy anywhere in the migration", () => {
-    expect(migration).not.toMatch(/for\s+delete/i);
+  it("has no DELETE policy anywhere in any migration", () => {
+    expect(allMigrations).not.toMatch(/for\s+delete/i);
   });
 });
 

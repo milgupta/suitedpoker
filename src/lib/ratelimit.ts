@@ -146,6 +146,25 @@ export const RULES = {
    * taps fold + next twice a second, and every hand is several requests. The
    * drill rule's 120/min rejects a legitimate hot streak mid-session.
    */
+  /**
+   * The quiz deals and grades on the same cadence as a drill, and costs the
+   * product nothing but a Postgres write — no model call, no solver. Open on
+   * failure for the same reason DRILL_* is: the only thing at stake is latency.
+   */
+  QUIZ_NEXT: {
+    key: "quiz_next",
+    limit: 120,
+    kind: "sliding",
+    windowSeconds: 60,
+    failMode: "open",
+  },
+  QUIZ_ANSWER: {
+    key: "quiz_answer",
+    limit: 120,
+    kind: "sliding",
+    windowSeconds: 60,
+    failMode: "open",
+  },
   SIM_ACTION: {
     key: "sim_action",
     limit: 600,

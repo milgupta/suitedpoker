@@ -12,6 +12,8 @@ import { cardFromString } from "@/poker/cards";
 
 const DAILY_HAND = ["As", "Kd", "Qc", "Jh", "Ts"].map(cardFromString);
 const ARENA_HAND = ["Ah", "Kd"].map(cardFromString);
+/** The open-ender from the quiz's own scenario list. */
+const QUIZ_HAND = ["Jh", "Th"].map(cardFromString);
 
 function PreviewWell({ children }: { children: ReactNode }) {
   return (
@@ -60,6 +62,31 @@ export function ArenaPreview() {
           <span className="bg-accent h-full w-[55%]" />
           <span className="bg-accent/30 h-full flex-1" />
         </div>
+      </div>
+    </PreviewWell>
+  );
+}
+
+/**
+ * Two cards and the answer, because the answer is the point.
+ *
+ * A percentage is the one thing this mode shows that no other card can: every
+ * other surface in the product hedges its numbers, and 31% here is exact. The
+ * chip carries `--accent`, NOT the grade ramp — blue is interface, and a green
+ * figure would read as a verdict on a hand nobody has played.
+ */
+export function QuizPreview() {
+  return (
+    <PreviewWell>
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          {QUIZ_HAND.map((card, i) => (
+            <PlayingCard key={i} card={card} size="md" index={i} dealCount={QUIZ_HAND.length} />
+          ))}
+        </div>
+        <span className="bg-accent text-on-accent text-heading-md rounded-full px-3 py-1 tabular-nums">
+          31%
+        </span>
       </div>
     </PreviewWell>
   );

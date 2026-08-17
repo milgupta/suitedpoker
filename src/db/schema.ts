@@ -247,6 +247,41 @@ export const drillAttempts = pgTable(
   ],
 );
 
+/**
+ * Poker-maths quiz attempts.
+ *
+ * A SEPARATE TABLE FROM `drill_attempts`, deliberately. Every statistic in the
+ * product — accuracy, the rating, the leak report, the diagnosis — reads
+ * drill_attempts and interprets `ev_loss` as the cost of a decision. A quiz
+ * answer has no EV loss: it is exactly right or exactly wrong, and writing it
+ * into that table would either need a fabricated ev_loss or would silently
+ * skew every number computed from the rows that have one.
+ *
+ * So this table has no grade, no ev_loss and no rating_after. It is a record of
+ * whether somebody knew a piece of arithmetic.
+ */
+export const quizAttempts = pgTable(
+  "quiz_attempts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: userId(),
+    /** See QUIZ_FAMILIES in src/poker/quiz.ts. */
+    family: text("family").notNull(),
+    /** The question as asked, so a review shows the same three options. */
+    questionPayload: jsonb("question_payload"),
+    /** Index into the options array as it was shown. */
+    chosenIndex: integer("chosen_index"),
+    correct: boolean("correct").notNull(),
+    timeMs: integer("time_ms"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("quiz_attempts_user_created_idx").on(t.userId, t.createdAt.desc()),
+    // The per-family breakdown on /progress groups by exactly this pair.
+    index("quiz_attempts_user_family_idx").on(t.userId, t.family),
+  ],
+);
+
 export const dailyChallenges = pgTable(
   "daily_challenges",
   {
@@ -500,6 +535,7 @@ export const USER_SCOPED_TABLES = [
   "coach_messages",
   "ai_usage",
   "leaks",
+  "quiz_attempts",
 ] as const;
 
 /**

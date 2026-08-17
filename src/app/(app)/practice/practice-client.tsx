@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { HubCard, HubCardGrid, HubCardMotion, HubFade } from "@/components/app/HubCard";
 import { buildArenaLink } from "@/lib/arena-preset";
-import { ArenaPreview, DailyPreview } from "./practice-previews";
+import { ArenaPreview, DailyPreview, QuizPreview } from "./practice-previews";
 
 /**
  * Practice hub — one large card per game type, plus opt-in deeper presets.
@@ -40,7 +40,12 @@ export function PracticeView() {
         </header>
       </HubFade>
 
-      <HubCardGrid count={3} className="grid gap-4 md:grid-cols-3">
+      {/*
+       * FOUR modes, so a 2x2 rather than a three-wide row with an orphan
+       * underneath it. Four across would work on a desktop and squeeze every
+       * preview; everything stacks at 390px either way.
+       */}
+      <HubCardGrid count={4} className="grid gap-4 md:grid-cols-2">
         <HubCardMotion index={0}>
           <HubCard
             href="/daily"
@@ -71,6 +76,17 @@ export function PracticeView() {
             imageSrc="/brand/hub/hub-table-sim.png"
             imageAlt="Table sim match in progress"
             dataQuick="Table sim"
+          />
+        </HubCardMotion>
+        <HubCardMotion index={3}>
+          <HubCard
+            href="/quiz"
+            title="Poker maths"
+            description="Ten questions on odds and outs. The only answers here are exact."
+            cta="Start a set"
+            preview={<QuizPreview />}
+            dataQuick="Poker maths"
+            dataCta="quiz"
           />
         </HubCardMotion>
       </HubCardGrid>
