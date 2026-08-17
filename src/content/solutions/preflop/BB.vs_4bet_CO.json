@@ -46,8 +46,7 @@
       "allin": 0.7
     },
     "AQs": {
-      "fold": 0.75,
-      "call": 0.25
+      "fold": 1
     },
     "AJs": {
       "fold": 1
@@ -580,8 +579,8 @@
     },
     "AQs": {
       "fold": 0,
-      "call": 0,
-      "allin": -0.26
+      "call": -0.12,
+      "allin": -0.12
     },
     "AJs": {
       "fold": 0,

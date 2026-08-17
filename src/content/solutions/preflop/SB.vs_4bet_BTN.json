@@ -67,7 +67,8 @@
       "fold": 1
     },
     "A5s": {
-      "fold": 1
+      "fold": 0.7,
+      "allin": 0.3
     },
     "A4s": {
       "fold": 1
@@ -614,8 +615,8 @@
     },
     "A5s": {
       "fold": 0,
-      "call": -0.39,
-      "allin": -0.39
+      "call": -0.42,
+      "allin": 0
     },
     "A4s": {
       "fold": 0,
@@ -780,7 +781,7 @@
     "JJ": {
       "fold": 0,
       "call": 0,
-      "allin": -0.25
+      "allin": -0.27
     },
     "JTs": {
       "fold": 0,

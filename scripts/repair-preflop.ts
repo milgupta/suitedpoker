@@ -531,9 +531,12 @@ const CO_VS_3BET_BB: NodeSpec = {
     { range: "AKo", freq: 0.45 },
     { range: "JJ-88", freq: 1 },
     { range: "AQs-ATs", freq: 1 },
-    { range: "KQs-KJs, QJs, JTs, T9s", freq: 1 },
+    // No T9s and no 66: the cutoff plays every one of these out of position for
+    // three streets, and the two hands whose whole value is flopping big are
+    // the ones that price stops covering first.
+    { range: "KQs-KJs, QJs, JTs", freq: 1 },
     { range: "AQo", freq: 0.45 },
-    { range: "77-66", freq: 0.5 },
+    { range: "77", freq: 0.5 },
   ],
 };
 
@@ -546,7 +549,10 @@ const CO_VS_3BET_BTN: NodeSpec = {
     { range: "QQ", freq: 0.55 },
     { range: "AKs", freq: 0.5 },
     { range: "AKo", freq: 0.4 },
-    { range: "A5s", freq: 0.3 },
+    // Two wheel aces rather than one: out of position against a range this
+    // strong, the cutoff needs its continues to be 4bets rather than calls, and
+    // A4s is the second-best blocker it still holds.
+    { range: "A5s-A4s", freq: 0.3 },
   ],
   call: [
     { range: "QQ", freq: 0.45 },
@@ -555,7 +561,10 @@ const CO_VS_3BET_BTN: NodeSpec = {
     { range: "JJ-99", freq: 1 },
     { range: "AQs-AJs", freq: 1 },
     { range: "KQs, QJs, JTs", freq: 1 },
-    { range: "88-77", freq: 0.5 },
+    // 77 folds outright here. A cold button 3bet is the strongest 3bet the
+    // cutoff faces, and set-mining out of position at this price is the first
+    // call that stops showing a profit.
+    { range: "88", freq: 0.5 },
     { range: "AQo", freq: 0.3 },
   ],
 };
@@ -598,8 +607,11 @@ const UTG_VS_3BET_MP: NodeSpec = {
     { range: "JJ-99", freq: 1 },
     { range: "AQs-AJs", freq: 1 },
     { range: "KQs, QJs, JTs", freq: 1 },
-    { range: "88-77", freq: 0.5 },
-    { range: "AQo", freq: 0.4 },
+    // No 77 and no AQo. This is the tightest opening range in the game facing
+    // a raise from the second-tightest: MP is not 3betting UTG light, so the
+    // bottom of UTG's continue is dominated far more often than the same hands
+    // are against a blind.
+    { range: "88", freq: 0.5 },
   ],
 };
 
@@ -640,14 +652,21 @@ const BTN_VS_3BET_SB: NodeSpec = {
     { range: "AA, KK", freq: 1 },
     { range: "QQ, AKs", freq: 0.6 },
     { range: "AKo", freq: 0.55 },
-    { range: "A5s-A4s", freq: 0.4 },
+    // Three wheel aces. The button opened nearly half the deck, so it holds
+    // more of these than any other seat and needs the extra 4bet bluff to stop
+    // its raising range being value-only against a small blind that has to
+    // defend against it.
+    { range: "A5s-A3s", freq: 0.4 },
   ],
   call: [
     { range: "QQ, AKs", freq: 0.4 },
     { range: "AKo", freq: 0.45 },
     { range: "JJ-88", freq: 1 },
     { range: "AQs-ATs", freq: 1 },
-    { range: "KQs-KJs, QJs, JTs, T9s", freq: 1 },
+    // 98s survives here and nowhere else in the 3bet family: the button is the
+    // only seat that opened it in the first place, and it is the only seat that
+    // realises its equity in position after calling.
+    { range: "KQs-KJs, QJs, JTs, T9s, 98s", freq: 1 },
     { range: "AQo", freq: 0.5 },
     { range: "77-66", freq: 0.5 },
   ],
@@ -672,8 +691,11 @@ const MP_VS_3BET_BB: NodeSpec = {
     { range: "QQ, AKs", freq: 0.35 },
     { range: "AKo", freq: 0.45 },
     { range: "JJ-99", freq: 1 },
-    { range: "AQs-AJs", freq: 1 },
-    { range: "KQs, QJs, JTs", freq: 1 },
+    // ATs and KJs continue here and not against a tighter 3bettor. The big
+    // blind 3bets the widest of any seat, so MP's marginal broadways are ahead
+    // of enough of that range to call rather than fold.
+    { range: "AQs-ATs", freq: 1 },
+    { range: "KQs-KJs, QJs, JTs", freq: 1 },
     { range: "88-77", freq: 0.55 },
     { range: "AQo", freq: 0.4 },
   ],
@@ -715,6 +737,10 @@ const BB_VS_4BET_BTN: NodeSpec = {
     { range: "QQ", freq: 0.7 },
     { range: "AKs", freq: 0.65 },
     { range: "AKo", freq: 0.4 },
+    // The one 5bet bluff in the family. A button 4bet is the widest 4bet
+    // anybody makes, and A5s blocks the aces and the wheel it is bluffing into
+    // while keeping a live suit if it is called.
+    { range: "A5s", freq: 0.25 },
   ],
   call: [
     { range: "QQ", freq: 0.3 },
@@ -722,6 +748,9 @@ const BB_VS_4BET_BTN: NodeSpec = {
     { range: "AKo", freq: 0.6 },
     { range: "JJ", freq: 0.55 },
     { range: "AQs", freq: 0.4 },
+    // TT only reaches a 4bet pot against the button. Against any tighter
+    // 4bettor it is drawing to a set against an overpair too often.
+    { range: "TT", freq: 0.3 },
   ],
 };
 
@@ -740,7 +769,10 @@ const BB_VS_4BET_CO: NodeSpec = {
     { range: "AKs", freq: 0.3 },
     { range: "AKo", freq: 0.65 },
     { range: "JJ", freq: 0.4 },
-    { range: "AQs", freq: 0.25 },
+    // AQs folds outright against a cutoff 4bet. It is dominated by most of the
+    // range that 4bets from a seat with three players still behind it, and
+    // calling 22 chips out of position to flop a pair is the exact hand a
+    // beginner most needs to see folded.
   ],
 };
 
@@ -753,6 +785,11 @@ const SB_VS_4BET_BTN: NodeSpec = {
     { range: "AA, KK", freq: 1 },
     { range: "QQ, AKs", freq: 0.85 },
     { range: "AKo", freq: 0.55 },
+    // "Shoves more and flats less" needs something to shove that is not a
+    // premium, or the range is value-only and the button folds to it forever.
+    // A5s is the natural one: it blocks the aces the button is 4betting for
+    // value, and it is a hand the small blind would otherwise have to fold.
+    { range: "A5s", freq: 0.3 },
   ],
   call: [
     { range: "QQ, AKs", freq: 0.15 },
@@ -1121,6 +1158,314 @@ function applyRfiLimpPenalty(file: NodeFile): void {
   }
 }
 
+// ── Multiway nodes ────────────────────────────────────────────────────────────
+
+/**
+ * THE POT IS THREE-HANDED HERE, AND NOWHERE ELSE IN THE SET.
+ *
+ * Every other node in the tree resolves to hero against exactly one opponent:
+ * `rfi` is an unopened pot, `vs_rfi` is one raiser, `vs_3bet` and `vs_4bet` are
+ * a single escalating duel. So a player could drill the entire product to
+ * exhaustion and never once be asked what to do when somebody has ALREADY
+ * called in front of them — which, at the stakes this product is aimed at, is
+ * the most common preflop situation there is.
+ *
+ * Two families, chosen because they are the two a beginner meets first:
+ *
+ * - `vs_open_call_X_Y` — X opens, Y calls, hero decides. The squeeze spot. The
+ *   dead money makes raising better than it looks and calling worse: a third
+ *   player in the pot cuts hero's share of every pot they win, and the two
+ *   ranges behind the bet are no longer one range.
+ * - `vs_limp_X` — X limps, folded to hero. The isolation spot, and the one a
+ *   live $1/$2 player faces every orbit.
+ *
+ * Both are authored in the same notation, through the same builder and the same
+ * EV derivation as everything else, so they are reviewable against a published
+ * chart exactly like the rest of the set.
+ */
+interface NewNodeSpec extends NodeSpec {
+  readonly heroPos: string;
+  readonly actionSeq: string;
+  readonly potBb: number;
+  readonly notes: string;
+  /** What the very best hand at this node is worth, for `deriveEv`. */
+  readonly maxValue: number;
+}
+
+const MULTIWAY: readonly NewNodeSpec[] = [
+  {
+    ref: "BTN:vs_open_call_UTG_MP",
+    heroPos: "BTN",
+    actionSeq: "vs_open_call_UTG_MP",
+    potBb: 6.5,
+    maxValue: 9,
+    reason: "new multiway node — squeeze spot, in position against an early open and a caller",
+    notes:
+      "UTG opens 5 and MP calls; hero is on the button with both blinds still behind. " +
+      "UTG's range is the tightest at the table, so there is little to squeeze light against — " +
+      "but the button closes the action with position on both players for the whole hand, " +
+      "which is what lets it call a set-mining and suited-broadway range that no other seat can.",
+    raise: [
+      { range: "AA-QQ", freq: 1 },
+      { range: "JJ", freq: 0.7 },
+      { range: "AKs", freq: 0.9 },
+      { range: "AKo", freq: 0.75 },
+      { range: "AQs", freq: 0.6 },
+      // The one blocker bluff. A5s takes an ace out of both ranges and still
+      // flops a wheel draw when it is called.
+      { range: "A5s", freq: 0.35 },
+    ],
+    call: [
+      { range: "JJ", freq: 0.3 },
+      { range: "TT-77", freq: 1 },
+      // AK never folds at 100bb. The share it does not squeeze with, it flats —
+      // in position, three-handed, that is a hand class ahead of both ranges.
+      { range: "AKs", freq: 0.1 },
+      { range: "AKo", freq: 0.25 },
+      { range: "AQs", freq: 0.4 },
+      { range: "AJs-ATs", freq: 1 },
+      { range: "KQs-KJs, QJs, JTs, T9s, 98s", freq: 1 },
+      { range: "AQo", freq: 0.5 },
+      // Small pairs go UP in value multiway: more callers means more paid off
+      // when the set arrives, which is the whole reason to play them.
+      { range: "66-22", freq: 0.6 },
+    ],
+  },
+  {
+    ref: "BB:vs_open_call_CO_BTN",
+    heroPos: "BB",
+    actionSeq: "vs_open_call_CO_BTN",
+    potBb: 6.5,
+    maxValue: 9,
+    reason: "new multiway node — big blind closing the action against a late open and a caller",
+    notes:
+      "CO opens 5 and BTN calls; hero is in the big blind and closes the action. " +
+      "Two late-position ranges are far wider than an early one, so the squeeze has real " +
+      "fold equity here — but hero plays every called pot out of position against two " +
+      "players, which is what keeps the flatting range to hands that flop well.",
+    raise: [
+      { range: "AA, KK", freq: 1 },
+      { range: "QQ", freq: 0.85 },
+      { range: "JJ", freq: 0.55 },
+      { range: "AKs", freq: 0.9 },
+      { range: "AKo", freq: 0.7 },
+      { range: "AQs", freq: 0.5 },
+      { range: "A5s-A4s", freq: 0.3 },
+    ],
+    call: [
+      { range: "QQ", freq: 0.15 },
+      { range: "JJ", freq: 0.45 },
+      { range: "TT-88", freq: 1 },
+      { range: "AKs", freq: 0.1 },
+      { range: "AKo", freq: 0.3 },
+      { range: "AQs", freq: 0.5 },
+      { range: "AJs, KQs, QJs, JTs", freq: 1 },
+      { range: "AQo", freq: 0.35 },
+      { range: "77-55", freq: 0.5 },
+    ],
+  },
+  {
+    ref: "SB:vs_open_call_MP_CO",
+    heroPos: "SB",
+    actionSeq: "vs_open_call_MP_CO",
+    potBb: 6.5,
+    maxValue: 9,
+    reason: "new multiway node — the worst seat at the table, squeeze or fold",
+    notes:
+      "MP opens 5 and CO calls; hero is in the small blind with the big blind STILL TO ACT. " +
+      "This is the tightest calling range in the whole set and that is the lesson: out of " +
+      "position against two players, with a third yet to speak, a hand that is merely " +
+      "playable is a hand that loses money. Raise it or fold it.",
+    raise: [
+      { range: "AA-QQ", freq: 1 },
+      { range: "JJ", freq: 0.75 },
+      { range: "AKs", freq: 1 },
+      { range: "AKo", freq: 0.8 },
+      { range: "AQs", freq: 0.55 },
+      { range: "A5s", freq: 0.3 },
+    ],
+    call: [
+      { range: "JJ", freq: 0.25 },
+      { range: "TT-99", freq: 1 },
+      { range: "AKo", freq: 0.2 },
+      { range: "AQs", freq: 0.45 },
+      { range: "AJs", freq: 0.6 },
+      { range: "KQs", freq: 0.6 },
+      { range: "88-66", freq: 0.5 },
+    ],
+  },
+  {
+    ref: "BB:vs_open_call_UTG_MP",
+    heroPos: "BB",
+    actionSeq: "vs_open_call_UTG_MP",
+    potBb: 6.5,
+    maxValue: 9,
+    reason:
+      "new multiway node — the same seat as BB:vs_open_call_CO_BTN against far stronger ranges",
+    notes:
+      "UTG opens 5 and MP calls; hero closes the action from the big blind. The pair to " +
+      "BB:vs_open_call_CO_BTN, and the contrast IS the lesson: identical seat, identical " +
+      "price, two of the tightest ranges at the table instead of two of the widest. There " +
+      "is no light squeeze here at all, and the price still makes a wide flat correct.",
+    raise: [
+      { range: "AA, KK", freq: 1 },
+      { range: "QQ", freq: 0.8 },
+      { range: "JJ", freq: 0.5 },
+      { range: "AKs", freq: 0.85 },
+      { range: "AKo", freq: 0.6 },
+      { range: "AQs", freq: 0.4 },
+      // Deliberately NO wheel-ace bluff. Against an UTG open and an MP call
+      // there is no weak range to fold out, which is the whole precondition
+      // for a light squeeze.
+    ],
+    call: [
+      { range: "QQ", freq: 0.2 },
+      { range: "JJ", freq: 0.5 },
+      { range: "TT-88", freq: 1 },
+      { range: "AKs", freq: 0.15 },
+      { range: "AKo", freq: 0.4 },
+      { range: "AQs", freq: 0.6 },
+      { range: "AJs, KQs, QJs, JTs, T9s", freq: 1 },
+      { range: "AQo", freq: 0.3 },
+      { range: "77-22", freq: 0.7 },
+    ],
+  },
+  {
+    ref: "BTN:vs_limp_UTG",
+    heroPos: "BTN",
+    actionSeq: "vs_limp_UTG",
+    potBb: 2.5,
+    maxValue: 6,
+    reason: "new multiway node — isolating a limper from the button",
+    notes:
+      "UTG limps for 2 and it folds to hero on the button. A limp is the one preflop action " +
+      "that caps a range: almost nobody limps aces. So the button attacks it with a very " +
+      "wide raising range, and the isolation raise — not the call — is the point. Calling " +
+      "invites the blinds in behind and turns a heads-up pot in position into a four-way one.",
+    raise: [
+      { range: "AA-77", freq: 1 },
+      { range: "66-22", freq: 0.6 },
+      { range: "AKs-A2s", freq: 1 },
+      { range: "AKo-ATo", freq: 1 },
+      { range: "A9o-A7o", freq: 0.5 },
+      { range: "KQs-K8s", freq: 1 },
+      { range: "KQo-KJo", freq: 1 },
+      { range: "QJs-Q8s", freq: 1 },
+      { range: "QJo", freq: 0.6 },
+      { range: "JTs-J8s, T9s-T8s, 98s, 87s, 76s, 65s", freq: 1 },
+    ],
+    call: [
+      { range: "66-22", freq: 0.4 },
+      { range: "K7s-K5s", freq: 0.5 },
+      { range: "J7s, 54s", freq: 0.4 },
+    ],
+  },
+  {
+    ref: "CO:vs_limp_MP",
+    heroPos: "CO",
+    actionSeq: "vs_limp_MP",
+    potBb: 2.5,
+    maxValue: 6,
+    reason: "new multiway node — isolating with three players still behind",
+    notes:
+      "MP limps for 2 and hero is in the cutoff with the button and both blinds still to act. " +
+      "The same limp, attacked from a worse seat: three players behind instead of two is " +
+      "the entire difference between this range and BTN:vs_limp_UTG, and it is a large one.",
+    raise: [
+      { range: "AA-88", freq: 1 },
+      { range: "77-22", freq: 0.5 },
+      { range: "AKs-A8s", freq: 1 },
+      { range: "A7s-A2s", freq: 0.6 },
+      { range: "AKo-AJo", freq: 1 },
+      { range: "ATo", freq: 0.6 },
+      { range: "KQs-KTs", freq: 1 },
+      { range: "K9s", freq: 0.5 },
+      { range: "KQo", freq: 0.7 },
+      { range: "QJs-QTs, JTs, T9s, 98s, 87s", freq: 1 },
+    ],
+    call: [
+      { range: "77-22", freq: 0.3 },
+      { range: "A7s-A5s", freq: 0.2 },
+    ],
+  },
+  {
+    ref: "SB:vs_limp_UTG",
+    heroPos: "SB",
+    actionSeq: "vs_limp_UTG",
+    potBb: 2.5,
+    maxValue: 6,
+    reason: "new multiway node — the cheapest call in poker, and why it is still mostly wrong",
+    notes:
+      "UTG limps for 2 and it folds to hero in the small blind, who is in for 1 already and " +
+      "can complete for 1 more. That price is the best on the table and it is also a trap: " +
+      "completing plays a multiway pot out of position for the whole hand, with the big " +
+      "blind able to raise behind. Raising is still the main plan.",
+    raise: [
+      { range: "AA-99", freq: 1 },
+      { range: "88-22", freq: 0.45 },
+      { range: "AKs-A9s", freq: 1 },
+      { range: "A5s-A2s", freq: 0.7 },
+      { range: "AKo-AJo", freq: 1 },
+      { range: "KQs-KJs, QJs, JTs", freq: 1 },
+      { range: "KQo", freq: 0.6 },
+    ],
+    call: [
+      { range: "88-22", freq: 0.3 },
+      { range: "A8s-A6s", freq: 0.5 },
+      { range: "KTs", freq: 0.5 },
+      { range: "QTs", freq: 0.4 },
+      { range: "T9s", freq: 0.5 },
+    ],
+  },
+];
+
+/** Every hand key, in the same form the solution files use. */
+function allHandKeys(): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < RANKS.length; i++) {
+    for (let j = 0; j < RANKS.length; j++) {
+      const hi = RANKS[i]!;
+      const lo = RANKS[j]!;
+      if (i === j) out.push(`${hi}${hi}`);
+      else if (i < j) out.push(`${hi}${lo}s`);
+      else out.push(`${lo}${hi}o`);
+    }
+  }
+  return [...new Set(out)];
+}
+
+function writeMultiway(spec: NewNodeSpec): string {
+  const hands = allHandKeys();
+  const strategy = buildStrategy(spec, hands);
+  const actions = ["fold", "call", "raise"];
+  const file: NodeFile = {
+    solutionSet: "suitedpoker-6max-100bb-v1",
+    provenance: "authored-approximation",
+    heroPos: spec.heroPos,
+    actionSeq: spec.actionSeq,
+    potBb: spec.potBb,
+    effStackBb: 100,
+    actions,
+    confidence: {
+      rangeShape: "medium",
+      frequencies: "low",
+      ev: "low",
+      note:
+        "Authored from multiway principles rather than solved: the dead money and the " +
+        "reduced share of every pot won are modelled, the exact frequencies are not " +
+        "defensible to a decimal place. The SHAPE — raise or fold from out of position, " +
+        "flat wide only when closing the action in position, small pairs up and offsuit " +
+        "broadways down — is the part worth defending and the part a reviewer should check. " +
+        "The EV column is derived from the strategy under the indifference rule.",
+    },
+    notes: spec.notes,
+    strategy,
+    ev: deriveEv(strategy, actions, spec.maxValue),
+  };
+  writeFileSync(pathFor(spec.ref), `${JSON.stringify(file, null, 2)}\n`);
+  return `${spec.ref.padEnd(26)} NEW  continue ${widthOf(strategy, "continue").toFixed(1)}%  raise ${widthOf(strategy, "raise").toFixed(1)}%`;
+}
+
 function main(): void {
   const rows: string[] = [];
 
@@ -1178,8 +1523,10 @@ function main(): void {
     );
   }
 
+  for (const spec of MULTIWAY) rows.push(writeMultiway(spec));
+
   console.log(rows.join("\n"));
-  console.log(`\n${SPECS.length} nodes repaired.`);
+  console.log(`\n${SPECS.length} nodes repaired, ${MULTIWAY.length} multiway nodes authored.`);
 }
 
 main();

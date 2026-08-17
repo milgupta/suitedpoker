@@ -88,6 +88,34 @@ describe("no two served nodes give the same answer", () => {
     expect(collisions, `these nodes answer identically:\n${collisions.join("\n")}`).toEqual([]);
   });
 
+  /*
+   * The strategy check above passed while SEVEN served nodes shared an EV
+   * column between them, in three groups. That is not a cosmetic duplicate:
+   * `gradeDecision` derives the band, the Glicko delta, the leak report and the
+   * diagnosis from EV, so a mistake facing a button 3bet cost the identical
+   * number of big blinds as the same mistake facing a big blind's.
+   *
+   * The cause is worth recording, because it is not obvious and it will recur:
+   * `deriveEv` is a function of the strategy's SUPPORT — which hands continue
+   * and with which actions — not of its weights. Two nodes can therefore differ
+   * in every frequency, pass the byte-identical-strategy check above, and still
+   * produce the same EV column to the last decimal. Differentiating a pairing
+   * means changing which hands are in the range, not only how often they act.
+   */
+  it("has no byte-identical EV column between two served nodes", () => {
+    const bySignature = new Map<string, string[]>();
+    for (const node of data.preflop) {
+      const signature = JSON.stringify(node.ev);
+      bySignature.set(signature, [...(bySignature.get(signature) ?? []), node.ref]);
+    }
+
+    const collisions = [...bySignature.values()]
+      .filter((refs) => refs.length > 1)
+      .map((refs) => refs.join(" == "));
+
+    expect(collisions, `these nodes price identically:\n${collisions.join("\n")}`).toEqual([]);
+  });
+
   it("gives a different answer at every position for the same facing action", () => {
     // Weaker but more specific: two nodes facing the same villain from
     // different hero seats must differ, because the hero's own opening range

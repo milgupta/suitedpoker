@@ -23,6 +23,7 @@ import {
   type PreflopNode,
 } from "../../src/poker/solutions";
 import { HAND_KEYS } from "../../src/poker/range";
+import { cardsFromString } from "../../src/poker/cards";
 import { loadSolutionData } from "../../src/lib/solution-data";
 import type { SolutionData, Spot } from "../../src/poker/generator";
 
@@ -95,10 +96,16 @@ function preflopNode(evConfidence: Confidence): PreflopNode {
   );
 }
 
+// Real cards and a real board, not a stub: postflop grading is keyed on the
+// combo now, so a spot with no hole cards exercises a path no user ever takes.
+// `Ah Kc` on `Ks 7d 2c` is top pair with an ace kicker — the class the
+// synthetic template below authors a strategy for.
 const postflopSpot = {
   nodeRef: "test-confidence-node",
   handKey: "AKo",
   handClass: "top_pair_good_kicker",
+  heroCards: cardsFromString("Ah Kc"),
+  board: cardsFromString("Ks 7d 2c"),
   legalActions: ["check", "bet_66"],
 } as unknown as Spot;
 

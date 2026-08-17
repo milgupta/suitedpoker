@@ -13,8 +13,10 @@
  * and why a defensible alternative is explicitly flagged as one.
  */
 
+import { type Card } from "./cards";
 import { type HandClass } from "./handclass";
 import { type HandKey } from "./range";
+import { refineEntry } from "./refine";
 import {
   evOf,
   getPostflopStrategy,
@@ -273,21 +275,35 @@ export function grade(
   );
 }
 
+/**
+ * Grades a postflop decision.
+ *
+ * `combo` is the ACTUAL holding and board. Supplying it re-keys the decision on
+ * `(template, handClass, comboFeatures)` — without it the whole postflop
+ * product is 130 cells and two different aces on two different boards grade
+ * identically. Every path that grades a real user decision must pass it; the
+ * class-level call remains for surfaces that have no combo to speak of (the
+ * range grid, the methodology counts).
+ *
+ * The EV column is derived from the frequencies either way — see `refineEntry`.
+ */
 export function gradePostflop(
   template: PostflopTemplate,
   handClass: HandClass,
   chosenAction: PostflopActionName,
   nodeStats?: NodeStats,
+  combo?: { hole: readonly [Card, Card]; board: readonly Card[] },
 ): Grade {
   const entry = getPostflopStrategy(template, handClass);
   if (entry === undefined) {
     throw new RangeError(`${template.id} has no strategy for ${handClass}`);
   }
+  const refined = refineEntry(entry, template.actions, combo);
   return gradeDecision(
     {
       actions: template.actions,
-      frequencies: Object.fromEntries(template.actions.map((a) => [a, entry.strategy[a] ?? 0])),
-      evs: Object.fromEntries(template.actions.map((a) => [a, entry.ev[a] ?? 0])),
+      frequencies: Object.fromEntries(template.actions.map((a) => [a, refined.strategy[a] ?? 0])),
+      evs: Object.fromEntries(template.actions.map((a) => [a, refined.ev[a] ?? 0])),
     },
     chosenAction,
     nodeStats,

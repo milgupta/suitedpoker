@@ -20,6 +20,7 @@ import {
   type DemoHandRecord,
 } from "@/lib/demo-hand";
 import { FIXED_DEMO, FIXED_DEMO_NODE_REF } from "@/lib/demo-script";
+import { BASELINE_OPEN_CHIPS } from "@/poker/sizing";
 import { SPOT_TTL_SECONDS } from "../../drills/next/route";
 
 /**
@@ -94,6 +95,9 @@ export const POST = withAuth(async (_request, auth) => {
         actionSeq: FIXED_DEMO.actionSeq,
         difficulty: FIXED_DEMO.difficulty,
         forceHandKey: FIXED_DEMO.handKey as HandKey,
+        // The demo's copy quotes this node's numbers and states the open size
+        // in prose, so it must be dealt at the price that copy was written for.
+        forceFacingChips: BASELINE_OPEN_CHIPS,
       },
       data,
       seed,

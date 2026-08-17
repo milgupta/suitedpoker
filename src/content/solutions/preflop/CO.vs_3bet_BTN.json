@@ -30,8 +30,7 @@
       "fold": 1
     },
     "77": {
-      "fold": 0.5,
-      "call": 0.5
+      "fold": 1
     },
     "88": {
       "fold": 0.5,
@@ -74,7 +73,8 @@
       "raise": 0.3
     },
     "A4s": {
-      "fold": 1
+      "fold": 0.7,
+      "raise": 0.3
     },
     "A3s": {
       "fold": 1
@@ -560,18 +560,18 @@
     },
     "77": {
       "fold": 0,
-      "call": 0,
-      "raise": -0.26
+      "call": -0.14,
+      "raise": -0.36
     },
     "88": {
       "fold": 0,
       "call": 0,
-      "raise": -0.26
+      "raise": -0.28
     },
     "99": {
       "fold": 0,
       "call": 0,
-      "raise": -0.27
+      "raise": -0.29
     },
     "AA": {
       "fold": 0,
@@ -586,12 +586,12 @@
     "AQs": {
       "fold": 0,
       "call": 0.73,
-      "raise": 0.24
+      "raise": 0.21
     },
     "AJs": {
       "fold": 0,
       "call": 0.32,
-      "raise": -0.05
+      "raise": -0.07
     },
     "ATs": {
       "fold": 0,
@@ -625,8 +625,8 @@
     },
     "A4s": {
       "fold": 0,
-      "call": -0.39,
-      "raise": -0.61
+      "call": -0.41,
+      "raise": 0
     },
     "A3s": {
       "fold": 0,
@@ -651,7 +651,7 @@
     "KQs": {
       "fold": 0,
       "call": 0.14,
-      "raise": -0.18
+      "raise": -0.2
     },
     "KJs": {
       "fold": 0,
@@ -706,7 +706,7 @@
     "AQo": {
       "fold": 0,
       "call": 0,
-      "raise": -0.27
+      "raise": -0.29
     },
     "KQo": {
       "fold": 0,
@@ -721,7 +721,7 @@
     "QJs": {
       "fold": 0,
       "call": 0,
-      "raise": -0.27
+      "raise": -0.29
     },
     "QTs": {
       "fold": 0,
@@ -786,12 +786,12 @@
     "JJ": {
       "fold": 0,
       "call": 2.46,
-      "raise": 1.45
+      "raise": 1.43
     },
     "JTs": {
       "fold": 0,
       "call": 0,
-      "raise": -0.26
+      "raise": -0.28
     },
     "J9s": {
       "fold": 0,
@@ -856,7 +856,7 @@
     "TT": {
       "fold": 0,
       "call": 0.1,
-      "raise": -0.2
+      "raise": -0.22
     },
     "T9s": {
       "fold": 0,

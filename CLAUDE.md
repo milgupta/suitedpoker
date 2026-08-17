@@ -158,6 +158,79 @@ sessions.
 **Every substage in `SUITEDPOKER_BUILD_PLAN.md` is now done.** Update this table
 if you add one.
 
+**What the content-depth pass left you.**
+
+- 🔴 **POSTFLOP WAS 130 ANSWERS AND IS NOW KEYED ON THE COMBO.**
+  `gradePostflop` graded `(template, handClass)` and nothing else, so `AhKh` on
+  `Ah 7d 2c` and `AcKs` on `As 8h 3d` were the SAME CELL — blockers, the kicker
+  inside the class, the backdoor draw and which of the four boards you were
+  dealt all collapsed. `src/poker/refine.ts` re-keys it on
+  `(template, handClass, comboFeatures)`: **108 reachable cells → 259**.
+  Bounded to ±0.20 frequency and it can only redistribute inside the support the
+  template already authors, so it can never invent a line or drop one.
+- 🛑 **118 OF 130 POSTFLOP CELLS PRICED A LINE THEY RECOMMENDED AS A MISTAKE.**
+  `top_pair_weak_kicker` in `river-facing-large-bet-after-two-calls` folded 65%
+  and called 35% with the call at **-0.23**. This is the exact bug
+  `repair-preflop.ts` was written to fix preflop, still live postflop through
+  every substage that touched it. EV is now DERIVED from the frequencies under
+  the indifference rule rather than carried beside them — one source of truth,
+  so a refinement cannot desynchronise the two. **0 violations.**
+- 🔴 **`config.difficulty` WAS NEVER READ IN `generatePostflop`.** It computed a
+  difficulty onto the OUTPUT and never took one as INPUT, so the entire 3.3
+  adaptive loop was inert on every postflop hand — a 1400-rated player and a
+  700-rated one drew from an identical pool for eleven substages. Nothing caught
+  it because the returned spot always carried a plausible-looking number. The
+  only way to see it is to ask for two targets and compare, which
+  `refine-sizing.test.ts` now does. **Both new tests were mutation-checked: they
+  fail when the bug is reintroduced.**
+- 🔴 **SEVEN SERVED NODES SHARED AN EV COLUMN, IN THREE GROUPS**, and the
+  byte-identical-STRATEGY invariant passed the whole time. The cause is worth
+  remembering because it will recur: **`deriveEv` is a function of the strategy's
+  SUPPORT — which hands continue and with which actions — not of its weights.**
+  Two nodes can differ in every frequency and still price identically to the last
+  decimal. Differentiating a pairing means changing WHICH HANDS are in the range.
+  A new invariant fails the build on a duplicate EV column.
+- **Raise sizing varies, in whole chips: opens 5/6/7, 3bets 22/26/30, 4bets
+  44/52/60** (`src/poker/sizing.ts`). Chips are already the display unit, so
+  those ARE 2.5/3/3.5bb with no decimal anywhere on screen. Weighted 50/30/20
+  toward the baseline because 2.5x is what a real game mostly deals.
+- **The narrowing needed TWO weights and one was not enough.** `resistance`
+  (from the hand's EV) alone folded AKo 20% to a bigger 4bet, because EV is
+  relative WITHIN a node and the bottom of a 4bet-calling range scores the same
+  as the bottom of a blind defence — and one of those bottoms is AKo. Scaling on
+  extra BIG BLINDS rather than relative price made it worse still (22→30bb is
+  eight big blinds). It is `priceRatio × resistance × widthFactor` now: measured
+  **BB vs a button open 40.4% → 31.4%** across 2.5x→3.5x, against a published
+  ~40%→~30%, with a 4bet node moving 3% and AA/KK/QQ untouched.
+- ⚠️ **THE SCRIPTED SURFACES MUST PIN THEIR SIZE.** The demo hand is
+  `BB:vs_rfi_BTN` and its copy states the open in prose ("the button only raised
+  to 5") and quotes the node's frequencies, so a dealt 7-chip open contradicts
+  its own explanation. `forceFacingChips` exists for exactly this and the demo
+  route and the landing showcase both use it. Any new scripted spot must too.
+- **7 multiway nodes: 4 squeeze (`vs_open_call_X_Y`) and 3 limped
+  (`vs_limp_X`).** Before them EVERY node in the tree resolved to hero against
+  exactly one opponent — no multiway pot existed anywhere in the product, for an
+  audience whose games are mostly multiway. `seatActivity` already handled the
+  histories with no change (it walks the betting order rather than comparing seat
+  indices), and `tests/unit/action-legality.test.ts` replays all 7 through the
+  REAL engine, so the spots are provably reachable game states.
+- 🔴 **THE PREMIUM-FOLD INVARIANT CAUGHT MY OWN RANGES.** Four of the squeeze
+  nodes folded AKs/AKo up to 40% because the specs put the non-raise share
+  nowhere. AK does not fold at 100bb; the remainder belongs in CALL. Authored
+  ranges get the same invariant treatment as inherited ones for this reason.
+- **`facingChips` is on `ClientSpot` deliberately** and was added to both
+  client-key allowlists with the reason recorded. It is already printed verbatim
+  in `actionHistory` and says nothing about strategy, but the grader prices
+  against it so it must travel and come back.
+- ⚠️ **`npm run mutation` is 5/6, NOT the 6/6 this file claimed** — "the API
+  guard stops checking entitlement" survives, and `git stash` confirms it
+  survives on a clean tree too, so it predates this pass. `api-route-audit`
+  enumerates routes statically and never exercises the guard at runtime. Worth
+  its own fix: the surviving mutation means every paid API route would serve an
+  unsubscribed caller and nothing would say so.
+- ⚠️ **`npm run screenshots` still not re-run**, and it now also has variable
+  open sizes and multiway tables to show.
+
 **What the first live Stripe test-mode run left you.**
 
 - 🛑 **`DATABASE_URL` WAS POINTING AT SUPABASE'S SESSION-MODE POOLER (port
@@ -195,7 +268,12 @@ if you add one.
 
 **What the product correctness audit left you.**
 
-- 🛑 **THE STRATEGY SET IS NOW 24 NODES, NOT 43.** `src/poker/node-status.ts` is
+- 🛑 **THE STRATEGY SET IS AN ALLOWLIST, NOT THE FILE COUNT.** (This read "24
+  nodes, not 43" and was stale twice over: later repairs released nodes back,
+  and the content-depth pass added 7 multiway files. It is **39 served of 50 on
+  disk**, 11 quarantined — but do not trust that number either; count it with
+  `loadSolutionData().preflop.length` rather than reading it here.)
+  `src/poker/node-status.ts` is
   an allowlist: every quarantined node carries a WRITTEN REASON and
   `loadSolutionData()` filters it, while `loadAllSolutionData()` still returns
   everything so `/methodology` counts honestly and the deferred solver work has

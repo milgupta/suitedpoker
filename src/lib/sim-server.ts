@@ -18,6 +18,7 @@ import {
   type HandHistory,
 } from "@/poker/gamestate";
 import { grade as gradePreflop, gradePostflop } from "@/poker/grader";
+import { comboOf } from "@/poker/refine";
 import { boardTexture, classifyHand, type BoardTag } from "@/poker/handclass";
 import { handToKey } from "@/poker/range";
 import {
@@ -663,7 +664,15 @@ function heroPostflopDecision(
   }
 
   try {
-    const result = gradePostflop(template, handClass, mapped);
+    // Same combo re-keying as the drill grader — a hand played at the table and
+    // the same hand drilled in the arena must not grade differently.
+    const result = gradePostflop(
+      template,
+      handClass,
+      mapped,
+      undefined,
+      comboOf(hero.holeCards, game.board as readonly Card[]),
+    );
     return {
       street,
       heroActionIndex: index,

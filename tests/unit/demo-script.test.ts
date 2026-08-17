@@ -24,6 +24,7 @@ import {
   type DemoAction,
 } from "@/lib/demo-script";
 import { isServableNode } from "@/poker/node-status";
+import { BASELINE_OPEN_CHIPS } from "../../src/poker/sizing";
 import { actionHistoryFor } from "@/poker/generator";
 import { CHIPS_PER_BB } from "@/lib/units";
 
@@ -166,11 +167,14 @@ describe("the mini chat routes questions to written answers", () => {
      * changes again, this sentence is the one that quietly becomes a lie,
      * because it is prose rather than a formatted amount.
      */
-    const history = actionHistoryFor({
-      ref: FIXED_DEMO_NODE_REF,
-      heroPos: FIXED_DEMO.heroPos,
-      actionSeq: FIXED_DEMO.actionSeq,
-    } as Parameters<typeof actionHistoryFor>[0]);
+    const history = actionHistoryFor(
+      {
+        ref: FIXED_DEMO_NODE_REF,
+        heroPos: FIXED_DEMO.heroPos,
+        actionSeq: FIXED_DEMO.actionSeq,
+      } as Parameters<typeof actionHistoryFor>[0],
+      BASELINE_OPEN_CHIPS,
+    );
 
     const openSize = history.join(" ").match(/opens (\d+)/)?.[1];
     expect(openSize, "the generator no longer prints an open size").toBeDefined();

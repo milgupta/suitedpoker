@@ -28,6 +28,14 @@ import {
   evOf,
 } from "./solutions";
 import { committedBbOf, seatActivity } from "./seat-activity";
+import { refineEntry } from "./refine";
+import {
+  BASELINE_OPEN_CHIPS,
+  BASELINE_THREE_BET_CHIPS,
+  sizedPotBb,
+  sizedRow,
+  sizesFor,
+} from "./sizing";
 
 export type SpotType = "preflop" | "postflop";
 
@@ -58,6 +66,17 @@ export interface SpotConfig {
    * Server-side only. Nothing reachable from a request body sets it.
    */
   forceHandKey?: HandKey;
+  /**
+   * Deal this exact raise size (in chips) rather than sampling one.
+   *
+   * The scripted surfaces need it: the demo hand's copy states the open size in
+   * prose ("the button only raised to 5") and quotes the node's frequencies, so
+   * a spot that dealt a 7-chip open would contradict its own explanation. The
+   * landing showcase has the same problem for the same reason.
+   *
+   * Server-side only. Nothing reachable from a request body sets it.
+   */
+  forceFacingChips?: number;
 }
 
 export interface SeatView {
@@ -92,6 +111,14 @@ export interface Spot {
   readonly legalActions: readonly string[];
   readonly seats: readonly SeatView[];
   readonly difficulty: number;
+  /**
+   * The raise hero is FACING, in chips. 0 postflop and at an unopened pot.
+   *
+   * Safe on the client — it is already printed in the action history — and it
+   * has to travel, because the grader must price the decision against the same
+   * raise the user was shown. See `src/poker/sizing.ts`.
+   */
+  readonly facingChips: number;
 }
 
 /**
@@ -229,6 +256,10 @@ export function tagsForNode(node: PreflopNode): string[] {
   else if (node.actionSeq.startsWith("vs_rfi_")) tags.push("vs-open", "defense");
   else if (node.actionSeq.startsWith("vs_3bet_")) tags.push("3bet");
   else if (node.actionSeq.startsWith("vs_4bet_")) tags.push("4bet");
+  // `multiway` spans both families so a lesson or a leak can ask for "a pot
+  // with more than one opponent in it" without naming the shape.
+  else if (node.actionSeq.startsWith("vs_open_call_")) tags.push("squeeze", "multiway");
+  else if (node.actionSeq.startsWith("vs_limp_")) tags.push("limped", "multiway", "isolation");
   if (node.heroPos === "SB" || node.heroPos === "BB") tags.push("blind-defense");
   return tags;
 }
@@ -280,22 +311,63 @@ function seatsFor(
  * has to be taught before they can read the line. See `src/lib/units.ts` for
  * why the whole product moved off big blinds.
  */
-const OPEN_CHIPS = 5;
-const THREE_BET_CHIPS = 22;
-const FOUR_BET_CHIPS = 44;
+const OPEN_CHIPS = BASELINE_OPEN_CHIPS;
+/** A limp is exactly one big blind. */
+const LIMP_CHIPS = 2;
+const THREE_BET_CHIPS = BASELINE_THREE_BET_CHIPS;
 
-export function actionHistoryFor(node: PreflopNode): string[] {
+/**
+ * The action history, with the price hero FACES taken from the spot.
+ *
+ * Only the last raise varies. The sizes before it are the baseline, because
+ * they are hero's own past action or a street already settled — varying those
+ * too would change what hero is holding without changing the question.
+ */
+export function actionHistoryFor(node: PreflopNode, facingChips: number): string[] {
   if (node.actionSeq === "rfi") return ["folded to hero"];
   const opponent = node.actionSeq.split("_").pop() ?? "";
-  if (node.actionSeq.startsWith("vs_rfi_")) return [`${opponent} opens ${OPEN_CHIPS}`];
+
+  // Multiway. Both amounts are written out because `committedBbOf` reads the
+  // last figure on the line to draw a seat's chips — a bare "MP calls" would
+  // put 5 chips in the pot with nothing in front of the player who paid them.
+  if (node.actionSeq.startsWith("vs_limp_")) {
+    return [`${opponent} limps ${LIMP_CHIPS}`];
+  }
+  if (node.actionSeq.startsWith("vs_open_call_")) {
+    const [, , , opener, caller] = node.actionSeq.split("_");
+    return [`${opener ?? ""} opens ${OPEN_CHIPS}`, `${caller ?? ""} calls ${OPEN_CHIPS}`];
+  }
+
+  if (node.actionSeq.startsWith("vs_rfi_")) return [`${opponent} opens ${facingChips}`];
   if (node.actionSeq.startsWith("vs_3bet_")) {
-    return [`${node.heroPos} opens ${OPEN_CHIPS}`, `${opponent} 3bets to ${THREE_BET_CHIPS}`];
+    return [`${node.heroPos} opens ${OPEN_CHIPS}`, `${opponent} 3bets to ${facingChips}`];
   }
   return [
     `${opponent} opens ${OPEN_CHIPS}`,
     `${node.heroPos} 3bets to ${THREE_BET_CHIPS}`,
-    `${opponent} 4bets to ${FOUR_BET_CHIPS}`,
+    `${opponent} 4bets to ${facingChips}`,
   ];
+}
+
+/**
+ * Which price this spot deals, weighted toward the baseline.
+ *
+ * Not uniform: 2.5x is by a wide margin the most common open in real games, and
+ * a drill that served the three sizes equally would misrepresent how often a
+ * player actually meets each one.
+ */
+const SIZE_WEIGHTS: readonly number[] = [0.5, 0.3, 0.2];
+
+function pickFacingChips(node: PreflopNode, rng: Rng, forced?: number): number {
+  const sizes = sizesFor(node.actionSeq);
+  if (sizes.length === 0) return 0;
+  if (forced !== undefined && sizes.includes(forced)) return forced;
+  let target = rng();
+  for (let i = 0; i < sizes.length; i++) {
+    target -= SIZE_WEIGHTS[i] ?? 0;
+    if (target < 0) return sizes[i]!;
+  }
+  return sizes[0]!;
 }
 
 export interface SolutionData {
@@ -304,6 +376,15 @@ export interface SolutionData {
 }
 
 const MAX_RESAMPLES = 60;
+
+/**
+ * Candidate combos considered when a postflop difficulty is requested.
+ *
+ * Higher than preflop's 12 because a postflop draw can be rejected before it
+ * scores at all — an unreachable combo, or a hand class the template has no row
+ * for — so the yield per attempt is lower.
+ */
+const POSTFLOP_DIFFICULTY_DRAWS = 16;
 
 function pick<T>(items: readonly T[], rng: Rng): T {
   const item = items[randomInt(rng, items.length)];
@@ -386,6 +467,23 @@ function generatePreflop(config: SpotConfig, data: SolutionData, rng: Rng, seed:
     );
   }
   const node = pick(candidates, rng);
+  const facingChips = pickFacingChips(node, rng, config.forceFacingChips);
+
+  // Difficulty is measured on the SIZED row, not the authored one. Facing a
+  // bigger raise genuinely changes the question — a hand that was a clear call
+  // at 5 chips can be a coin flip at 7 — and a difficulty computed from the
+  // baseline would rank a spot the grader then treats differently.
+  const rowFor = (handKey: HandKey) => sizedRow(node, handKey, facingChips);
+  const difficultyFor = (handKey: HandKey): number => {
+    const row = rowFor(handKey);
+    const evs = node.actions.map((a) => row.ev[a] ?? 0).sort((x, y) => y - x);
+    return difficultyOf({
+      entropy: strategyEntropy(node.actions.map((a) => row.strategy[a] ?? 0)),
+      evGap: (evs[0] ?? 0) - (evs[1] ?? 0),
+      street: "preflop",
+      classAmbiguity: 0,
+    });
+  };
 
   // Draw a few candidate hands and keep the one closest to the requested
   // difficulty. Sampling once and hoping would make `difficulty` decorative.
@@ -395,29 +493,14 @@ function generatePreflop(config: SpotConfig, data: SolutionData, rng: Rng, seed:
   const draws = forced !== undefined ? 0 : target === undefined ? 1 : 12;
 
   if (forced !== undefined) {
-    const strategy = getStrategy(node, forced);
-    best = {
-      handKey: forced,
-      difficulty: difficultyOf({
-        entropy: strategyEntropy(node.actions.map((a) => strategy[a] ?? 0)),
-        evGap: evGapOf(node, forced),
-        street: "preflop",
-        classAmbiguity: 0,
-      }),
-    };
+    best = { handKey: forced, difficulty: difficultyFor(forced) };
   }
 
   const reachable = reachableHands(node, data);
 
   for (let i = 0; i < draws; i++) {
     const handKey = sampleInstructiveHand(node, rng, reachable);
-    const strategy = getStrategy(node, handKey);
-    const difficulty = difficultyOf({
-      entropy: strategyEntropy(node.actions.map((a) => strategy[a] ?? 0)),
-      evGap: evGapOf(node, handKey),
-      street: "preflop",
-      classAmbiguity: 0,
-    });
+    const difficulty = difficultyFor(handKey);
     if (best === null || Math.abs(difficulty - target!) < Math.abs(best.difficulty - target!)) {
       best = { handKey, difficulty };
     }
@@ -425,7 +508,7 @@ function generatePreflop(config: SpotConfig, data: SolutionData, rng: Rng, seed:
   }
   const chosen = best!;
   const combo = comboFor(chosen.handKey, [], rng);
-  const actionHistory = actionHistoryFor(node);
+  const actionHistory = actionHistoryFor(node, facingChips);
 
   return {
     id: spotId(node.ref, seed),
@@ -437,12 +520,13 @@ function generatePreflop(config: SpotConfig, data: SolutionData, rng: Rng, seed:
     heroPos: node.heroPos,
     heroCards: [combo[0], combo[1]],
     board: [],
-    potBb: node.potBb,
+    potBb: sizedPotBb(node, facingChips),
     effStackBb: node.effStackBb,
     actionHistory,
     legalActions: [...node.actions],
     seats: seatsFor(node.heroPos, node.effStackBb, actionHistory, 0),
     difficulty: chosen.difficulty,
+    facingChips,
   };
 }
 
@@ -465,7 +549,23 @@ function generatePostflop(config: SpotConfig, data: SolutionData, rng: Rng, seed
   const template = pick(candidates, rng);
   const heroRange = safeRange(template.heroRange);
 
-  for (let attempt = 0; attempt < MAX_RESAMPLES; attempt++) {
+  /**
+   * Difficulty targeting, which this function did not do for eleven substages.
+   * `config.difficulty` was computed onto the OUTPUT and never read as an
+   * INPUT, so the whole adaptive-difficulty loop was inert on every postflop
+   * hand: a 1400-rated player and a 700-rated one drew from the same pool.
+   *
+   * Same shape as the preflop path — draw candidates, keep the closest — but
+   * the draws must be counted separately from the resample budget, because a
+   * combo whose class the template has no row for is not a candidate at all.
+   */
+  const target = config.difficulty;
+  const wanted = target === undefined ? 1 : POSTFLOP_DIFFICULTY_DRAWS;
+
+  let best: { combo: Combo; board: Card[]; handClass: HandClass; difficulty: number } | null = null;
+  let drawn = 0;
+
+  for (let attempt = 0; attempt < MAX_RESAMPLES && drawn < wanted; attempt++) {
     const boardText = pick(template.exampleBoards, rng);
     const board = boardText
       .split(/\s+/)
@@ -478,9 +578,14 @@ function generatePostflop(config: SpotConfig, data: SolutionData, rng: Rng, seed
     const handClass = classifyHand([combo[0], combo[1]], board);
     const entry = getPostflopStrategy(template, handClass);
     if (entry === undefined) continue;
+    drawn++;
 
-    const frequencies = template.actions.map((a) => entry.strategy[a] ?? 0);
-    const evs = template.actions.map((a) => entry.ev[a] ?? 0).sort((x, y) => y - x);
+    // Scored on the REFINED cell, not the authored one. The combo is part of
+    // the decision now, so a difficulty computed from the bare class would rank
+    // a spot the grader then treats as a different question.
+    const refined = refineEntry(entry, template.actions, { hole: [combo[0], combo[1]], board });
+    const frequencies = template.actions.map((a) => refined.strategy[a] ?? 0);
+    const evs = template.actions.map((a) => refined.ev[a] ?? 0).sort((x, y) => y - x);
     const difficulty = difficultyOf({
       entropy: strategyEntropy(frequencies),
       evGap: (evs[0] ?? 0) - (evs[1] ?? 0),
@@ -488,34 +593,47 @@ function generatePostflop(config: SpotConfig, data: SolutionData, rng: Rng, seed
       classAmbiguity: template.strategies.length > 10 ? 1 : 0.5,
     });
 
-    const actionHistory = [...template.actionHistory];
-
-    return {
-      id: spotId(template.id, seed),
-      seed,
-      type: "postflop",
-      nodeRef: template.id,
-      handKey: comboKeyOf(combo),
-      handClass,
-      heroPos: template.heroPos,
-      heroCards: [combo[0], combo[1]],
-      board,
-      potBb: template.potBb,
-      effStackBb: template.effStackBb,
-      actionHistory,
-      legalActions: [...template.actions],
-      seats: seatsFor(template.heroPos, template.effStackBb, actionHistory, board.length),
-      difficulty,
-    };
+    if (
+      best === null ||
+      (target !== undefined && Math.abs(difficulty - target) < Math.abs(best.difficulty - target))
+    ) {
+      best = { combo, board, handClass, difficulty };
+    }
+    if (target !== undefined && best.difficulty === target) break;
   }
 
   // Fail loudly. A silent fallback here would serve a spot whose hand class the
   // template has no strategy for, and the grader would then have nothing to
   // grade against.
-  throw new Error(
-    `could not build a spot for ${template.id} in ${MAX_RESAMPLES} attempts — ` +
-      `its hero range and its strategy list probably do not overlap`,
-  );
+  if (best === null) {
+    throw new Error(
+      `could not build a spot for ${template.id} in ${MAX_RESAMPLES} attempts — ` +
+        `its hero range and its strategy list probably do not overlap`,
+    );
+  }
+
+  const actionHistory = [...template.actionHistory];
+
+  return {
+    id: spotId(template.id, seed),
+    seed,
+    type: "postflop",
+    nodeRef: template.id,
+    handKey: comboKeyOf(best.combo),
+    handClass: best.handClass,
+    heroPos: template.heroPos,
+    heroCards: [best.combo[0], best.combo[1]],
+    board: best.board,
+    potBb: template.potBb,
+    effStackBb: template.effStackBb,
+    actionHistory,
+    legalActions: [...template.actions],
+    seats: seatsFor(template.heroPos, template.effStackBb, actionHistory, best.board.length),
+    difficulty: best.difficulty,
+    // Postflop sizing is authored into the template's own action list; there is
+    // no single "raise faced" to vary.
+    facingChips: 0,
+  };
 }
 
 function comboKeyOf(combo: Combo): HandKey {

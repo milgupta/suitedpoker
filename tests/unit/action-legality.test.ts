@@ -36,7 +36,7 @@ const OPEN = 5;
 const THREE_BET = 22;
 const FOUR_BET = 44;
 
-type Step = { pos: Position; type: "fold" | "raise"; amount?: number };
+type Step = { pos: Position; type: "fold" | "raise" | "call"; amount?: number };
 
 /** The scripted actions, in engine order, that reach the hero's decision. */
 function stepsFor(node: PreflopNode): Step[] {
@@ -52,6 +52,30 @@ function stepsFor(node: PreflopNode): Step[] {
   if (seq === "rfi") return folds(before(hero));
 
   const opponent = seq.split("_").pop() as Position;
+
+  // Multiway. A limp is a CALL of the big blind, and the caller in a squeeze
+  // spot calls the open — both are passive actions the engine must accept at
+  // that seat, which is exactly what makes this replay worth running on them.
+  if (seq.startsWith("vs_limp_")) {
+    return [
+      ...folds(before(opponent)),
+      { pos: opponent, type: "call" },
+      ...folds(between(opponent, hero)),
+    ];
+  }
+
+  if (seq.startsWith("vs_open_call_")) {
+    const [, , , openerName, callerName] = seq.split("_");
+    const opener = openerName as Position;
+    const caller = callerName as Position;
+    return [
+      ...folds(before(opener)),
+      { pos: opener, type: "raise", amount: OPEN },
+      ...folds(between(opener, caller)),
+      { pos: caller, type: "call" },
+      ...folds(between(caller, hero)),
+    ];
+  }
 
   if (seq.startsWith("vs_rfi_")) {
     return [
@@ -101,7 +125,15 @@ function replayToHero(node: PreflopNode): GameState {
     state =
       step.type === "fold"
         ? applyAction(state, { type: "fold" })
-        : applyAction(state, { type: "raise", amount: step.amount! });
+        : step.type === "call"
+          ? // The engine prices the call itself (it differs by seat — the small
+            // blind already has chips in), so the amount is read off the legal
+            // list rather than assumed here.
+            applyAction(state, {
+              type: "call",
+              amount: legalActions(state).find((a) => a.type === "call")?.amount,
+            })
+          : applyAction(state, { type: "raise", amount: step.amount! });
   }
 
   const hero = state.actionOn === null ? null : state.players[state.actionOn];

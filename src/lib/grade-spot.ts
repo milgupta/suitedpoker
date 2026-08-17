@@ -1,16 +1,16 @@
 import "server-only";
 
-import { grade as gradePreflop, gradePostflop, type Grade } from "@/poker/grader";
+import { gradeDecision, gradePostflop, type Grade } from "@/poker/grader";
 import type { SolutionData, Spot } from "@/poker/generator";
 import {
   getPostflopStrategy,
-  getStrategy,
   nodeRefOf,
-  postflopBestAction,
   type NodeConfidence,
   type PostflopActionName,
   type PreflopActionName,
 } from "@/poker/solutions";
+import { comboOf, refineEntry, refinedBestAction } from "@/poker/refine";
+import { sizedRow } from "@/poker/sizing";
 
 /**
  * The honest ceiling on a grade whose numbers the data itself distrusts.
@@ -52,15 +52,30 @@ export function gradeSpot(
     const template = data.postflop.find((t) => t.id === spot.nodeRef);
     if (template === undefined || spot.handClass === null) return null;
     return capGradeForConfidence(
-      gradePostflop(template, spot.handClass, action as PostflopActionName),
+      // The combo is what re-keys this off the bare hand class. The answer
+      // route regenerates the whole spot from its stored seed, so the hole
+      // cards and board here are exactly the ones the user was shown.
+      gradePostflop(
+        template,
+        spot.handClass,
+        action as PostflopActionName,
+        undefined,
+        comboOf(spot.heroCards, spot.board),
+      ),
       template.confidence,
     );
   }
 
   const node = data.preflop.find((n) => nodeRefOf(n.heroPos, n.actionSeq) === spot.nodeRef);
   if (node === undefined) return null;
+  // Priced against the raise the user was actually shown. Grading a 7-chip open
+  // as though it were 5 would mark the correct fold of a marginal hand wrong.
+  const row = sizedRow(node, spot.handKey, spot.facingChips);
   return capGradeForConfidence(
-    gradePreflop(node, spot.handKey, action as PreflopActionName),
+    gradeDecision(
+      { actions: node.actions, frequencies: row.strategy, evs: row.ev },
+      action as PreflopActionName,
+    ),
     node.confidence,
   );
 }
@@ -98,16 +113,21 @@ export function strategyForSpot(
     if (template === undefined || spot.handClass === null) return null;
     const entry = getPostflopStrategy(template, spot.handClass);
     if (entry === undefined) return null;
+    // Refined with the same combo the grader uses. A hint built from the
+    // class-level mix would name frequencies the feedback panel then contradicts.
+    const refined = refineEntry(entry, template.actions, comboOf(spot.heroCards, spot.board));
     return {
-      mix: Object.fromEntries(template.actions.map((a) => [a, entry.strategy[a] ?? 0])),
-      bestAction: postflopBestAction(template, spot.handClass),
+      mix: Object.fromEntries(template.actions.map((a) => [a, refined.strategy[a] ?? 0])),
+      bestAction: refinedBestAction(refined, template.actions),
       notes: entry.rationale ?? null,
     };
   }
 
   const node = data.preflop.find((n) => nodeRefOf(n.heroPos, n.actionSeq) === spot.nodeRef);
   if (node === undefined) return null;
-  const mix = getStrategy(node, spot.handKey);
+  // Sized exactly as the grader will price it. A hint quoting the 2.5x mix on a
+  // 3.5x open would describe a spot the user is not being asked about.
+  const mix = sizedRow(node, spot.handKey, spot.facingChips).strategy;
   const bestAction =
     Object.entries(mix).sort((a, b) => b[1] - a[1])[0]?.[0] ?? spot.legalActions[0] ?? "";
   return { mix, bestAction, notes: node.notes ?? null };

@@ -221,6 +221,7 @@ describe("no solution data reaches the client", () => {
         "board",
         "difficulty",
         "effStackBb",
+        "facingChips",
         "heroCards",
         "heroPos",
         "id",
@@ -249,15 +250,33 @@ describe("instructiveness", () => {
   });
 
   it("almost never generates AA", () => {
+    /*
+     * Sampled at 20,000 rather than 3,000, and asserted as a RATE against the
+     * uniform baseline rather than as a raw count.
+     *
+     * At 3,000 draws the expected number of aces is about 4 with a standard
+     * deviation of 2, so a hard "fewer than 10" threshold is a bit over three
+     * standard deviations from the mean — close enough that an ordinary change
+     * to the order the generator consumes its rng reshuffles the draws and
+     * trips it, with the underlying rate unmoved. It did exactly that, and the
+     * measured rate had actually IMPROVED at the time it failed.
+     *
+     * A test whose failure does not imply a regression is worse than no test:
+     * the reflex is to raise the threshold, which is tuning the assertion to
+     * the code. The sample is now large enough that the bound means something.
+     */
+    const draws = 20_000;
     let aces = 0;
-    for (let i = 0; i < 3000; i++) {
+    for (let i = 0; i < draws; i++) {
       const spot = generateSpot({ type: "preflop" }, data, `aces:${i}`);
       if (spot.handKey === "AA") aces++;
     }
-    // Uniform sampling over 169 hands would give ~18. Instructiveness should
-    // suppress it well below that.
-    expect(aces).toBeLessThan(10);
-    record("AA is suppressed", `${aces} of 3000 spots were AA (uniform would be ~18)`);
+    const uniform = draws / 169;
+    expect(aces).toBeLessThan(uniform * 0.4);
+    record(
+      "AA is suppressed",
+      `${aces} of ${draws} spots were AA (uniform would be ~${uniform.toFixed(0)})`,
+    );
   });
 
   it("computes entropy correctly", () => {

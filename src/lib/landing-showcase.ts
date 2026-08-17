@@ -5,6 +5,7 @@ import { positionName } from "@/lib/demo-hand";
 import type { Grade } from "@/lib/grade";
 import { formatActionHistory, situationLine } from "@/lib/spot-situation";
 import { actionHistoryFor } from "@/poker/generator";
+import { BASELINE_OPEN_CHIPS } from "@/poker/sizing";
 import { bandFor } from "@/poker/grader";
 import type { HandKey } from "@/poker/range";
 import { committedBbOf, PREFLOP_ORDER, seatActivity } from "@/poker/seat-activity";
@@ -259,7 +260,8 @@ export function buildShowcase(node: PreflopNode, hand: HandKey = SHOWCASE_HAND):
 const actionHistoryOf = actionHistoryFor;
 
 function tableOf(node: PreflopNode, hand: HandKey): ShowcaseTable {
-  const history = actionHistoryOf(node);
+  // The showcase is scripted copy, so it always shows the baseline open.
+  const history = actionHistoryOf(node, BASELINE_OPEN_CHIPS);
   const activity = seatActivity(node.heroPos, history);
 
   return {
