@@ -109,6 +109,10 @@ test.describe("drill loop", () => {
       "legalActions",
       "seats",
       "difficulty",
+      // The raise hero faces, in chips. Already printed verbatim in
+      // `actionHistory` ("BTN opens 7") and says nothing about the strategy —
+      // but the grader prices against it, so it has to travel and come back.
+      "facingChips",
       "seat",
       "position",
       "stackBb",

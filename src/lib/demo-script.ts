@@ -68,11 +68,15 @@ export interface DemoVerdict {
 /**
  * One written response per action, not one per grade.
  *
- * Grade-keyed copy was the first attempt and it says the wrong thing: `fold`
- * and `call` both grade `best` here (the solver is indifferent), so a
- * grade-keyed message congratulates both identically and teaches nothing about
- * the difference — which IS the lesson. Keying on what they actually pressed
- * lets each answer be about that answer.
+ * Grade-keyed copy was the first attempt and it says the wrong thing. `call`
+ * grades `best` and `fold` grades `solid` — they are indifferent in EV, and
+ * the only thing separating them is that one is the line the chart takes four
+ * times in five. Two words that close together cannot carry the lesson, which
+ * is WHY the difference exists. Keying on what they actually pressed lets each
+ * answer be about that answer.
+ *
+ * (This used to read "both grade `best`", which was true and was the bug: a
+ * green "✓ Best" sat above a panel printing "Call." when the user had folded.)
  */
 export const DEMO_VERDICT: Record<DemoAction, DemoVerdict> = {
   call: {

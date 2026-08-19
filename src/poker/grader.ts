@@ -196,6 +196,32 @@ export function gradeDecision(
     chosenAction !== bestAction;
   if (isBalancedAlternative && grade !== "best") grade = "solid";
 
+  /*
+   * A MINORITY LINE IS `solid`, NEVER `best`.
+   *
+   * Under the indifference rule every action in a mix is worth exactly the
+   * same, so `evLoss` is 0 for all of them and `bandFor(0)` returns "best".
+   * That put a green "✓ Best" on a 20% fold while the panel directly above it
+   * printed "Call." — the same grading-versus-display contradiction this
+   * module was written to prevent, just mirrored. The `isBalancedAlternative`
+   * rule above was meant to catch it and cannot: it only ever UPGRADES to
+   * solid, and the grade is already "best" by the time it runs.
+   *
+   * It is NOT an inaccuracy, and must never be coloured as one. Folding T9o one
+   * time in five is what the strategy does; marking it amber would teach that a
+   * real mixed line is a mistake, which is precisely the lie the EV-loss design
+   * exists to avoid. `solid` is the honest word — correct poker, but not the
+   * headline answer.
+   *
+   * The `freqOf(topAction) > chosenFreq` guard is what keeps a genuine 50/50
+   * out of this: with equal frequencies `topAction` is decided by the order of
+   * `actions`, and demoting one side of a coin flip on a tie-break would be
+   * arbitrary rather than true.
+   */
+  const isMinorityLine =
+    displayMode !== "clear" && isPlayedFrequency(chosenFreq) && freqOf(topAction) > chosenFreq;
+  if (isMinorityLine && grade === "best") grade = "solid";
+
   // The pedagogical override. Folding a hand the solution always raises is a
   // large conceptual error even when the chip cost is small, and letting it
   // score `solid` because the EV table happens to be flat would teach exactly

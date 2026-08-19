@@ -59,9 +59,17 @@ describe("grade bands", () => {
   ];
 
   it.each(cases)("an EV loss of %s grades as %s (%s)", (evLoss, expected) => {
-    // Fold is the chosen (worse) action; raise is best by exactly `evLoss`.
-    // raiseFreq 0.6 keeps the pure-raise override out of the way.
-    const result = gradeDecision(twoActions(evLoss, 0.6), "fold");
+    /*
+     * Fold is the chosen (worse) action; raise is best by exactly `evLoss`.
+     *
+     * raiseFreq 0.4 makes FOLD the majority line, which is what isolates the
+     * bands from everything else in the grader. At 0.6 the chosen fold was a
+     * minority line, so these cases were really asserting that a 40% action
+     * scores "best" — the defect that put a green tick on a 20% fold while the
+     * panel above it said "Call." The pure-raise override stays out of the way
+     * either way, since raise is not played at 100%.
+     */
+    const result = gradeDecision(twoActions(evLoss, 0.4), "fold");
     expect(result.grade).toBe(expected);
     expect(result.evLoss).toBeCloseTo(evLoss, 9);
   });
@@ -69,6 +77,56 @@ describe("grade bands", () => {
   it("grades the best action as best regardless of the gap", () => {
     expect(gradeDecision(twoActions(50, 0.6), "raise").grade).toBe("best");
     expect(gradeDecision(twoActions(50, 0.6), "raise").evLoss).toBe(0);
+  });
+
+  /*
+   * THE MINORITY RULE.
+   *
+   * Reported from the onboarding hand: T9o in the big blind against a button
+   * open is call 80 / fold 20, the user folded, and the panel printed "Call."
+   * above a green "✓ Best". Under the indifference rule both actions are worth
+   * exactly 0, so `bandFor(0)` returned "best" for the 20% line.
+   *
+   * It must be `solid` — not `best`, because it is not the headline answer,
+   * and NOT `inaccuracy`, because folding one time in five is what the
+   * strategy does and colouring it amber would teach that a real mixed line is
+   * a mistake.
+   */
+  describe("a minority line in a mixed spot", () => {
+    const mixed = (foldFreq: number): GradeInput => ({
+      actions: ["fold", "call"],
+      frequencies: { fold: foldFreq, call: 1 - foldFreq },
+      evs: { fold: 0, call: 0 },
+    });
+
+    it("scores solid, not best", () => {
+      expect(gradeDecision(mixed(0.2), "fold").grade).toBe("solid");
+    });
+
+    it("still scores the majority line best", () => {
+      expect(gradeDecision(mixed(0.2), "call").grade).toBe("best");
+    });
+
+    it("never scores it as an inaccuracy or worse", () => {
+      // The whole point: a real part of the mix is never an error.
+      for (const freq of [0.05, 0.15, 0.2, 0.35, 0.49]) {
+        const grade = gradeDecision(mixed(freq), "fold").grade;
+        expect(["best", "solid"], `fold at ${freq} graded ${grade}`).toContain(grade);
+      }
+    });
+
+    it("demotes neither side of a true 50/50", () => {
+      // With equal frequencies the "top" action is decided by the order of
+      // `actions`, and demoting a coin flip on a tie-break would be arbitrary.
+      expect(gradeDecision(mixed(0.5), "fold").grade).toBe("best");
+      expect(gradeDecision(mixed(0.5), "call").grade).toBe("best");
+    });
+
+    it("keeps the chosen EV loss at zero, because it really is zero", () => {
+      // The WORD changes; the number must not. Rating, accuracy and the leak
+      // report all read evLoss, and a minority line costs nothing.
+      expect(gradeDecision(mixed(0.2), "fold").evLoss).toBe(0);
+    });
   });
 
   it("never reports a negative EV loss across 100,000 combinations", () => {

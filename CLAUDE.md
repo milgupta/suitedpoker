@@ -159,7 +159,40 @@ sessions.
 **Every substage in `SUITEDPOKER_BUILD_PLAN.md` is now done.** Update this table
 if you add one.
 
-**What the poker-maths quiz left you.**
+**What the minority-line grade fix left you.**
+
+- 🔴 **A 20% FOLD SHOWED A GREEN "✓ Best" WHILE THE PANEL ABOVE IT SAID
+  "Call."** Reported from the onboarding hand (T9o in the big blind, call 80 /
+  fold 20). Under the indifference rule every action in a mix is worth exactly
+  the same, so `evLoss` is 0 for all of them and `bandFor(0)` returns `best` —
+  the minority line got the identical badge as the modal one. That is the same
+  grading-versus-display contradiction `grader.ts` was written to prevent, just
+  mirrored.
+- **`isBalancedAlternative` was supposed to catch this and could not.** It only
+  ever UPGRADES to solid (`if (isBalancedAlternative && grade !== "best")`), and
+  the grade is already `best` by the time it runs. The flag was correct — it
+  read `true` on the reported hand — and the guard around it was backwards.
+- 🛑 **THE FIX IS `solid`, NOT `inaccuracy`, AND THAT DISTINCTION IS THE WHOLE
+  POINT.** Folding T9o one time in five is what the strategy does. Colouring it
+  amber would teach that a real mixed line is a mistake, which is precisely the
+  lie the EV-loss design exists to avoid. `solid` means correct poker that is
+  not the headline answer. **`evLoss` is untouched at 0** — the WORD changed,
+  the NUMBER did not, so rating, accuracy and the leak report are unaffected.
+- **A true 50/50 is never demoted.** With equal frequencies `topAction` falls
+  out of the order of `actions`, so demoting one side on a tie-break would be
+  arbitrary. Guarded on `freqOf(topAction) > chosenFreq`.
+- **Scale: 447 of 7,149 played preflop lines and 138 of 284 postflop.** Postflop
+  is 48.6% because it is 98.5% mixed cells — and because making the postflop EV
+  column indifference-consistent (which fixed 118 real contradictions) turned
+  every minority postflop line into `best`. That repair widened this bug before
+  anyone saw it; on preflop it predated everything.
+- ⚠️ **THERE ARE THREE CLIENT-KEY ALLOWLISTS, NOT TWO.** `facingChips` was added
+  to `tests/unit/drill-security.test.ts` and `tests/unit/poker/generator.test.ts`
+  and MISSED in `tests/e2e/drill.spec.ts` — so it shipped to production with
+  that e2e red, because **e2e is not in `npm run verify` or the commit hook**.
+  Run the drill spec after touching `ClientSpot`.
+
+**What the poker-maths quiz left you.
 
 - 🔴 **`src/poker/odds.ts` IS THE ONLY EXACT DATA IN THE PRODUCT.** Every
   strategy file says `authored-approximation` and will until 2.10 runs; these
