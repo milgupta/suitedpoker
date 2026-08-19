@@ -61,7 +61,16 @@ const MUTATIONS: Mutation[] = [
     file: "src/lib/api-guard.ts",
     from: "    if (!(await hasActiveSubscription(auth.userId))) return paymentRequired();",
     to: "    if (false) return paymentRequired();",
-    caughtBy: "npx vitest run --project unit tests/unit/api-route-audit.test.ts",
+    /*
+     * Pointed at the RUNTIME test, not the route audit.
+     *
+     * This mutation survived for a long time because `api-route-audit` is a
+     * static scan: it reads every file under src/app/api and checks the guard
+     * was WRITTEN. Deleting the check inside the guard leaves every one of
+     * those files untouched, so the audit stayed green while the paywall was
+     * open to everyone. A test that cannot fail is not a check.
+     */
+    caughtBy: "npx vitest run --project unit tests/unit/api-guard-runtime.test.ts",
     why: "every paid API route would serve an unsubscribed caller",
   },
   {

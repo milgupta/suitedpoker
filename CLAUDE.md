@@ -308,12 +308,17 @@ if you add one.
   client-key allowlists with the reason recorded. It is already printed verbatim
   in `actionHistory` and says nothing about strategy, but the grader prices
   against it so it must travel and come back.
-- ⚠️ **`npm run mutation` is 5/6, NOT the 6/6 this file claimed** — "the API
-  guard stops checking entitlement" survives, and `git stash` confirms it
-  survives on a clean tree too, so it predates this pass. `api-route-audit`
-  enumerates routes statically and never exercises the guard at runtime. Worth
-  its own fix: the surviving mutation means every paid API route would serve an
-  unsubscribed caller and nothing would say so.
+- ✅ **`npm run mutation` IS 6/6 AGAIN.** It read 5/6 for a long time: "the API
+  guard stops checking entitlement" survived because it was pointed at
+  `api-route-audit`, which is a STATIC scan. Deleting the check inside
+  `withEntitlement` leaves every file that scan reads untouched, so the audit
+  stayed green while the paywall was open to everyone. **A test that cannot
+  fail is not a check.** `tests/unit/api-guard-runtime.test.ts` now calls the
+  wrapper directly with `createClient` and `hasActiveSubscription` stubbed —
+  runs in half a second, needs no credentials, and asserts the handler is NEVER
+  reached by an unsubscribed caller. The runtime proof used to exist only in
+  `tests/e2e/entitlement.spec.ts`, which is in neither `npm run verify` nor the
+  mutation run.
 - ⚠️ **`npm run screenshots` still not re-run**, and it now also has variable
   open sizes and multiway tables to show.
 

@@ -7,8 +7,16 @@
  * POST` fails the build, and has to be named in the exemption list with a
  * reason if it really is public.
  *
- * This is a static audit. It proves the guard was WRITTEN, not that it works —
- * tests/e2e/entitlement.spec.ts proves that against real requests.
+ * This is a static audit. It proves the guard was WRITTEN, not that it works,
+ * and that distinction cost something real: `npm run mutation` deletes the
+ * entitlement check inside `withEntitlement`, which leaves every file this scan
+ * reads completely untouched — so the audit stayed green while the paywall was
+ * open to everyone, and the mutation survived.
+ *
+ * Two things prove the guard RUNS: tests/unit/api-guard-runtime.test.ts calls
+ * the wrapper directly with stubbed dependencies (fast, no credentials, in
+ * `npm run verify` and in the mutation run), and tests/e2e/entitlement.spec.ts
+ * proves it over real HTTP. Do not let this file be the only one.
  */
 
 import { readFileSync } from "node:fs";
