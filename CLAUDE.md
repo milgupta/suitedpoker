@@ -136,7 +136,7 @@ sessions.
 | 8.2 Meta Pixel and Conversions API | done — dedup wired end to end, hash hand-verified |
 | 8.3 Transactional email | done — 8 emails read, dunning schedule exact |
 | 8.4 Landing page and SEO | done — Lighthouse mobile 99/100/100/100, scan clean |
-| 8.5 Product assets, icons, capture | done — 7 shots, 82% smaller, clean loop seam |
+| 8.5 Product assets, icons, capture | done — 6 shots, 86% smaller, clean loop seam |
 | 9.1 / 9.2 Motion, mobile, PWA pass | done — CLS 0.0000 everywhere, axe clean, 4 device sizes |
 | 9.3 / 9.4 Test suite, perf, launch readiness | done — 6/6 mutations caught, build gate live |
 | 9.6 Compliance hardening | done — age gate, geo-block, 251-file string audit clean |
@@ -159,7 +159,29 @@ sessions.
 **Every substage in `SUITEDPOKER_BUILD_PLAN.md` is now done.** Update this table
 if you add one.
 
-**What the minority-line grade fix left you.**
+**What the screenshot refresh left you.**
+
+- **Re-run after the quiz, the sizing work and the grade fix. 5 of 6 shots
+  changed.** `dashboard` is the one that MATTERED: it captures `/practice`, so
+  it had been advertising a three-card hub for a product with four modes — a
+  marketing image of something that did not exist.
+- **`lesson` came back BYTE-IDENTICAL**, which is the determinism claim in
+  `capture-screenshots.ts` proving itself rather than being asserted. The three
+  that deal a live hand cannot be, by design: making them reproducible would
+  mean letting the client pick the spot seed, and 3.2 exists to stop that.
+- **The feedback shot now shows the grade fix**, which is a happy accident worth
+  keeping: it captured "YOU CHECKED ✓ Solid" against a headline of "Bet 33%."
+  on a 7% minority line. The hero marketing image is now a demonstration that
+  the product distinguishes a real mixed line from the modal one.
+- **It is 6 shots, not the 7 this file used to claim**, and the AVIF saving is
+  86%, not 82%. Both numbers were stale; `npm run optimize:assets` prints the
+  real ones (2395KB → 327KB).
+- **Run BOTH commands, in order.** `npm run screenshots` writes PNGs;
+  `npm run optimize:assets` produces the AVIF and WebP the pages actually
+  reference. Capturing without optimising leaves the shipped images stale while
+  `public/screenshots/*.png` looks current.
+
+**What the minority-line grade fix left you.
 
 - 🔴 **A 20% FOLD SHOWED A GREEN "✓ Best" WHILE THE PANEL ABOVE IT SAID
   "Call."** Reported from the onboarding hand (T9o in the big blind, call 80 /
@@ -319,8 +341,8 @@ if you add one.
   reached by an unsubscribed caller. The runtime proof used to exist only in
   `tests/e2e/entitlement.spec.ts`, which is in neither `npm run verify` nor the
   mutation run.
-- ⚠️ **`npm run screenshots` still not re-run**, and it now also has variable
-  open sizes and multiway tables to show.
+- ✅ **`npm run screenshots` HAS been re-run** (see the screenshot-refresh note
+  above).
 
 **What the first live Stripe test-mode run left you.**
 
@@ -426,9 +448,8 @@ if you add one.
   board statement and the fiction guard over a written corpus of both kinds),
   and `spot-seats` driven by every served node rather than the cases somebody
   thought to write down.
-- ⚠️ **`npm run screenshots` has NOT been re-run.** The range grid legend, the
-  capsule row and the feedback copy all changed; `public/screenshots` still
-  shows the previous text.
+- ✅ **`npm run screenshots` HAS been re-run** (see the screenshot-refresh note
+  above).
 
 **What the RunOut pass left you.**
 
