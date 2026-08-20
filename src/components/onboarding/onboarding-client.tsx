@@ -54,9 +54,10 @@ export function OnboardingClient({ initialAnswers, mode = "api" }: OnboardingCli
   const reduced = useReducedMotion() ?? false;
 
   const [answers, setAnswers] = useState<Answers>(initialAnswers);
-  const [step, setStep] = useState<number>(() =>
-    Object.keys(initialAnswers).length === 0 ? 0 : resumeIndex(initialAnswers),
-  );
+  // No intro screen: the quiz opens on the first unanswered question. The ad
+  // creative and the landing page have already done the hook's job by the time
+  // anyone is here, so a second pitch was one more tap before the funnel.
+  const [step, setStep] = useState<number>(() => resumeIndex(initialAnswers));
   const [direction, setDirection] = useState<1 | -1>(1);
   const [busy, setBusy] = useState(false);
   const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -192,16 +193,6 @@ export function OnboardingClient({ initialAnswers, mode = "api" }: OnboardingCli
         exit: { opacity: 0, x: direction * -24 },
       };
 
-  if (step === 0) {
-    return (
-      <Hook
-        onStart={() => {
-          goTo(1, 1);
-        }}
-      />
-    );
-  }
-
   const chart = isChartStep(step);
   if (question === undefined && !chart) return null;
 
@@ -211,11 +202,17 @@ export function OnboardingClient({ initialAnswers, mode = "api" }: OnboardingCli
       data-step={step}
     >
       <div className="flex items-center gap-4">
+        {/* Invisible, not absent, on question one: the progress bar must not
+            jump sideways when the button appears on question two. */}
         <button
           type="button"
           aria-label="Back"
-          className="tap-target text-text-secondary hover:text-text-primary -ml-2 p-2"
-          onClick={() => goTo(Math.max(0, step - 1), -1)}
+          className={cn(
+            "tap-target text-text-secondary hover:text-text-primary -ml-2 p-2",
+            step === 1 && "invisible",
+          )}
+          disabled={step === 1}
+          onClick={() => goTo(Math.max(1, step - 1), -1)}
         >
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
             <path
@@ -300,20 +297,6 @@ export function OnboardingClient({ initialAnswers, mode = "api" }: OnboardingCli
       </AnimatePresence>
 
       <p className="text-text-tertiary text-caption text-center italic">{FOOTER}</p>
-    </div>
-  );
-}
-
-function Hook({ onStart }: { onStart: () => void }) {
-  return (
-    <div className="flex min-h-[calc(100dvh-2*var(--app-shell-py))] flex-col justify-center gap-6 text-center">
-      <h1 className="text-display-lg text-balance">
-        Most players lose money on the same five hands. Let&rsquo;s find yours.
-      </h1>
-      <p className="text-text-secondary text-body-lg">Two minutes. No poker knowledge needed.</p>
-      <Button variant="accent" size="lg" className="w-full" onClick={onStart}>
-        Find my leak
-      </Button>
     </div>
   );
 }

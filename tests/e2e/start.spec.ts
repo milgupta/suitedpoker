@@ -41,12 +41,13 @@ test.describe("start funnel (public)", () => {
   test("/start is public and does not require login", async ({ page }) => {
     await page.goto("/start");
     await expect(page).toHaveURL(/\/start/);
-    await expect(page.getByRole("button", { name: "Find my leak" })).toBeVisible();
+    // No intro screen: the quiz opens directly on question one.
+    await expect(page.locator("[data-step='1']")).toBeVisible();
   });
 
   test("quiz completion lands on signup with answers stored", async ({ page }) => {
     await page.goto("/start");
-    await page.getByRole("button", { name: "Find my leak" }).click();
+    await expect(page.locator("[data-step='1']")).toBeVisible();
 
     for (const step of PATH) {
       await pick(page, step.value);

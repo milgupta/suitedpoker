@@ -135,7 +135,7 @@ test.describe("entitlement gating", () => {
     // Gating onboarding would trap every new signup; gating /welcome would
     // bounce a user whose Stripe webhook has not landed yet.
     await page.goto("/onboarding");
-    await expect(page.getByRole("button", { name: "Find my leak" })).toBeVisible();
+    await expect(page.locator("[data-step='1']")).toBeVisible();
 
     await page.goto("/welcome");
     // NOT bounced to /paywall — which is the whole point of the exemption.

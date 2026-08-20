@@ -57,8 +57,8 @@ async function login(page: Page, email: string): Promise<void> {
 }
 
 async function startQuiz(page: Page): Promise<void> {
+  // No intro screen: the quiz opens directly on question one.
   await page.goto("/onboarding");
-  await page.getByRole("button", { name: "Find my leak" }).click();
   await expect(page.locator("[data-step='1']")).toBeVisible();
 }
 
