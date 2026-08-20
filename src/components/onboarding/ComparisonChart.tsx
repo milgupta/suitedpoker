@@ -279,7 +279,7 @@ export function ComparisonChart({ onContinue }: { onContinue: () => void }) {
         </svg>
       </div>
 
-      <p className="text-text-tertiary text-caption">{CHART_FOOTNOTE}</p>
+      <p className="text-text-secondary text-caption font-medium">{CHART_FOOTNOTE}</p>
 
       <div className="mt-auto pt-4">
         <Button variant="accent" size="lg" className="w-full" onClick={onContinue}>
