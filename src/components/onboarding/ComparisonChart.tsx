@@ -1,6 +1,7 @@
 "use client";
 
-import { motion, useReducedMotion } from "motion/react";
+import { useEffect, useRef } from "react";
+import { animate, motion, useReducedMotion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import {
   CHART_CAPTION,
@@ -50,6 +51,18 @@ import {
  * do not justify a dependency in the highest-traffic pre-purchase route, and a
  * library would arrive after hydration and shift the layout.
  *
+ * THE PLAYERS RIDE THE TIPS. For the whole draw — the only part of the
+ * animation a fast tapper ever sees — a bare line tip reads as "just a line".
+ * The two dots ARE the two players the heading promises: they sit together on
+ * the shared start, ride the tips of their curves as the gap opens, and freeze
+ * as the endpoints the labels attach to. One shared progress value drives the
+ * dashoffset AND both dots (`animate` + `getPointAtLength`), because two clocks
+ * for one gesture is how a dot arrives before its line.
+ *
+ * `pathLength={1}` on both strokes is what makes the hidden initial state
+ * server-renderable: dasharray/dashoffset of 1 needs no measured length, so
+ * there is no first-frame flash of fully-drawn lines before the effect runs.
+ *
  * THE ROOT IS NOT `justify-center`, DELIBERATELY. Every question step stacks
  * from the top of the same flex column, so centring this one dropped its
  * heading ~190px below the heading the user was reading a tap earlier. Eight
@@ -66,8 +79,18 @@ const VIEW_H = 180;
 const TRAINED = CHART_SERIES.find((s) => s.id === "trained")!;
 const UNTRAINED = CHART_SERIES.find((s) => s.id === "untrained")!;
 
+// One timing object, shared by the strokes and the riding dots, so the two
+// halves of the same gesture cannot drift apart.
+const DRAW = { duration: 1.15, delay: 0.15, ease: [0.22, 1, 0.36, 1] as const };
+const DRAW_END = DRAW.delay + DRAW.duration;
+
 export function ComparisonChart({ onContinue }: { onContinue: () => void }) {
   const reduced = useReducedMotion() ?? false;
+
+  const trainedPathRef = useRef<SVGPathElement>(null);
+  const untrainedPathRef = useRef<SVGPathElement>(null);
+  const trainedDotRef = useRef<SVGCircleElement>(null);
+  const untrainedDotRef = useRef<SVGCircleElement>(null);
 
   const trainedPts = chartPoints(TRAINED.points, VIEW_W, VIEW_H, Y_MIN, Y_MAX);
   const untrainedPts = chartPoints(UNTRAINED.points, VIEW_W, VIEW_H, Y_MIN, Y_MAX);
@@ -76,16 +99,39 @@ export function ComparisonChart({ onContinue }: { onContinue: () => void }) {
   const untrainedEnd = untrainedPts[untrainedPts.length - 1]!;
   const axisY = VIEW_H - CHART_PAD.bottom;
 
-  // One timing object, shared, so the two curves cannot drift apart.
-  const draw = reduced
-    ? { duration: 0 }
-    : { duration: 1.15, delay: 0.15, ease: [0.22, 1, 0.36, 1] as const };
+  useEffect(() => {
+    const riders = [
+      { path: untrainedPathRef.current, dot: untrainedDotRef.current },
+      { path: trainedPathRef.current, dot: trainedDotRef.current },
+    ].filter(
+      (r): r is { path: SVGPathElement; dot: SVGCircleElement } =>
+        r.path !== null && r.dot !== null,
+    );
+
+    const place = (progress: number): void => {
+      for (const { path, dot } of riders) {
+        path.style.strokeDashoffset = String(1 - progress);
+        const point = path.getPointAtLength(progress * path.getTotalLength());
+        dot.setAttribute("cx", String(point.x));
+        dot.setAttribute("cy", String(point.y));
+      }
+    };
+
+    if (reduced) {
+      place(1);
+      return;
+    }
+    place(0);
+    const controls = animate(0, 1, { ...DRAW, onUpdate: place });
+    return () => controls.stop();
+  }, [reduced]);
+
   const settle = reduced
     ? { duration: 0 }
     : { duration: 0.45, delay: 0.95, ease: "easeOut" as const };
   const endpoints = reduced
     ? { duration: 0 }
-    : { duration: 0.35, delay: 1.15, ease: "easeOut" as const };
+    : { duration: 0.35, delay: DRAW_END, ease: "easeOut" as const };
 
   return (
     <div className="flex flex-1 flex-col gap-5" data-chart="comparison">
@@ -152,27 +198,29 @@ export function ComparisonChart({ onContinue }: { onContinue: () => void }) {
             transition={settle}
           />
 
-          <motion.path
+          <path
+            ref={untrainedPathRef}
             d={chartPath(UNTRAINED.points, VIEW_W, VIEW_H, Y_MIN, Y_MAX)}
             fill="none"
             stroke="var(--color-danger-bright)"
             strokeWidth="2.25"
             strokeLinecap="round"
             strokeLinejoin="round"
-            initial={reduced ? { pathLength: 1 } : { pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-            transition={draw}
+            pathLength={1}
+            strokeDasharray="1"
+            strokeDashoffset="1"
           />
-          <motion.path
+          <path
+            ref={trainedPathRef}
             d={chartPath(TRAINED.points, VIEW_W, VIEW_H, Y_MIN, Y_MAX)}
             fill="none"
             stroke="var(--color-accent-400)"
             strokeWidth="2.75"
             strokeLinecap="round"
             strokeLinejoin="round"
-            initial={reduced ? { pathLength: 1 } : { pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-            transition={draw}
+            pathLength={1}
+            strokeDasharray="1"
+            strokeDashoffset="1"
           />
 
           {/* Shared start — both players, same hole. */}
@@ -185,18 +233,30 @@ export function ComparisonChart({ onContinue }: { onContinue: () => void }) {
             strokeWidth="1.75"
           />
 
-          {/* The endpoints ARE the legend — there is no separate key. */}
+          {/* The two players. They leave the shared start together, ride the
+              tips of their curves, and freeze as the endpoints the labels name.
+              Positioned by the draw effect; these coordinates are frame one. */}
+          <circle
+            ref={untrainedDotRef}
+            cx={trainedStart.x}
+            cy={trainedStart.y}
+            r="4"
+            fill="var(--color-danger-bright)"
+          />
+          <circle
+            ref={trainedDotRef}
+            cx={trainedStart.x}
+            cy={trainedStart.y}
+            r="4.5"
+            fill="var(--color-accent-400)"
+          />
+
+          {/* The endpoint labels ARE the legend — there is no separate key. */}
           <motion.g
             initial={reduced ? { opacity: 1 } : { opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={endpoints}
           >
-            <circle
-              cx={untrainedEnd.x}
-              cy={untrainedEnd.y}
-              r="4"
-              fill="var(--color-danger-bright)"
-            />
             <text
               x={untrainedEnd.x + 9}
               y={untrainedEnd.y + 4}
@@ -206,8 +266,6 @@ export function ComparisonChart({ onContinue }: { onContinue: () => void }) {
             >
               {UNTRAINED.endLabel}
             </text>
-
-            <circle cx={trainedEnd.x} cy={trainedEnd.y} r="4.5" fill="var(--color-accent-400)" />
             <text
               x={trainedEnd.x + 9}
               y={trainedEnd.y + 4}
