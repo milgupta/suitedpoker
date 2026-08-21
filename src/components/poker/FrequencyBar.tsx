@@ -55,8 +55,20 @@ export function FrequencyBar({ segments, chosenAction, className }: FrequencyBar
           violation at serious severity — invalid markup that also leaves a
           screen-reader user unable to reach the buttons the label describes.
           A group may legitimately contain controls and still carry a name. */}
+      {/*
+       * A RING, NOT A BORDER, and the reason is the tap target.
+       *
+       * `h-11` is 44px, and under `box-sizing: border-box` a 1px border on each
+       * edge leaves the segments inside it 42px — two pixels under the minimum
+       * this product holds itself to, on one of the few controls a user
+       * actually presses. A ring paints in the same place and costs no layout,
+       * so the buttons fill the full 44.
+       *
+       * Found by the paywall sweep, which is where the arena's own bar has had
+       * the same two pixels missing the whole time.
+       */}
       <div
-        className="border-border flex h-11 w-full overflow-hidden rounded-full border"
+        className="ring-border flex h-11 w-full overflow-hidden rounded-full ring-1 ring-inset"
         role="group"
         aria-label={segments
           .map((s) => `${actionLabel(s.action)} ${Math.round(s.freq * 100)}%`)

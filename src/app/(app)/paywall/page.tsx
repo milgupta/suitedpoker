@@ -122,11 +122,19 @@ export default async function PaywallPage() {
         />
       </Suspense>
 
-      <SignOutButton />
-
       {/* The payment screen is the one page behind the login that a Stripe
           risk reviewer actually reaches. */}
       <ComplianceFooter />
+
+      {/*
+       * LAST, and deliberately quiet — but still here.
+       *
+       * It used to sit between the proof band and the disclaimer, which put a
+       * grey "Log out" in the middle of a payment screen. It cannot simply go:
+       * /paywall renders no nav, so for somebody signed in as the wrong
+       * account this is the only way out. Demoted, not deleted.
+       */}
+      <SignOutButton />
     </div>
   );
 }

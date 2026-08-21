@@ -735,6 +735,53 @@
     }
   }
 
+  /*
+   * ── The proof band on a phone ─────────────────────────────────────────────
+   *
+   * A marquee needs room either side to read as motion. At 390px a 20rem chip
+   * plus the edge mask left roughly one and a bit cards visible, both of them
+   * cut mid-word — "oker has completely changed / dy the game" — which reads as
+   * broken text, not as a band that is moving. Social proof rendered as a
+   * severed sentence is worse than no social proof.
+   *
+   * So below `sm` it stops being a marquee and becomes what a phone already
+   * knows how to do: a snap carousel, one card centred with a peek of the next
+   * to say there are more. The duplicate half is only there so translateX(-50%)
+   * lands seamlessly; with no animation it would just be the same quotes twice,
+   * so it is hidden. It is already `aria-hidden`, so nothing is lost.
+   */
+  @media (width < 40rem) {
+    .marquee {
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+      /* The mask exists to soften a moving edge. Nothing is moving here, and
+         at this width it clipped the first and last card instead. */
+      -webkit-mask-image: none;
+      mask-image: none;
+    }
+
+    .marquee::-webkit-scrollbar {
+      display: none;
+    }
+
+    .marquee-track {
+      width: auto;
+      animation: none;
+    }
+
+    /* The seam duplicate: pure decoration once the track is not translating. */
+    .marquee-track > [aria-hidden] {
+      display: none;
+    }
+
+    .marquee li {
+      scroll-snap-align: center;
+      /* One card centred, with enough of the next showing to be swipeable. */
+      width: min(20rem, 82vw);
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     /*
      * No animation is applied at all under reduce — not a shortened one — so

@@ -246,16 +246,14 @@ export function PaywallClient({ plan = null, showcase = null }: PaywallClientPro
                    * place the source for a testimonial would go. A percentage that
                    * nobody can trace back is the one that costs the ad account.
                    */}
-                  <h1 className="text-display-lg text-balance">
+                  {/* display-md on a phone, display-lg from `sm`. At display-lg this set in
+                      FIVE lines at 390px and shoved the plan cards down the screen. */}
+                  <h1 className="text-display-md sm:text-display-lg text-balance">
                     {/* --accent-bright, which `.panel-light` re-points to
                     --accent-700 so it stays legible on white. */}
                     <span className="text-accent-bright">92%</span> of Suited Poker subscribers
                     improved their game
                   </h1>
-
-                  <p className="text-text-secondary text-body-lg max-w-[42ch]">
-                    Join the best poker trainer available.
-                  </p>
 
                   {cancelled && (
                     <p role="status" className="text-text-tertiary text-body-sm">
@@ -319,13 +317,13 @@ export function PaywallClient({ plan = null, showcase = null }: PaywallClientPro
                 <footer className="text-text-tertiary text-caption flex flex-wrap justify-center gap-x-4 gap-y-2">
                   <Link
                     href="/legal/terms"
-                    className="hover:text-text-secondary underline underline-offset-4"
+                    className="tap-target hover:text-text-secondary underline underline-offset-4"
                   >
                     Terms
                   </Link>
                   <Link
                     href="/legal/privacy"
-                    className="hover:text-text-secondary underline underline-offset-4"
+                    className="tap-target hover:text-text-secondary underline underline-offset-4"
                   >
                     Privacy
                   </Link>

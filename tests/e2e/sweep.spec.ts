@@ -85,6 +85,30 @@ async function makeSubscriber(): Promise<{ id: string; email: string }> {
   return { id: data.user.id, email };
 }
 
+/**
+ * A signed-in user with NO subscription.
+ *
+ * /paywall is the one screen a subscriber can never see — `makeSubscriber`
+ * would be redirected straight off it — which is exactly why the payment page
+ * sat outside this sweep for its whole life. It is also the most commercially
+ * important screen in the product, and it was carrying two sub-44px controls
+ * and a proof band that cut its own quotes in half at 390px. Both were found by
+ * hand, which is the argument for it being in here.
+ */
+async function makeUnsubscribed(): Promise<{ id: string; email: string }> {
+  const email = `e2e+sweeppw${Date.now()}${Math.floor(Math.random() * 10_000)}@suitedpoker.com`;
+  const { data, error } = await admin.auth.admin.createUser({
+    email,
+    password: PASSWORD,
+    email_confirm: true,
+  });
+  if (error !== null) throw error;
+  const id = data.user?.id;
+  if (id === undefined) throw new Error("no user id");
+  created.push(id);
+  return { id, email };
+}
+
 async function login(page: Page, email: string): Promise<void> {
   await page.goto("/login");
   await page.getByLabel("Email").fill(email);
@@ -297,6 +321,79 @@ test.describe("the sweep", () => {
     }
 
     await context.close();
+  });
+
+  test("the paywall survives every phone width", async ({ page }) => {
+    const user = await makeUnsubscribed();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await login(page, user.email);
+
+    const problems: string[] = [];
+
+    for (const device of DEVICES) {
+      await page.setViewportSize({ width: device.width, height: device.height });
+      await page.goto("/paywall", { waitUntil: "domcontentloaded" });
+      await page.waitForSelector("input[type=radio]", { timeout: 30_000 });
+      /*
+       * Scroll the whole page first. The showcase reveals on `whileInView`, so
+       * measuring at scrollY=0 catches it mid-animation at zero size and the
+       * result changes with viewport height — a check that reports different
+       * findings per device for no real reason is worse than no check.
+       */
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+      await page.waitForTimeout(900);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.waitForTimeout(300);
+
+      const overflowing = await overflowingElements(page);
+      if (overflowing.length > 0) {
+        problems.push(`${device.name}: overflows — ${overflowing.join(", ")}`);
+      }
+
+      const found = await page.evaluate(() => {
+        const bad: string[] = [];
+
+        for (const el of Array.from(
+          document.body.querySelectorAll<HTMLElement>("button, a[href], input"),
+        )) {
+          const rect = el.getBoundingClientRect();
+          if (rect.width === 0 || rect.height === 0) continue;
+          if (el.classList.contains("tap-target")) continue;
+          if (el.tagName === "A" && el.closest("p, li, dd") !== null) continue;
+          /*
+           * A radio inside a label is not the target — the label is, and the
+           * plan card is deliberately far bigger than 44px. `.tap-target` is
+           * explicitly NOT used there because its ::before overlay would sit
+           * on top of the card's own radio and swallow the click.
+           */
+          const label = el.closest("label");
+          if (label !== null && label.getBoundingClientRect().height >= 44) continue;
+          if (rect.height < 44) {
+            bad.push(`${el.tagName.toLowerCase()} "${(el.textContent ?? "").trim().slice(0, 24)}"`);
+          }
+        }
+
+        /*
+         * The proof band must show a WHOLE quote. Below `sm` it stops being a
+         * marquee and becomes a snap carousel precisely because a 20rem chip
+         * behind an edge mask left both visible cards cut mid-word, and social
+         * proof rendered as a severed sentence is worse than none.
+         */
+        const band = document.querySelector(".marquee");
+        const first = band?.querySelector("li");
+        if (band !== null && first != null) {
+          const b = band.getBoundingClientRect();
+          const c = first.getBoundingClientRect();
+          if (c.width > b.width + 1)
+            bad.push(`quote card ${Math.round(c.width)}px in ${Math.round(b.width)}px`);
+        }
+        return [...new Set(bad)];
+      });
+
+      if (found.length > 0) problems.push(`${device.name}: ${found.join(" | ")}`);
+    }
+
+    expect(problems, problems.join("\n")).toEqual([]);
   });
 
   test("every interactive control clears 44px", async ({ page }) => {
