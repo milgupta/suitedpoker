@@ -21,7 +21,7 @@ export function SignupFromStart() {
       title="Create your account"
       lead={
         fromStart
-          ? "Save your answers and see the hand that costs you the most."
+          ? "Save your answers — your leak breakdown is next."
           : "Ten minutes a day. Real spots, graded on what they cost you."
       }
       footer={

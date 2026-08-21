@@ -36,35 +36,27 @@ Use a fresh incognito window. When asked to create an account, use:
 
 THE PATH YOU SHOULD SEE — flag any deviation as a bug:
 
-  1. /start          A headline, then 8 questions, one per screen.
-                     Q1-Q5 and Q8 are single-choice and should ADVANCE BY
+  1. /start          A headline, then 4 questions, one per screen.
+                     Q1-Q3 are single-choice and should ADVANCE BY
                      THEMSELVES after one tap — no Continue button.
-                     Q6 is multi-select and DOES have a Continue button.
-                     Between Q6 and Q8 there is a chart screen ("Two players,
-                     same starting point") with a "Keep going" button.
-                     A progress bar reads 1/8 … 8/8 and must never skip or
+                     Q4 is multi-select and DOES have a Continue button.
+                     A progress bar reads 1/4 … 4/4 and must never skip or
                      go backwards.
-  2. /signup?from=start   Email + password. No other fields.
-  3. /onboarding/hand     "Before we build your plan, one hand." Two buttons:
-                          "Deal me in" and "Skip this".
-  4a. If you deal in: a poker table, then Fold / Call / Raise. After you act you
-      get a grade, a written explanation, four tappable questions and a text box
-      to ask your own. Then a button to continue.
-  4b. If you skip: straight to step 5.
-  5. /paywall        Your personalised plan, then Yearly / Monthly pricing.
+  2. Still on /start: "Try one hand." — a poker table with ace-king suited
+                     on the button and Fold / Call / Raise. Whatever you tap
+                     gets an instant written verdict and a Continue button.
+                     There is no progress bar on this screen.
+  3. /signup?from=start   Email + password. No other fields.
+  4. /paywall        Your personalised plan, then Yearly / Monthly pricing.
 
 DO ALL OF THIS:
 
-  A. Walk 1 → 5 choosing "I play live $1/$2", "I call too much and lose", and
-     any answers after that. At the demo hand, press CALL.
-  B. On the hand screen, tap TWO of the four suggested questions and read the
-     answers. Then type your own question — "why is it 80 percent?" — and read
-     that answer. Then type something off-topic — "what stakes should I play?" —
-     and check it does NOT invent an answer.
+  A. Walk 1 → 4 choosing "I call too much and lose" and any answers after
+     that. At the example hand, press CALL and read the verdict.
   C. Stop at the paywall. DO NOT enter card details or complete a purchase.
   D. Then go back and run it a SECOND time in a new incognito window, but this
-     time press "Skip this" on the hand screen. Confirm you still reach the
-     paywall.
+     time press RAISE on the example hand. Confirm the verdict says it is
+     right and you still reach signup and the paywall.
 
 REPORT, in this order:
 

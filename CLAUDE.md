@@ -159,6 +159,39 @@ sessions.
 **Every substage in `SUITEDPOKER_BUILD_PLAN.md` is now done.** Update this table
 if you add one.
 
+**What the onboarding shortening left you (Aug 2026).**
+
+- 🔴 **THE QUIZ IS FOUR QUESTIONS NOW: pain, goal, study, leaks.** Venue,
+  frequency, minutes and the chart interstitial are gone from the flow, but
+  they stay on the `Answers` type as documented legacy fields — existing
+  profiles carry them and the derivations still read them (venue tempers the
+  skill tier, venue+frequency price the diagnosis, minutes sets the daily
+  target). A NEW user's diagnosis is bb-only (no venue → `annualUsd` null),
+  defaults to monthly hands and 5 min/day.
+- **The ads funnel is `/start` (4 questions → scripted example hand) →
+  `/signup?from=start` → `/paywall`.** The continue bridge and the api-mode
+  safety net now land on /paywall, NOT /onboarding/hand — the ads funnel plays
+  its hand pre-signup. Organic `/signup` → `/onboarding` still hands off to
+  the real demo hand (7.2b), which is unchanged.
+- 🛑 **THE EXAMPLE HAND IS AUTHORED, NOT DEALT** (`src/lib/example-hand.ts` +
+  `ExampleHand.tsx`): A♠K♠ on the button, folded to hero, fold/call/raise with
+  hand-written verdicts. It runs pre-auth with NO server call, so there is no
+  abuse surface and nothing to leak — the copy has no frequencies and no EVs.
+  It renders on the real `DrillSurface` with seats built by the real
+  `seatActivity` helpers. Local (`/start`) mode only — `EXAMPLE_STEP` sits
+  outside `TOTAL_STEPS` and shows no progress bar.
+- **`continueAfterWelcome` now checks full completeness, not `resumeIndex`** —
+  the last question's index EQUALS `TOTAL_STEPS`, so an index comparison
+  cannot tell "on the last question" from "finished". This was latent before
+  (minutes was both last and skippable-looking) and became live with 4 steps.
+- **The comparison chart is DELETED** (ComparisonChart.tsx, onboarding-chart.ts
+  and its test) — git history has it if the judgement reverses.
+- **`example_hand_answered {action, correct}`** is the new analytics event —
+  the last signal before the signup form.
+- **The paywall's Terms/Privacy links were 404s in production** — they said
+  `/terms`, the pages live at `/legal/terms`. Fixed; the site footer always
+  had the right paths, so no scan caught the paywall copy of them.
+
 **What the screenshot refresh left you.**
 
 - **Re-run after the quiz, the sizing work and the grade fix. 5 of 6 shots

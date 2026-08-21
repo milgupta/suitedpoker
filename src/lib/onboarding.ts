@@ -15,38 +15,25 @@ import type { SkillTier } from "@/lib/explain-policy";
  *   over-rates themselves. "I know which hands to play but freeze after the
  *   flop" is recognised rather than judged.
  *
- *   ANSWERS ECHO FORWARD. Once someone says they play $1/$2, every later
- *   question says "$1/$2" and not "your stakes". Without it the whole thing
- *   reads as a data-collection ritual rather than a conversation.
+ *   ANSWERS ECHO FORWARD. Once someone says they call too much, the next
+ *   question says "You call too much" and not "your problem". Without it the
+ *   whole thing reads as a data-collection ritual rather than a conversation.
  */
 
-export type QuestionId = "venue" | "pain" | "frequency" | "goal" | "study" | "leaks" | "minutes";
+export type QuestionId = "pain" | "goal" | "study" | "leaks";
 
-export const QUESTION_IDS: readonly QuestionId[] = [
-  "venue",
-  "pain",
-  "frequency",
-  "goal",
-  "study",
-  "leaks",
-  "minutes",
-];
+export const QUESTION_IDS: readonly QuestionId[] = ["pain", "goal", "study", "leaks"];
+
+/** Progress is index / this and nothing else. */
+export const TOTAL_STEPS = QUESTION_IDS.length;
 
 /**
- * The one step that asks nothing.
- *
- * A value interstitial sits after the leaks question, which is where the quiz
- * stops being novel and starts being a form. It has to come after the user has
- * given enough for the screen to feel earned, and before the diagnosis, which
- * is the actual payoff and must not be pre-empted.
- *
- * It is a STEP, not an overlay, so the progress bar keeps advancing and the
- * back button keeps working. Questions after it carry the shifted index.
+ * The step after the last question, in the ads funnel only: one scripted,
+ * obviously-answerable hand, played on the real table components. It sits
+ * outside TOTAL_STEPS because it is not a question and carries no progress bar
+ * — it is the payoff screen the four questions have been earning.
  */
-export const CHART_STEP = 7;
-
-/** Questions plus the interstitial. Progress is index / this and nothing else. */
-export const TOTAL_STEPS = QUESTION_IDS.length + 1;
+export const EXAMPLE_STEP = TOTAL_STEPS + 1;
 
 export interface QuizOption {
   readonly value: string;
@@ -68,24 +55,23 @@ export interface Question {
 }
 
 export interface Answers {
-  venue?: string;
   pain?: string;
-  frequency?: string;
   goal?: string;
   study?: string;
   leaks?: string[];
+  /**
+   * Legacy fields from the eight-question quiz. No screen asks them any more,
+   * but existing profiles carry them and the derivations still read them —
+   * venue tempers the skill tier, frequency and venue price the paywall's
+   * cost line, minutes sets the daily target. Absent, every one degrades to
+   * a sensible default.
+   */
+  venue?: string;
+  frequency?: string;
   minutes?: string;
 }
 
 /* ── Options ─────────────────────────────────────────────────────────────── */
-
-const VENUES: readonly QuizOption[] = [
-  { value: "home", label: "Home games with friends", echo: "in your home game" },
-  { value: "online_micro", label: "Online micro-stakes", echo: "at micro-stakes" },
-  { value: "live_1_2", label: "Live cardroom ($1/$2)", echo: "at $1/$2" },
-  { value: "play_money", label: "Play-money apps", echo: "in play money" },
-  { value: "starting", label: "I'm just starting out", echo: "when you sit down" },
-];
 
 const PAINS: readonly QuizOption[] = [
   { value: "call_too_much", label: "I call too much and lose", echo: "call too much" },
@@ -105,13 +91,6 @@ const PAINS: readonly QuizOption[] = [
     echo: "get bluffed off good hands",
   },
   { value: "tilt", label: "I go on tilt and spew", echo: "tilt" },
-];
-
-const FREQUENCIES: readonly QuizOption[] = [
-  { value: "yearly", label: "A few times a year" },
-  { value: "monthly", label: "About monthly" },
-  { value: "weekly", label: "Weekly" },
-  { value: "daily", label: "Most days" },
 ];
 
 const GOALS: readonly QuizOption[] = [
@@ -138,23 +117,11 @@ const LEAK_OPTIONS: readonly QuizOption[] = [
   { value: "tilt_control", label: "Tilt" },
 ];
 
-const MINUTES: readonly QuizOption[] = [
-  { value: "2", label: "2 min" },
-  // Anchored: the rest of the funnel talks in fives, so this is the easy pick.
-  { value: "5", label: "5 min" },
-  { value: "10", label: "10 min" },
-  { value: "15", label: "15 min" },
-];
-
 /* ── Echoing ─────────────────────────────────────────────────────────────── */
 
 function echoOf(options: readonly QuizOption[], value: string | undefined): string | null {
   if (value === undefined) return null;
   return options.find((o) => o.value === value)?.echo ?? null;
-}
-
-export function venueEcho(answers: Answers): string | null {
-  return echoOf(VENUES, answers.venue);
 }
 
 export function painEcho(answers: Answers): string | null {
@@ -169,85 +136,47 @@ export function painEcho(answers: Answers): string | null {
  * the generic phrasing this exists to avoid.
  */
 export const ECHO_POINTS: readonly { question: QuestionId; source: QuestionId }[] = [
-  { question: "pain", source: "venue" },
-  { question: "frequency", source: "venue" },
   { question: "goal", source: "pain" },
-  { question: "leaks", source: "venue" },
 ];
 
 /* ── The questions ───────────────────────────────────────────────────────── */
 
 export const QUESTIONS: readonly Question[] = [
   {
-    id: "venue",
-    index: 1,
-    kind: "single",
-    prompt: () => "Where do you play most?",
-    options: VENUES,
-  },
-  {
     id: "pain",
-    index: 2,
+    index: 1,
     kind: "single",
     // "Be honest" is doing real work here. It gives permission to pick the
     // embarrassing answer, which is the one worth knowing.
-    prompt: (a) => {
-      const where = venueEcho(a);
-      return where === null
-        ? "Be honest. What happens most?"
-        : `Be honest. What happens most ${where}?`;
-    },
+    prompt: () => "Be honest. What happens most when you play?",
     options: PAINS,
   },
   {
-    id: "frequency",
-    index: 3,
-    kind: "single",
-    prompt: (a) => {
-      const where = venueEcho(a);
-      return where === null ? "How often do you play?" : `How often do you play ${where}?`;
-    },
-    options: FREQUENCIES,
-  },
-  {
     id: "goal",
-    index: 4,
+    index: 2,
     kind: "single",
     prompt: (a) => {
       const pain = painEcho(a);
       return pain === null
-        ? "What would make this worth it?"
+        ? "What would make fixing your game worth it?"
         : `You ${pain}. What would make fixing that worth it?`;
     },
     options: GOALS,
   },
   {
     id: "study",
-    index: 5,
+    index: 3,
     kind: "single",
     prompt: () => "How much have you studied?",
     options: STUDY,
   },
   {
     id: "leaks",
-    index: 6,
+    index: 4,
     kind: "multi",
-    prompt: (a) => {
-      const where = venueEcho(a);
-      return where === null
-        ? "Which spots cost you the most?"
-        : `Which spots cost you the most ${where}?`;
-    },
+    prompt: () => "Which spots cost you the most?",
     hint: "Pick as many as you like.",
     options: LEAK_OPTIONS,
-  },
-  {
-    id: "minutes",
-    // 7 is the chart interstitial, so the last question is 8.
-    index: 8,
-    kind: "single",
-    prompt: () => "How much time do you want to train each day?",
-    options: MINUTES,
   },
 ];
 
@@ -290,12 +219,11 @@ export function resumeIndex(answers: Answers): number {
  * again. Incomplete quizzes still need the quiz; everyone else is in.
  */
 export function continueAfterWelcome(answers: Answers): "/onboarding" | "/practice" {
-  return resumeIndex(answers) < TOTAL_STEPS ? "/onboarding" : "/practice";
-}
-
-/** True for a step that shows the comparison chart rather than a question. */
-export function isChartStep(step: number): boolean {
-  return step === CHART_STEP;
+  // Full completeness, not resumeIndex: the last question's index equals
+  // TOTAL_STEPS, so an index comparison cannot tell "on the last question"
+  // from "finished".
+  const complete = QUESTIONS.every((q) => q.optional === true || isAnswered(q, answers));
+  return complete ? "/practice" : "/onboarding";
 }
 
 export function isAnswered(question: Question, answers: Answers): boolean {
@@ -313,7 +241,8 @@ function capTier(tier: SkillTier, ceiling: SkillTier): SkillTier {
 }
 
 /**
- * Skill tier, from Q5 tempered by Q1.
+ * Skill tier, from the study answer, tempered by the legacy venue answer when
+ * a profile still carries one.
  *
  * Study without table time does not transfer, so someone who has read about
  * solvers but only plays play money is not pitched at like a solver user. The
@@ -389,7 +318,7 @@ export function deriveCurriculumEntry(answers: Answers): string {
   return leak === null ? DEFAULT_MODULE : (LEAK_TO_LESSON[leak] ?? DEFAULT_MODULE);
 }
 
-/** Minutes per day, for the daily challenge target. */
+/** Minutes per day, for the daily challenge target. Legacy answer; default 5. */
 export function deriveDailyMinutes(answers: Answers): number {
   const parsed = Number(answers.minutes);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 5;

@@ -318,13 +318,13 @@ export function PaywallClient({ plan = null, showcase = null }: PaywallClientPro
 
                 <footer className="text-text-tertiary text-caption flex flex-wrap justify-center gap-x-4 gap-y-2">
                   <Link
-                    href="/terms"
+                    href="/legal/terms"
                     className="hover:text-text-secondary underline underline-offset-4"
                   >
                     Terms
                   </Link>
                   <Link
-                    href="/privacy"
+                    href="/legal/privacy"
                     className="hover:text-text-secondary underline underline-offset-4"
                   >
                     Privacy

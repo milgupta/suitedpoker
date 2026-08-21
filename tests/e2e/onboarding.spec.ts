@@ -9,7 +9,7 @@ import { adminClient, isConfigured } from "../support/e2e-supabase";
  * This is the top of the paid funnel, so the things checked here are the ones
  * that cost signups when they break: that answers survive a drop-off, that the
  * back button does not eat them, that every screen fits a phone without
- * scrolling, and that eight questions really can be answered in a minute.
+ * scrolling, and that four questions really can be answered in seconds.
  */
 
 loadLocalEnv();
@@ -67,25 +67,11 @@ async function pick(page: Page, value: string): Promise<void> {
   await page.locator(`[data-value='${value}']`).click();
 }
 
-/**
- * Step 7 asks nothing: it is the comparison-chart interstitial.
- *
- * Its caveat is asserted here rather than only in the happy path, because the
- * "illustrative, not a guarantee" line is the entire reason a with/without
- * performance chart is allowed to sit in a pre-purchase funnel at all.
- */
-async function passChart(page: Page): Promise<void> {
-  await expect(page.locator("[data-chart='comparison']")).toBeVisible();
-  await expect(page.getByText(/Illustrative only/i)).toBeVisible();
-  await page.getByRole("button", { name: "Keep going" }).click();
-}
-
+/** The three single-selects: pain, goal, study. Leaks (Q4) is the multi. */
 const PATH = [
-  { step: 1, value: "live_1_2" },
-  { step: 2, value: "call_too_much" },
-  { step: 3, value: "weekly" },
-  { step: 4, value: "move_up" },
-  { step: 5, value: "charts" },
+  { step: 1, value: "call_too_much" },
+  { step: 2, value: "move_up" },
+  { step: 3, value: "charts" },
 ];
 
 test.describe("onboarding", () => {
@@ -111,8 +97,8 @@ test.describe("onboarding", () => {
       await pick(page, value);
     }
 
-    // Q6 is the multi-select: Continue is disabled until something is picked.
-    await expect(page.locator("[data-step='6']")).toBeVisible();
+    // Q4 is the multi-select: Continue is disabled until something is picked.
+    await expect(page.locator("[data-step='4']")).toBeVisible();
     const continueButton = page.getByRole("button", { name: "Continue" });
     await expect(continueButton).toBeDisabled();
     await page.locator("[data-value='facing_aggression']").click();
@@ -120,19 +106,9 @@ test.describe("onboarding", () => {
     await expect(continueButton).toBeEnabled();
     await continueButton.click();
 
-    // Step 7 asks nothing: it is the comparison-chart interstitial. It must
-    // render its caveat, because that caption is the whole reason the screen
-    // is allowed to exist.
-    await expect(page.locator("[data-step='7']")).toBeVisible();
-    await expect(page.locator("[data-chart='comparison']")).toBeVisible();
-    await expect(page.getByText(/Illustrative only/i)).toBeVisible();
-    await page.getByRole("button", { name: "Keep going" }).click();
-
-    await expect(page.locator("[data-step='8']")).toBeVisible();
-    await pick(page, "10");
-
-    // 7.2b: the quiz now hands off to the demo hand, which is what the
-    // diagnosis opens with. The hand is the evidence; the quiz is the context.
+    // 7.2b: the organic quiz hands off to the demo hand, which is what the
+    // paywall's diagnosis opens with. The hand is the evidence; the quiz is
+    // the context. (The ads funnel plays its scripted hand on /start instead.)
     await expect(page).toHaveURL(/\/onboarding\/hand/);
 
     const { data } = await admin
@@ -144,13 +120,10 @@ test.describe("onboarding", () => {
     console.log("DERIVED PROFILE:\n" + JSON.stringify(data, null, 2));
 
     const onboarding = data?.onboarding as Record<string, unknown>;
-    expect(onboarding.venue).toBe("live_1_2");
     expect(onboarding.pain).toBe("call_too_much");
-    expect(onboarding.frequency).toBe("weekly");
     expect(onboarding.goal).toBe("move_up");
     expect(onboarding.study).toBe("charts");
     expect(onboarding.leaks).toEqual(["facing_aggression", "bet_sizing"]);
-    expect(onboarding.minutes).toBe("10");
 
     expect(data?.skill_tier).toBe("charts");
     expect(data?.primary_leak_key).toBe("overcalling");
@@ -165,7 +138,7 @@ test.describe("onboarding", () => {
 
     // Nothing to press. One tap is the whole interaction.
     await expect(page.getByRole("button", { name: "Continue" })).toHaveCount(0);
-    await pick(page, "home");
+    await pick(page, "tilt");
     await expect(page.locator("[data-step='2']")).toBeVisible({ timeout: 5_000 });
     await expect(page.getByRole("button", { name: "Continue" })).toHaveCount(0);
   });
@@ -203,21 +176,18 @@ test.describe("onboarding", () => {
     await login(page, email);
     await startQuiz(page);
 
-    await pick(page, "online_micro");
-    await page.waitForTimeout(400);
     await pick(page, "tilt");
     await page.waitForTimeout(400);
+    await pick(page, "serious");
+    await page.waitForTimeout(400);
+
+    await page.getByLabel("Back").click();
+    await page.waitForTimeout(400);
+    await expect(page.locator("[data-value='serious']")).toHaveAttribute("aria-checked", "true");
 
     await page.getByLabel("Back").click();
     await page.waitForTimeout(400);
     await expect(page.locator("[data-value='tilt']")).toHaveAttribute("aria-checked", "true");
-
-    await page.getByLabel("Back").click();
-    await page.waitForTimeout(400);
-    await expect(page.locator("[data-value='online_micro']")).toHaveAttribute(
-      "aria-checked",
-      "true",
-    );
   });
 
   test("resumes mid-quiz after the session is closed", async ({ page, browser }) => {
@@ -225,11 +195,11 @@ test.describe("onboarding", () => {
     await login(page, email);
     await startQuiz(page);
 
-    for (const { value } of PATH.slice(0, 3)) {
+    for (const { value } of PATH.slice(0, 2)) {
       await pick(page, value);
       await page.waitForTimeout(400);
     }
-    await expect(page.locator("[data-step='4']")).toBeVisible();
+    await expect(page.locator("[data-step='3']")).toBeVisible();
 
     // A fresh context: new tab, new day, phone picked back up.
     const second = await browser.newContext();
@@ -237,11 +207,11 @@ test.describe("onboarding", () => {
     await login(resumed, email);
     await resumed.goto("/onboarding");
 
-    // Straight back to Q4, with the first three intact.
-    await expect(resumed.locator("[data-step='4']")).toBeVisible();
+    // Straight back to Q3, with the first two intact.
+    await expect(resumed.locator("[data-step='3']")).toBeVisible();
     await resumed.getByLabel("Back").click();
     await resumed.waitForTimeout(400);
-    await expect(resumed.locator("[data-value='weekly']")).toHaveAttribute("aria-checked", "true");
+    await expect(resumed.locator("[data-value='move_up']")).toHaveAttribute("aria-checked", "true");
 
     await second.close();
   });
@@ -269,17 +239,7 @@ test.describe("onboarding", () => {
       await page.waitForTimeout(400);
     }
 
-    await assertFits("Q6");
-    await page.locator("[data-value='bluffing']").click();
-    await page.getByRole("button", { name: "Continue" }).click();
-    await page.waitForTimeout(400);
-
-    await assertFits("the comparison chart");
-    await passChart(page);
-    await page.waitForTimeout(400);
-
-    await assertFits("Q7 (minutes)");
-    await pick(page, "5");
+    await assertFits("Q4 (leaks)");
   });
 
   test("every option clears a 44px touch target at 390px", async ({ page }) => {
@@ -308,7 +268,7 @@ test.describe("onboarding", () => {
     await login(page, email);
     await startQuiz(page);
 
-    for (const { value } of PATH.slice(0, 3)) {
+    for (const { value } of PATH) {
       await expect(page.getByText("You can adjust later.")).toBeVisible();
       await pick(page, value);
       await page.waitForTimeout(400);
@@ -316,7 +276,7 @@ test.describe("onboarding", () => {
     await expect(page.getByText("You can adjust later.")).toBeVisible();
   });
 
-  test("completes in under 75 seconds with fast tapping", async ({ page }) => {
+  test("completes in under 45 seconds with fast tapping", async ({ page }) => {
     const { email } = await makeUser("speed");
     await login(page, email);
 
@@ -329,55 +289,10 @@ test.describe("onboarding", () => {
     }
     await page.locator("[data-value='bluffing']").click();
     await page.getByRole("button", { name: "Continue" }).click();
-    await page.waitForTimeout(300);
-    await passChart(page);
-    await page.waitForTimeout(300);
-    await pick(page, "5");
-    // 7.2b: the quiz now hands off to the demo hand, which is what the
-    // diagnosis opens with. The hand is the evidence; the quiz is the context.
     await expect(page).toHaveURL(/\/onboarding\/hand/);
 
     const elapsed = (Date.now() - startedAt) / 1000;
     console.log(`QUIZ COMPLETED IN ${elapsed.toFixed(1)}s`);
-    expect(elapsed, `took ${elapsed.toFixed(1)}s`).toBeLessThan(75);
-  });
-
-  test("the chart interstitial is not a dead end", async ({ page }) => {
-    // It asks nothing, so the only way it can fail is by trapping someone. Both
-    // directions have to work: forward to the last question, and back to the
-    // answers they already gave.
-    const { id, email } = await makeUser("chart");
-    await login(page, email);
-    await startQuiz(page);
-
-    for (const { value } of PATH) {
-      await pick(page, value);
-      await page.waitForTimeout(400);
-    }
-    await page.locator("[data-value='bluffing']").click();
-    await page.getByRole("button", { name: "Continue" }).click();
-    await page.waitForTimeout(400);
-
-    await expect(page.locator("[data-chart='comparison']")).toBeVisible();
-
-    // Back returns to the multi-select with the pick intact.
-    await page.getByRole("button", { name: "Back" }).click();
-    await expect(page.locator("[data-step='6']")).toBeVisible();
-    await page.getByRole("button", { name: "Continue" }).click();
-    await page.waitForTimeout(400);
-    await passChart(page);
-
-    await expect(page.locator("[data-step='8']")).toBeVisible();
-    await pick(page, "5");
-    await expect(page).toHaveURL(/\/onboarding\/hand/);
-
-    const { data } = await admin
-      .from("profiles")
-      .select("skill_tier, rating")
-      .eq("id", id)
-      .single();
-    console.log(`AFTER CHART DETOUR: ${JSON.stringify(data)}`);
-    expect(data?.skill_tier).toBe("charts");
-    expect(data?.rating).toBe(1000);
+    expect(elapsed, `took ${elapsed.toFixed(1)}s`).toBeLessThan(45);
   });
 });

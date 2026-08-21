@@ -15,7 +15,8 @@ export function ContinueClient() {
     void (async () => {
       const result = await commitStartAnswers();
       if (result === "committed") {
-        router.replace("/onboarding/hand");
+        // The ads funnel already played its hand on /start; the wall is next.
+        router.replace("/paywall");
         return;
       }
       // No stored quiz, incomplete, or failed write — fall through to the

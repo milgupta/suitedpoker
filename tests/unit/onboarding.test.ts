@@ -9,7 +9,6 @@
 
 import { describe, expect, it } from "vitest";
 import {
-  CHART_STEP,
   derive,
   deriveCurriculumEntry,
   deriveDailyMinutes,
@@ -46,17 +45,15 @@ describe("progress", () => {
   });
 
   it("never skips a step", () => {
-    // CHART_STEP asks nothing, so it is absent from QUESTIONS by design. The
-    // union of questions and the interstitial must still cover 1..TOTAL_STEPS
-    // with no hole — a gap here is a step the client renders as a blank screen.
-    const covered = [...QUESTIONS.map((q) => q.index), CHART_STEP].sort((a, b) => a - b);
+    // The questions must cover 1..TOTAL_STEPS with no hole — a gap here is a
+    // step the client renders as a blank screen.
+    const covered = QUESTIONS.map((q) => q.index).sort((a, b) => a - b);
     expect(covered).toEqual(Array.from({ length: TOTAL_STEPS }, (_, i) => i + 1));
   });
 
   it("gives every question a unique index and id", () => {
     expect(new Set(QUESTIONS.map((q) => q.index)).size).toBe(QUESTIONS.length);
     expect(new Set(QUESTIONS.map((q) => q.id)).size).toBe(QUESTIONS.length);
-    expect(QUESTIONS.some((q) => q.index === CHART_STEP)).toBe(false);
   });
 
   it("reaches exactly 100% on the last step and never exceeds it", () => {
@@ -113,7 +110,7 @@ describe("the control shape tells you the rule", () => {
 /* ── Echoing ─────────────────────────────────────────────────────────────── */
 
 describe("answers echo forward", () => {
-  const answers: Answers = { venue: "live_1_2", pain: "call_too_much" };
+  const answers: Answers = { pain: "call_too_much" };
 
   it("renders every declared echo point, and prints them", () => {
     const rendered: string[] = [];
@@ -137,14 +134,8 @@ describe("answers echo forward", () => {
     expect(rendered).toHaveLength(ECHO_POINTS.length);
   });
 
-  it("uses the venue verbatim rather than 'your stakes'", () => {
-    const pain = questionAt(2)!.prompt(answers);
-    expect(pain).toContain("$1/$2");
-    expect(pain.toLowerCase()).not.toContain("your stakes");
-  });
-
   it("repeats the pain back in their own framing", () => {
-    expect(questionAt(4)!.prompt(answers)).toContain("call too much");
+    expect(questionAt(2)!.prompt(answers)).toContain("call too much");
   });
 
   it("degrades to a sensible sentence when the source is missing", () => {
@@ -174,48 +165,45 @@ describe("resume", () => {
     expect(resumeIndex({})).toBe(1);
   });
 
-  it("resumes at Q4 when the first three are answered", () => {
-    expect(resumeIndex({ venue: "home", pain: "tilt", frequency: "weekly" })).toBe(4);
+  it("resumes at Q3 when the first two are answered", () => {
+    expect(resumeIndex({ pain: "tilt", goal: "serious" })).toBe(3);
   });
 
   it("treats an empty multi-select as unanswered", () => {
     const partial: Answers = {
-      venue: "home",
       pain: "tilt",
-      frequency: "weekly",
       goal: "serious",
       study: "never",
       leaks: [],
     };
-    expect(resumeIndex(partial)).toBe(6);
+    expect(resumeIndex(partial)).toBe(4);
   });
 
-  it("does not strand anyone on the optional last question", () => {
+  it("lands a finished quiz on the last step", () => {
     const all: Answers = {
-      venue: "home",
       pain: "tilt",
-      frequency: "weekly",
       goal: "serious",
       study: "never",
       leaks: ["tilt_control"],
-      minutes: "5",
     };
     expect(resumeIndex(all)).toBe(TOTAL_STEPS);
   });
 
   it("sends a finished quiz from /welcome into practice, not back into the quiz", () => {
     const all: Answers = {
-      venue: "home",
       pain: "tilt",
-      frequency: "weekly",
       goal: "serious",
       study: "never",
       leaks: ["tilt_control"],
-      minutes: "5",
     };
     expect(continueAfterWelcome(all)).toBe("/practice");
     expect(continueAfterWelcome({})).toBe("/onboarding");
-    expect(continueAfterWelcome({ venue: "home" })).toBe("/onboarding");
+    expect(continueAfterWelcome({ pain: "tilt" })).toBe("/onboarding");
+    // The last question's index equals TOTAL_STEPS, so this is the case an
+    // index comparison gets wrong: everything but leaks answered.
+    expect(continueAfterWelcome({ pain: "tilt", goal: "serious", study: "never" })).toBe(
+      "/onboarding",
+    );
   });
 
   it("knows what counts as answered", () => {
@@ -225,8 +213,8 @@ describe("resume", () => {
 
     const single = QUESTIONS.find((q) => q.kind === "single")!;
     expect(isAnswered(single, {})).toBe(false);
-    expect(isAnswered(single, { venue: "" })).toBe(false);
-    expect(isAnswered(single, { venue: "home" })).toBe(true);
+    expect(isAnswered(single, { pain: "" })).toBe(false);
+    expect(isAnswered(single, { pain: "tilt" })).toBe(true);
   });
 });
 
@@ -366,7 +354,7 @@ describe("derivation", () => {
     }
   });
 
-  it("defaults to never when the quiz was abandoned before Q5", () => {
+  it("defaults to never when the quiz was abandoned before the study question", () => {
     expect(deriveSkillTier({})).toBe("never");
     expect(deriveRating({}).rating).toBe(initialRatingFromOnboarding("never").rating);
   });

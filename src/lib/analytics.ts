@@ -26,6 +26,11 @@ export interface EventMap {
   onboarding_question_answered: { question: string; answer: string; index: number };
   onboarding_completed: { skillTier: string; primaryLeak: string; rating: number };
   /**
+   * The scripted example hand at the end of the /start quiz — pre-account,
+   * so this is the last signal before the signup form decides the funnel.
+   */
+  example_hand_answered: { action: string; correct: boolean };
+  /**
    * 7.2b's demo hand. `demo_hand_answered` carries the grade because
    * correlating it against purchase rate is the first question you will have —
    * whether people who play badly convert better than people who play well.
@@ -94,6 +99,7 @@ export const EVENT_NAMES = [
   "onboarding_started",
   "onboarding_question_answered",
   "onboarding_completed",
+  "example_hand_answered",
   "demo_hand_shown",
   "demo_hand_answered",
   "demo_hand_completed",

@@ -8,7 +8,7 @@ import { capture } from "@/lib/analytics-client";
 import { trackDeduplicated } from "@/lib/meta-client";
 import { SPRING } from "@/lib/motion";
 import {
-  isChartStep,
+  EXAMPLE_STEP,
   progressAt,
   questionAt,
   resumeIndex,
@@ -16,14 +16,14 @@ import {
   type Answers,
   type Question,
 } from "@/lib/onboarding";
-import { ComparisonChart } from "@/components/onboarding/ComparisonChart";
+import { ExampleHand } from "@/components/onboarding/ExampleHand";
 import { saveStartAnswers, commitStartAnswers } from "@/lib/start-answers-client";
 import { cn } from "@/lib/utils";
 
 /**
  * The onboarding quiz.
  *
- * The mechanics that make eight questions feel like thirty seconds:
+ * The mechanics that make four questions feel like fifteen seconds:
  *
  *   - Single-select AUTO-ADVANCES. No Continue button exists on those screens,
  *     so most questions are exactly one tap. Multi-select keeps a Continue,
@@ -72,7 +72,7 @@ export function OnboardingClient({ initialAnswers, mode = "api" }: OnboardingCli
   // Ads-funnel safety net. `/onboarding/continue` is the real commit, but a
   // signed-in user can still land here (organic signup, a failed continue).
   // If the local quiz is sitting in localStorage, pick it up rather than
-  // making them answer eight questions a second time.
+  // making them answer the quiz a second time.
   useEffect(() => {
     if (mode !== "api") return;
     if (Object.keys(initialAnswers).length > 0) return;
@@ -80,7 +80,9 @@ export function OnboardingClient({ initialAnswers, mode = "api" }: OnboardingCli
     void (async () => {
       const result = await commitStartAnswers();
       if (!cancelled && result === "committed") {
-        router.replace("/onboarding/hand");
+        // Ads funnel: the example hand was already played on /start, so the
+        // committed quiz goes straight to the wall.
+        router.replace("/paywall");
       }
     })();
     return () => {
@@ -170,6 +172,23 @@ export function OnboardingClient({ initialAnswers, mode = "api" }: OnboardingCli
     }
   }
 
+  /**
+   * Where "next" goes from a finished question. Before the last question it
+   * is simply the next one. After the last: the ads funnel plays the example
+   * hand first (its Continue calls `finish`), the organic flow finishes here.
+   */
+  function advanceFrom(current: number, latest: Answers): void {
+    if (current < TOTAL_STEPS) {
+      goTo(current + 1, 1);
+      return;
+    }
+    if (mode === "local") {
+      goTo(EXAMPLE_STEP, 1);
+      return;
+    }
+    void finish(latest);
+  }
+
   function selectSingle(id: keyof Answers, value: string): void {
     void record(id, value);
 
@@ -177,11 +196,7 @@ export function OnboardingClient({ initialAnswers, mode = "api" }: OnboardingCli
     // Instant advance reads as the app choosing for you.
     if (advanceTimer.current !== null) clearTimeout(advanceTimer.current);
     advanceTimer.current = setTimeout(() => {
-      if (step >= TOTAL_STEPS) {
-        void finish({ ...answers, [id]: value });
-      } else {
-        goTo(step + 1, 1);
-      }
+      advanceFrom(step, { ...answers, [id]: value });
     }, AUTO_ADVANCE_MS);
   }
 
@@ -193,8 +208,21 @@ export function OnboardingClient({ initialAnswers, mode = "api" }: OnboardingCli
         exit: { opacity: 0, x: direction * -24 },
       };
 
-  const chart = isChartStep(step);
-  if (question === undefined && !chart) return null;
+  const example = step === EXAMPLE_STEP && mode === "local";
+  if (question === undefined && !example) return null;
+
+  if (example) {
+    return (
+      <div
+        className="flex min-h-[calc(100dvh-2*var(--app-shell-py))] flex-col gap-6"
+        data-step={step}
+      >
+        {/* No progress header: the questions are done, and a bar reading 4/4
+            over a poker table says there is a fifth question coming. */}
+        <ExampleHand onContinue={() => void finish(answers)} />
+      </div>
+    );
+  }
 
   return (
     <div
@@ -248,52 +276,41 @@ export function OnboardingClient({ initialAnswers, mode = "api" }: OnboardingCli
       </div>
 
       <AnimatePresence mode="wait" initial={false}>
-        {chart ? (
-          <motion.div
-            key="chart"
-            {...slide}
-            transition={reduced ? { duration: 0 } : SPRING.smooth}
-            className="flex flex-1 flex-col"
-          >
-            <ComparisonChart onContinue={() => goTo(step + 1, 1)} />
-          </motion.div>
-        ) : (
-          <motion.div
-            key={question!.id}
-            {...slide}
-            transition={reduced ? { duration: 0 } : SPRING.smooth}
-            className="flex flex-1 flex-col gap-6"
-          >
-            {/* Left-aligned: you are answering. Interstitials centre theirs. */}
-            <h1 className="text-display-md text-left">{question!.prompt(answers)}</h1>
-            {question!.hint !== undefined && (
-              <p className="text-text-tertiary text-body-sm -mt-4">{question!.hint}</p>
-            )}
+        <motion.div
+          key={question!.id}
+          {...slide}
+          transition={reduced ? { duration: 0 } : SPRING.smooth}
+          className="flex flex-1 flex-col gap-8"
+        >
+          {/* Left-aligned: you are answering. Interstitials centre theirs. */}
+          <h1 className="text-display-md text-left">{question!.prompt(answers)}</h1>
+          {question!.hint !== undefined && (
+            <p className="text-text-tertiary text-body-sm -mt-6">{question!.hint}</p>
+          )}
 
-            {question!.kind === "multi" ? (
-              <MultiSelect
-                question={question!}
-                label={question!.prompt(answers)}
-                selected={answers.leaks ?? []}
-                onToggle={(value) => {
-                  const current = answers.leaks ?? [];
-                  const next = current.includes(value)
-                    ? current.filter((v) => v !== value)
-                    : [...current, value];
-                  void record("leaks", next);
-                }}
-                onContinue={() => goTo(step + 1, 1)}
-              />
-            ) : (
-              <SingleSelect
-                question={question!}
-                label={question!.prompt(answers)}
-                selected={answers[question!.id] as string | undefined}
-                onSelect={(value) => selectSingle(question!.id, value)}
-              />
-            )}
-          </motion.div>
-        )}
+          {question!.kind === "multi" ? (
+            <MultiSelect
+              question={question!}
+              label={question!.prompt(answers)}
+              selected={answers.leaks ?? []}
+              onToggle={(value) => {
+                const current = answers.leaks ?? [];
+                const next = current.includes(value)
+                  ? current.filter((v) => v !== value)
+                  : [...current, value];
+                void record("leaks", next);
+              }}
+              onContinue={() => advanceFrom(step, answers)}
+            />
+          ) : (
+            <SingleSelect
+              question={question!}
+              label={question!.prompt(answers)}
+              selected={answers[question!.id] as string | undefined}
+              onSelect={(value) => selectSingle(question!.id, value)}
+            />
+          )}
+        </motion.div>
       </AnimatePresence>
 
       <p className="text-text-tertiary text-caption text-center italic">{FOOTER}</p>

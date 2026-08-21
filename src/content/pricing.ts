@@ -35,7 +35,7 @@ export interface PricingFaqItem {
 export const PRICING_FAQ: readonly PricingFaqItem[] = [
   {
     q: "Is there a free trial?",
-    a: "There is no time-limited trial. Before you are asked for a card you answer eight questions and play one real hand, and the read you get at the end is built from what you did in it — that is the trial, and it costs nothing.",
+    a: "There is no time-limited trial. Before you are asked for a card you answer four questions and play one real hand, and the read you get at the end is built from what you did in it — that is the trial, and it costs nothing.",
   },
   {
     q: "What happens when I subscribe?",

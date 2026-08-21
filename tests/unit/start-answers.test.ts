@@ -10,13 +10,10 @@ import { authOnlyRedirect } from "../../src/lib/auth-only-redirect";
 import type { Answers } from "../../src/lib/onboarding";
 
 const COMPLETE: Answers = {
-  venue: "live_1_2",
   pain: "call_too_much",
-  frequency: "weekly",
   goal: "move_up",
   study: "charts",
   leaks: ["facing_aggression", "bet_sizing"],
-  minutes: "10",
 };
 
 describe("start-answers", () => {
@@ -40,25 +37,23 @@ describe("start-answers", () => {
 
   it("coerces only known question fields", () => {
     const answers = coerceAnswers({
-      venue: "live_1_2",
       pain: "call_too_much",
-      frequency: "weekly",
       goal: "move_up",
       study: "charts",
       leaks: ["facing_aggression", 12, "bet_sizing"],
+      // Legacy eight-question fields are no longer asked, so a stored blob
+      // carrying them must not resurrect them.
+      venue: "live_1_2",
       minutes: "10",
       evil: "drop-me",
       hand: "should not appear on Answers type path",
     });
 
     expect(answers).toEqual({
-      venue: "live_1_2",
       pain: "call_too_much",
-      frequency: "weekly",
       goal: "move_up",
       study: "charts",
       leaks: ["facing_aggression", "bet_sizing"],
-      minutes: "10",
     });
     expect(answersAreComplete(answers)).toBe(true);
   });
@@ -67,7 +62,7 @@ describe("start-answers", () => {
     expect(coerceAnswers(null)).toEqual({});
     expect(coerceAnswers("nope")).toEqual({});
     expect(answersAreComplete({})).toBe(false);
-    expect(answersAreComplete({ venue: "home" })).toBe(false);
-    expect(requiredIdsAnswered(COMPLETE).length).toBeGreaterThanOrEqual(7);
+    expect(answersAreComplete({ pain: "tilt" })).toBe(false);
+    expect(requiredIdsAnswered(COMPLETE).length).toBe(4);
   });
 });

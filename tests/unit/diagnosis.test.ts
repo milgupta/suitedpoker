@@ -27,6 +27,11 @@ import {
 } from "../../src/lib/diagnosis";
 import { optionsFor, type Answers } from "../../src/lib/onboarding";
 
+/**
+ * A profile from the eight-question era: venue, frequency and minutes are no
+ * longer asked, but existing rows carry them and the model still prices with
+ * them. The four-question paths are covered separately below.
+ */
 const BASE: Answers = {
   venue: "live_1_2",
   pain: "call_too_much",
@@ -37,14 +42,22 @@ const BASE: Answers = {
   minutes: "10",
 };
 
+/** Everything a NEW user can produce: the four asked questions, nothing else. */
+const NEW_USER: Answers = {
+  pain: "call_too_much",
+  goal: "stop_losing",
+  study: "charts",
+  leaks: ["facing_aggression"],
+};
+
 /** Everything the screen prints, flattened so a change anywhere is visible. */
 function rendered(answers: Answers): string {
   const d = buildDiagnosis(answers);
   return JSON.stringify(d);
 }
 
-describe("the 25 Q1 x Q2 combinations", () => {
-  const venues = optionsFor("venue").map((o) => o.value);
+describe("the 25 venue × pain combinations (venue is a legacy profile field)", () => {
+  const venues = Object.keys(BB_VALUE_USD);
   const pains = optionsFor("pain").map((o) => o.value);
 
   it("prints every headline and figure", () => {
@@ -152,16 +165,14 @@ describe("the math is reproducible", () => {
   });
 
   it("uses a model where every input is a named constant", () => {
-    // The tooltip promises these numbers; they must exist for every option.
-    for (const option of optionsFor("venue")) {
-      expect(BB_VALUE_USD[option.value], option.value).toBeDefined();
-    }
-    for (const option of optionsFor("frequency")) {
-      expect(HANDS_PER_YEAR[option.value], option.value).toBeDefined();
-    }
+    // The tooltip promises these numbers; they must exist for every pain the
+    // quiz can produce, and for the legacy venue/frequency values on disk.
     for (const option of optionsFor("pain")) {
       const d = buildDiagnosis({ ...BASE, pain: option.value });
       expect(LEAK_BB100[d.leakKey], option.value).toBeDefined();
+    }
+    for (const frequency of Object.keys(HANDS_PER_YEAR)) {
+      expect(estimateCost({ ...BASE, frequency }).handsPerYear).toBe(HANDS_PER_YEAR[frequency]);
     }
   });
 });
@@ -171,7 +182,7 @@ describe("never a winning", () => {
     /\bwin\b|\bwinnings\b|\bprofit\b|\bearn\b|\bmake \$|\bwon \$|\+\s*\$|\+\d+%|guarantee/i;
 
   it("frames every figure as a cost, in every combination", () => {
-    for (const venue of optionsFor("venue").map((o) => o.value)) {
+    for (const venue of [...Object.keys(BB_VALUE_USD), undefined]) {
       for (const pain of optionsFor("pain").map((o) => o.value)) {
         for (const goal of [...optionsFor("goal").map((o) => o.value), undefined]) {
           const d = buildDiagnosis({ ...BASE, venue, pain, goal });
@@ -186,6 +197,45 @@ describe("never a winning", () => {
     const d = buildDiagnosis(BASE);
     expect(d.projectedRating).toBe(Math.max(d.rating + 100, CURRICULUM_CEILING_RATING));
     expect(d.projectedRating).toBeLessThan(1800);
+  });
+});
+
+describe("the four-question quiz alone", () => {
+  it("computes a full diagnosis with no legacy fields at all", () => {
+    const d = buildDiagnosis(NEW_USER);
+    expect(d.headline.length).toBeGreaterThan(10);
+    expect(d.cost.annualBb).toBeGreaterThan(0);
+    expect(d.goalLine).not.toBeNull();
+    expect(d.minutesPerDay).toBe(5);
+  });
+
+  it("NEVER shows dollars without a venue to price them from", () => {
+    // No venue answer means no dollars-per-blind — the same fail-closed rule
+    // as play money. Every new user is on this path now.
+    const d = buildDiagnosis(NEW_USER);
+    expect(d.cost.annualUsd).toBeNull();
+    expect(d.cost.formula).not.toContain("$");
+    expect(d.cost.formula).toContain("big blinds");
+  });
+
+  it("defaults the hands-per-year to the monthly figure", () => {
+    expect(estimateCost(NEW_USER).handsPerYear).toBe(HANDS_PER_YEAR.monthly);
+  });
+
+  it("moves on every one of the four asked questions", () => {
+    const before = JSON.stringify(buildDiagnosis(NEW_USER));
+    const moved: Record<string, Answers> = {
+      pain: { ...NEW_USER, pain: "tilt" },
+      goal: { ...NEW_USER, goal: "move_up" },
+      study: { ...NEW_USER, study: "never" },
+      leaks: { ...NEW_USER, leaks: ["bet_sizing"] },
+    };
+    for (const [question, answers] of Object.entries(moved)) {
+      expect(
+        JSON.stringify(buildDiagnosis(answers)),
+        `${question} does not move the diagnosis — dead weight or a bug`,
+      ).not.toBe(before);
+    }
   });
 });
 
