@@ -72,20 +72,6 @@ export const PROBLEM: readonly ProblemPoint[] = [
   },
 ];
 
-export const MIX = {
-  eyebrow: "The idea",
-  title: "Good players don't always do the same thing.",
-  body: "Most training tools mark one action correct and everything else wrong. Real strategy is a mix — the same hand calls some of the time and folds the rest, on purpose, so it cannot be read.",
-  /**
-   * The sentence that has to survive contact with the numbers next to it. It
-   * says "costs almost nothing" rather than naming a figure, because the figure
-   * is rendered from the solution file and would drift out of the prose.
-   */
-  closing:
-    "Take the less common line on this hand and you have not made a mistake — you have taken one of two reasonable lines, and the app tells you exactly what it costs. Learning why both exist is the part that transfers to the table.",
-  gridCaption: "The whole range behind that one hand. Every cell is the same data.",
-} as const;
-
 export const HOW = {
   eyebrow: "The loop",
   title: "How it works",
@@ -190,7 +176,7 @@ export const FAQ: readonly FaqItem[] = [
 
 export const FINAL_CTA = {
   title: "Find out where your game leaks.",
-  body: "Eight questions, then one real hand you play yourself. The read you get at the end is built from what you actually did, not from what you said.",
+  body: "Four questions, then one real hand you play yourself. The read you get at the end is built from what you actually did, not from what you said.",
   cta: "Sign Up",
 } as const;
 

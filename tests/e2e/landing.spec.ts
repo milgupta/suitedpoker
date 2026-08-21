@@ -250,16 +250,6 @@ test.describe("the landing page", () => {
     await expect(page.locator("a[href='/pricing']:visible").first()).toBeVisible();
   });
 
-  test("the range showcase renders real strategy, not a picture of it", async ({ page }) => {
-    await page.goto("/");
-
-    // 169 cells means the actual RangeGrid mounted with real data. A crashed
-    // client component renders nothing, and nothing contains no wrong numbers —
-    // which is exactly how the arena stayed broken for two substages.
-    const cells = page.locator("[role='gridcell']");
-    await expect(cells).toHaveCount(169);
-  });
-
   test("how it works is one mixed hand, rendered not photographed", async ({ page }) => {
     await page.goto("/");
     const how = page.locator("[data-section='how']");

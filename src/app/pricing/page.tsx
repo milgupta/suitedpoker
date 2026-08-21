@@ -112,8 +112,8 @@ export default function PricingPage() {
               See where your game leaks before you decide.
             </h2>
             <p className="text-text-secondary text-body-lg mx-auto mt-5 max-w-lg text-pretty">
-              Eight questions and one real hand, then a read built from what you actually did. About
-              two minutes, and no card.
+              Four questions and one real hand, then a read built from what you actually did. About
+              a minute, and no card.
             </p>
             <Link
               href="/signup"

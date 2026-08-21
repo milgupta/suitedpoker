@@ -121,6 +121,6 @@ export const MORE_FEATURES: readonly SmallFeature[] = [
 
 export const FEATURES_CTA = {
   title: "Start with the hand you are worst at.",
-  body: "Eight questions and one real hand, then a read built from what you actually did. About two minutes.",
+  body: "Four questions and one real hand, then a read built from what you actually did. About a minute.",
   cta: "Find my biggest leak",
 } as const;

@@ -4,11 +4,10 @@ import { TrackView } from "@/components/track-view";
 import { AppFrame } from "@/components/marketing/AppFrame";
 import { DecisionShowcase } from "@/components/marketing/DecisionShowcase";
 import { HowItWorks } from "@/components/marketing/HowItWorks";
-import { RangeShowcase } from "@/components/marketing/RangeShowcase";
 import { SiteFooter } from "@/components/marketing/SiteFooter";
 import { SiteHeader } from "@/components/marketing/SiteHeader";
 import { TestimonialCarousel } from "@/components/marketing/TestimonialCarousel";
-import { FAQ, FEATURES, FINAL_CTA, HERO, HERO_PROOF, MIX, PROBLEM } from "@/content/landing";
+import { FAQ, FEATURES, FINAL_CTA, HERO, HERO_PROOF, PROBLEM } from "@/content/landing";
 import { landingShowcase } from "@/lib/landing-showcase-server";
 import { provenanceHeadline } from "@/lib/methodology";
 import { methodologyFacts } from "@/lib/methodology-server";
@@ -193,36 +192,6 @@ export default function Home() {
 
         {/* After the loop is clear, social proof — not in the first viewport. */}
         <TestimonialCarousel />
-
-        {/* ── The idea, with the whole range behind it ──────────────────────────
-            Deliberately AFTER the loop and the proof. "A hand is a mix, not one
-            right answer" is the claim this product stands on, and it only lands
-            once the reader has seen what a hand looks like here. Ahead of the
-            loop it is an assertion; behind it, it is the explanation for
-            something they have already been shown. */}
-        <section id="mix" className="border-border border-t">
-          <div className="mx-auto max-w-(--container-app) px-6 py-20">
-            <div className="grid gap-12 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1fr)] lg:gap-16">
-              <div className="lg:sticky lg:top-28 lg:self-start">
-                <p className="text-accent-bright text-overline font-mono tracking-widest uppercase">
-                  {MIX.eyebrow}
-                </p>
-                <h2 className="text-display-md sm:text-display-lg mt-4 text-balance">
-                  {MIX.title}
-                </h2>
-                <p className="text-text-secondary text-body-lg mt-6 text-pretty">{MIX.body}</p>
-                <p className="text-text-secondary text-body-lg mt-4 text-pretty">{MIX.closing}</p>
-              </div>
-
-              <div>
-                <AppFrame label="suitedpoker.com/ranges">
-                  <RangeShowcase showcase={showcase} />
-                </AppFrame>
-                <p className="text-text-tertiary text-body-md mt-4">{MIX.gridCaption}</p>
-              </div>
-            </div>
-          </div>
-        </section>
 
         {/* ── What you get ─────────────────────────────────────────────────── */}
         <section className="border-border border-t">
