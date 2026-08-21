@@ -46,7 +46,7 @@ import { cn } from "@/lib/utils";
  *      selection with border weight alone is genuinely ambiguous about what you
  *      are buying, and a styled div is not a control a keyboard can reach.
  *   3. Both the headline number AND the real charge are on the card. "$10.00
- *      /mo" reads far smaller than "$119.99"; the "billed yearly" line beneath
+ *      /mo" reads far smaller than "$73.99"; the "billed yearly" line beneath
  *      the plan name is what keeps it honest. The headline is per MONTH rather
  *      than per week — a monthly figure is the one somebody can check against
  *      their own bank statement.

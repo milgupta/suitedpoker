@@ -22,9 +22,9 @@ describe("the prices", () => {
   it("matches the Stripe products exactly", () => {
     // If these ever disagree with the dashboard, the paywall lies about what it
     // is about to charge.
-    expect(PLANS.monthly.amountCents).toBe(2499);
+    expect(PLANS.monthly.amountCents).toBe(1999);
     expect(PLANS.monthly.interval).toBe("month");
-    expect(PLANS.annual.amountCents).toBe(11999);
+    expect(PLANS.annual.amountCents).toBe(7399);
     expect(PLANS.annual.interval).toBe("year");
   });
 
@@ -37,32 +37,32 @@ describe("the prices", () => {
 
 describe("the headline arithmetic", () => {
   it("annualises the monthly plan over twelve months", () => {
-    expect(annualisedCents("monthly")).toBe(29_988);
-    expect(annualisedCents("annual")).toBe(11_999);
+    expect(annualisedCents("monthly")).toBe(23_988);
+    expect(annualisedCents("annual")).toBe(7_399);
   });
 
   it("computes the per-week price the paywall prints", () => {
-    // $299.88 / 52 = $5.7669 -> $5.77; $119.99 / 52 = $2.3075 -> $2.31
-    expect(formatUsd(perWeekCents("monthly"))).toBe("$5.77");
-    expect(formatUsd(perWeekCents("annual"))).toBe("$2.31");
+    // $239.88 / 52 = $4.6131 -> $4.61; $73.99 / 52 = $1.4229 -> $1.42
+    expect(formatUsd(perWeekCents("monthly"))).toBe("$4.61");
+    expect(formatUsd(perWeekCents("annual"))).toBe("$1.42");
   });
 
   it("rounds the headline to the nearest cent, not down", () => {
     // Rounding down in the customer's favour on the headline and then billing
     // the real figure is a small dishonesty, and this audience checks.
-    expect(perWeekCents("monthly")).toBe(577);
-    expect(perWeekCents("annual")).toBe(231);
+    expect(perWeekCents("monthly")).toBe(461);
+    expect(perWeekCents("annual")).toBe(142);
   });
 
   it("states the saving as the number the page shows", () => {
-    // 1 - 119.99/299.88 = 59.99% -> "Save 60%"
-    expect(savingPercent()).toBe(60);
+    // 1 - 73.99/239.88 = 69.16% -> "Save 69%"
+    expect(savingPercent()).toBe(69);
   });
 
   it("keeps the struck-through figure honest", () => {
     // The struck price must be what twelve monthly payments actually cost, not
     // a bigger invented number.
-    expect(formatUsd(annualisedCents("monthly"))).toBe("$299.88");
+    expect(formatUsd(annualisedCents("monthly"))).toBe("$239.88");
     expect(annualisedCents("monthly")).toBe(PLANS.monthly.amountCents * 12);
   });
 
@@ -77,8 +77,8 @@ describe("formatUsd", () => {
   it("always shows two decimal places", () => {
     expect(formatUsd(0)).toBe("$0.00");
     expect(formatUsd(500)).toBe("$5.00");
-    expect(formatUsd(2499)).toBe("$24.99");
-    expect(formatUsd(11999)).toBe("$119.99");
+    expect(formatUsd(1999)).toBe("$19.99");
+    expect(formatUsd(7399)).toBe("$73.99");
   });
 });
 

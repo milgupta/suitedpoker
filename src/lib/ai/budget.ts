@@ -6,7 +6,7 @@ import { serverEnv } from "@/lib/env.server";
 /**
  * THE THING THAT STOPS A $40,000 MONTH.
  *
- * An LLM endpoint behind a flat $24.99 subscription is an unbounded liability
+ * An LLM endpoint behind a flat $19.99 subscription is an unbounded liability
  * sold at a fixed price. Per-user limits (ratelimit.ts) bound one abuser; this
  * bounds EVERYONE at once — a viral post, a scraper, a bug in our own retry
  * logic. It is the only control that holds when the assumption "users behave

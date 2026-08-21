@@ -177,7 +177,7 @@ describe("the event payload", () => {
       expect(event.custom_data?.value).toBe(value);
       // Sanity against the real prices: a rounded value makes every ROAS
       // figure in Ads Manager wrong.
-      expect(event.custom_data?.value).toBe(plan === "annual" ? 119.99 : 24.99);
+      expect(event.custom_data?.value).toBe(plan === "annual" ? 73.99 : 19.99);
     }
   });
 });
@@ -655,7 +655,7 @@ describe("only production may reach the live dataset", () => {
           fbc: `fb.1.${NOW}.abc`,
           fbp: "fb.1.999.111",
         },
-        custom_data: { value: 24.99, currency: "USD" },
+        custom_data: { value: 19.99, currency: "USD" },
       },
       undefined,
     );

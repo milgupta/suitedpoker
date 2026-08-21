@@ -18,7 +18,7 @@ import { adminClient, isConfigured } from "../support/e2e-supabase";
  *   - an unfinished quiz produces no band, and does not break the paywall
  *
  * Scanned through `[data-plan-band]` rather than the whole page ON PURPOSE:
- * the paywall legitimately prints "$119.99 per year" a few hundred pixels
+ * the paywall legitimately prints "$73.99 per year" a few hundred pixels
  * below. Prices in dollars are fine; RESULTS in dollars are not, and a
  * page-wide `/\$\d/` here would either fail forever or have to be so loose it
  * proved nothing.

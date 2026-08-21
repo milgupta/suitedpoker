@@ -16,7 +16,7 @@ endpoint are dashboard state, and the app only reads their ids.
 | Field | Value |
 |---|---|
 | Name | SuitedPoker Monthly |
-| Price | `24.99` USD |
+| Price | `19.99` USD |
 | Billing period | Monthly |
 | Type | Recurring |
 
@@ -25,12 +25,17 @@ Repeat:
 | Field | Value |
 |---|---|
 | Name | SuitedPoker Annual |
-| Price | `119.99` USD |
+| Price | `73.99` USD |
 | Billing period | Yearly |
 | Type | Recurring |
 
 Two products with one price each, or one product with two prices — both work.
 The app only ever reads the two **price** ids (`price_…`, not `prod_…`).
+
+**Repriced 2026-08 from $24.99/$119.99.** A Stripe price is immutable, so a
+change means ADDING a price to the existing product and repointing the env var
+— never editing one. Existing subscribers stay on whatever price they signed up
+on, forever. See `docs/REPRICE-2026-08.md`.
 
 Copy each price id from the product page:
 

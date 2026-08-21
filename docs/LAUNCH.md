@@ -30,7 +30,7 @@ top to bottom; do not skip the verification column.
 |---|---|
 | Create the two products in **Live** mode | Price IDs differ from test mode. They are NOT interchangeable. |
 | Set `STRIPE_SECRET_KEY` = `sk_live_…` | The build refuses `sk_test_` in production — see §6 |
-| Set `STRIPE_PRICE_MONTHLY` / `STRIPE_PRICE_ANNUAL` to the LIVE ids | `/paywall` shows $24.99 and $119.99 |
+| Set `STRIPE_PRICE_MONTHLY` / `STRIPE_PRICE_ANNUAL` to the LIVE ids | `/paywall` shows $19.99 and $73.99 |
 | Add the webhook endpoint: `https://suitedpoker.com/api/stripe/webhook` | Events: `checkout.session.completed`, `customer.subscription.*`, `invoice.payment_succeeded`, `invoice.payment_failed` |
 | Set `STRIPE_WEBHOOK_SECRET` from that endpoint | **The single most dangerous variable to get wrong**: payments succeed and access is never granted |
 | Recreate the **billing portal configuration** in Live mode | Plan switching OFF. The monthly→yearly upgrade is `/api/stripe/switch-plan`, so 7.5's save offer stays measurable |
