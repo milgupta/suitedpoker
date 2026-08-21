@@ -259,7 +259,7 @@ export default function Home() {
               {FAQ.map((item, index) => (
                 <details
                   key={item.q}
-                  open={index === 0}
+                  open={index === 0 || item.openByDefault === true}
                   className="group border-border border-b"
                   data-faq
                 >

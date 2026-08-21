@@ -133,6 +133,13 @@ export const FEATURES: readonly Feature[] = [
 export interface FaqItem {
   readonly q: string;
   readonly a: string;
+  /**
+   * Ships with its `<details>` open. The gambling denial carries this: the
+   * word "gambling" may only ever appear in VISIBLE text inside a denial
+   * (enforced by the landing e2e), and a collapsed answer is excluded from
+   * the page's rendered text. Reordering the FAQ must not re-hide it.
+   */
+  readonly openByDefault?: boolean;
 }
 
 /**
@@ -185,6 +192,7 @@ export const FAQ: readonly FaqItem[] = [
   {
     q: "Is this gambling?",
     a: "No. SuitedPoker is educational software. There is no wagering, no real money at stake, and nothing to win or lose. You practise decisions against precomputed strategy and get feedback on them.",
+    openByDefault: true,
   },
   {
     q: "Does it work on my phone?",
