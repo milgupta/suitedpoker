@@ -60,6 +60,8 @@ test.describe("start funnel (public)", () => {
     await page.getByRole("button", { name: "Raise" }).click();
     await expect(page.locator("[data-example-verdict='correct']")).toBeVisible();
     await expect(page.getByText(/Exactly right/i)).toBeVisible();
+    // The chart's frequencies reveal over the buttons, like the real drill.
+    await expect(page.getByText("100%")).toBeVisible();
 
     await page.getByTestId("example-continue").click();
     await expect(page).toHaveURL(/\/signup\?from=start/);

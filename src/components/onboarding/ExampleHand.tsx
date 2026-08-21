@@ -3,13 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { Button } from "@/components/ui/button";
-import { DrillSurface } from "@/components/poker";
+import { DrillSurface, FrequencyCapsules } from "@/components/poker";
 import { capture } from "@/lib/analytics-client";
 import { fadeUp } from "@/lib/motion";
 import {
   EXAMPLE_CORRECT_ACTION,
   EXAMPLE_INTRO,
   EXAMPLE_OUTRO,
+  EXAMPLE_SEGMENTS,
   EXAMPLE_SPOT,
   exampleVerdict,
   type ExampleVerdict,
@@ -66,6 +67,17 @@ export function ExampleHand({ onContinue }: { onContinue: () => void }) {
         onAction={answer}
         answered={verdict !== null}
         topAction={verdict === null ? null : EXAMPLE_CORRECT_ACTION}
+        capsules={
+          verdict === null ? undefined : (
+            // The chart's own frequencies, revealed over the buttons exactly
+            // as the real drill does it. Pinned to BTN.rfi.json by test.
+            <FrequencyCapsules
+              segments={EXAMPLE_SEGMENTS}
+              topAction={EXAMPLE_CORRECT_ACTION}
+              revealed
+            />
+          )
+        }
         // The intro line above already states the situation in one sentence;
         // the default coach tip underneath would say it a third time.
         coachTip={null}

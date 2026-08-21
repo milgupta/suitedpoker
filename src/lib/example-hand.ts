@@ -3,6 +3,7 @@ import { committedBbOf, seatActivity, PREFLOP_ORDER } from "@/poker/seat-activit
 import type { SeatView } from "@/poker/generator";
 import type { HeroPosition } from "@/poker/solutions";
 import type { DrillSpotView } from "@/components/poker/DrillSurface";
+import { capsuleSegments, type CapsuleSegment } from "@/lib/action-grid";
 
 /**
  * The scripted example hand: the last step of the /start quiz, played before
@@ -66,6 +67,27 @@ export const EXAMPLE_SPOT: DrillSpotView = {
 
 export const EXAMPLE_CORRECT_ACTION = "raise";
 
+/**
+ * The chart's frequencies for A♠K♠ at this node, shown as capsules over the
+ * buttons after answering — the same reveal the real drill does.
+ *
+ * HAND-WRITTEN HERE, PINNED TO THE DATA BY TEST. This screen is scripted, so
+ * these numbers cannot be looked up at runtime without shipping strategy data
+ * to an unauthenticated client. `tests/unit/example-hand.test.ts` asserts they
+ * equal `BTN.rfi.json`'s strategy for AKs, so a future repair of that node
+ * fails the build here instead of letting the demo contradict the product.
+ */
+export const EXAMPLE_FREQUENCIES: Readonly<Record<string, number>> = {
+  fold: 0,
+  call: 0,
+  raise: 1,
+};
+
+export const EXAMPLE_SEGMENTS: readonly CapsuleSegment[] = capsuleSegments(
+  EXAMPLE_SPOT.legalActions,
+  { frequencies: EXAMPLE_FREQUENCIES, alternativeActions: [] },
+);
+
 // The situation line on the table already states the spot ("Everyone folded
 // to you in the button…"), so this must not restate it — three copies of the
 // same sentence reads as filler on the one screen that has to feel effortless.
@@ -98,7 +120,10 @@ export function exampleVerdict(action: string): ExampleVerdict {
     return {
       correct: false,
       title: "The play is a raise.",
-      body: "Just calling invites the blinds in cheap while you hold one of the strongest hands in the game. Ace-king suited wants a bigger pot — raise and take control.",
+      // Speaks to the reason people tap Call: the disguise myth. Slow-playing
+      // to hide a monster is the most common wrong instinct in this spot, and
+      // naming it here is the first thing the product teaches.
+      body: "Trying to hide your strength by just calling wins you a tiny pot with a monster hand. Real disguise comes from raising your weak hands and your strong ones the same way — which is exactly what the charts teach.",
     };
   }
   return {
@@ -110,6 +135,8 @@ export function exampleVerdict(action: string): ExampleVerdict {
 
 /** The bridge line under the verdict, and the CTA into the account screen. */
 export const EXAMPLE_OUTRO = {
-  bridge: "Every drill grades you like this — instant, specific, and in plain English.",
+  // "100–0" must stay true to EXAMPLE_FREQUENCIES above — the capsules print
+  // those numbers directly over the buttons this sentence refers to.
+  bridge: "This one is 100–0. Most spots are a mix — the trainer teaches you which is which.",
   cta: "Continue",
 };
