@@ -136,37 +136,59 @@ export interface FaqItem {
 }
 
 /**
- * Eight, and the count is asserted by the FAQPage structured-data test. If you
- * add a ninth, update the test rather than deleting one to fit.
+ * Twelve, and the count is asserted by the FAQPage structured-data test. If
+ * you add a thirteenth, update the test rather than deleting one to fit.
+ *
+ * Ordered as a sales arc, not a compliance sheet: barrier-removers first
+ * (do I qualify, will it fit my game), then what you get and why it works,
+ * then effort and the trial, then the technical-trust and legal answers. The
+ * gambling denial stays on the page for ad reviewers — it just is not the
+ * greeting.
  */
 export const FAQ: readonly FaqItem[] = [
-  {
-    q: "Is this gambling?",
-    a: "No. SuitedPoker is educational software. There is no wagering, no real money at stake, and nothing to win or lose. You practise decisions against precomputed strategy and get feedback on them.",
-  },
   {
     q: "Do I need to know poker already?",
     a: "You need to know the rules and hand rankings. Everything after that — position, ranges, board texture, bet sizing — is what the curriculum teaches, starting from the beginning.",
   },
   {
-    q: "What is a solver?",
-    a: "A program that calculates the mathematically optimal way to play a poker situation. Professionals have used them for years. They are expensive and hard to read, which is the gap this fills.",
+    q: "Will this work for my home game?",
+    a: "Yes, and it is probably where it helps most. The strategy is built for 6-max at 100 big blinds, which is close to how a typical home game plays. The ideas — position, which hands to open, why you fold a good hand sometimes — transfer directly.",
+  },
+  {
+    q: "What do I actually get?",
+    a: "Unlimited practice hands graded against solved strategy, an AI coach that explains every decision in plain English, a daily five-hand challenge, a full table simulator with post-session review, a structured curriculum, and every range in the solution set, browsable. One subscription, everything included.",
+  },
+  {
+    q: "How is this different from training videos?",
+    a: "Videos show you someone else's decisions. Here you make your own — every hand is graded against solved strategy, and the feedback is about the exact spot in front of you. You find out which situations cost you, not which ones are interesting to talk about.",
+  },
+  {
+    q: "How does it find my leaks?",
+    a: "Every answer you give is scored by what it would cost against solved strategy. The app tracks where you give up the most — by position and by situation — and tilts your practice toward those spots until they stop leaking.",
   },
   {
     q: "How much time does it take?",
     a: "Around ten minutes a day. The daily challenge is five hands and takes about three.",
   },
   {
-    q: "Does it work on my phone?",
-    a: "Yes. It is built for mobile first and runs in the browser — nothing to install.",
+    q: "Is there a free trial?",
+    a: "The signup quiz is the trial: four questions and one real hand, played and graded before you are ever asked for a card. If the read on your game feels right, the subscription unlocks everything.",
+  },
+  {
+    q: "What is a solver?",
+    a: "A program that calculates the mathematically optimal way to play a poker situation. Professionals have used them for years. They are expensive and hard to read, which is the gap this fills.",
   },
   {
     q: "Is this actually GTO?",
     a: "It is a simplified approximation of GTO, and we say so on the methodology page rather than hiding it. The range shapes follow published solver-derived output; the exact frequencies are our model. For learning why a hand mixes at all, that is the right level of precision. For the last fraction of a big blind in a specific river spot, it is not — and nothing at this price is.",
   },
   {
-    q: "Will this work for my home game?",
-    a: "Yes, and it is probably where it helps most. The strategy is built for 6-max at 100 big blinds, which is close to how a typical home game plays. The ideas — position, which hands to open, why you fold a good hand sometimes — transfer directly.",
+    q: "Is this gambling?",
+    a: "No. SuitedPoker is educational software. There is no wagering, no real money at stake, and nothing to win or lose. You practise decisions against precomputed strategy and get feedback on them.",
+  },
+  {
+    q: "Does it work on my phone?",
+    a: "Yes. It is built for mobile first and runs in the browser — nothing to install.",
   },
   {
     q: "Can I cancel?",

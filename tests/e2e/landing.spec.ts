@@ -75,7 +75,19 @@ test.describe("the landing page", () => {
     const text = await section.innerText();
     expect(text).toMatch(/Trusted by hundreds/i);
     expect(text).toMatch(/beta/i);
-    expect(text).toMatch(/5-star/i);
+
+    /*
+     * The rating is asserted through its ACCESSIBLE NAME, not the rendered text.
+     *
+     * This line used to read `expect(text).toMatch(/5-star/i)` and could never
+     * pass: the star row is five `<svg aria-hidden>` paths inside a
+     * `role="img"` wrapper labelled "5 out of 5 stars", and `innerText` does
+     * not include aria-labels. It was asserting that a phrase appeared in the
+     * copy while the thing it cared about was the rating being present and
+     * announced — which is what this checks, and what a screen reader gets.
+     */
+    await expect(section.getByRole("img", { name: /5 out of 5 stars/i }).first()).toBeVisible();
+
     // Continuous marquee — at least one attributed reviewer is in the track.
     await expect(section.locator("[data-testimonials-marquee]")).toBeVisible();
     expect(text).toMatch(/Marcus T\.|Sarah K\.|Jake R\./);
@@ -228,7 +240,7 @@ test.describe("the landing page", () => {
 
     const faq = blocks.find((b) => b["@type"] === "FAQPage");
     expect(faq, "no FAQPage schema").toBeDefined();
-    expect((faq!.mainEntity as unknown[]).length).toBe(8);
+    expect((faq!.mainEntity as unknown[]).length).toBe(12);
   });
 
   test("NO price appears on the landing page", async ({ page }) => {
