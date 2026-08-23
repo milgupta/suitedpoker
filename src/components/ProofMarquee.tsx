@@ -48,7 +48,16 @@ export function ProofMarquee({ className = "" }: { className?: string }) {
     );
 
   return (
-    <div className={`marquee ${className}`} data-proof={quotes.length > 0 ? "quotes" : "points"}>
+    // tabindex: below `sm` the band scrolls (`overflow-x: auto`), and axe
+    // requires a scroll region to be keyboard-reachable. On desktop the same
+    // tab stop pauses the marquee via `:focus-within`.
+    <div
+      className={`marquee ${className}`}
+      data-proof={quotes.length > 0 ? "quotes" : "points"}
+      tabIndex={0}
+      role="region"
+      aria-label={quotes.length > 0 ? "What players say" : "What is included"}
+    >
       <div className="marquee-track">
         {half}
         {/* The duplicate exists only so translateX(-50%) lands seamlessly. */}

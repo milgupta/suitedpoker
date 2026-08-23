@@ -185,11 +185,49 @@ if you add one.
   profile (Meta matching needs an email). Expect Lead volume slightly below
   signup volume now: a signup can bail mid-quiz, where on `/start` the quiz was
   already done.
-- ⚠️ **`tests/e2e/sweep.spec.ts` fails 10 of 18 PRE-EXISTING** (verified by
-  stash on a clean tree): /ranges overflows sideways at phone widths, /practice
-  keeps rotation transforms under reduced motion, /daily seat labels fail
-  contrast, and the landing testimonial marquee is scrollable-but-unfocusable.
-  None are from this pass; they need their own session.
+- ✅ **RESOLVED — the sweep is 18/18 again.** This read "fails 10 of 18
+  PRE-EXISTING"; all four defects were fixed the next day (see the sweep
+  repair section below). Kept as a ✅ because a silently vanished warning
+  reads as an oversight.
+
+**What the sweep repair left you (Aug 2026).**
+
+- 🔴 **A FOLDED SEAT DIMMED ITS TEXT BELOW WCAG AA, AND THE FIX IS "DIM THE
+  AVATAR, NEVER THE TEXT".** `OpponentStrip` and `HeroDock` put
+  `opacity: 0.4` on the whole seat/strength card, which took
+  `--text-tertiary` to 1.6:1 — an axe `serious` on /daily (9 nodes).
+  `SeatAvatar` ALREADY dims itself when folded, so the container dim was also
+  double-dimming the avatar to 0.16. Now: the avatar (a graphic) carries the
+  dim, folded TEXT steps down one token (secondary → tertiary), and
+  `--text-tertiary` at full opacity is 4.65:1 — the quietest AA-compliant
+  treatment. The acting pulse moved to the avatar for the same reason: a
+  column pulsing to 0.55 takes text under AA mid-pulse.
+- **The /practice card fan uses the CSS `translate`/`rotate` PROPERTIES, not
+  `transform`.** The sweep's reduced-motion check reads computed `transform`
+  to catch entrance animations stuck mid-translate; static layout written
+  into that same channel is indistinguishable from a stuck animation. The
+  independent properties are a channel motion libraries never write, so the
+  check stays strict and the static art passes honestly.
+- **`GameSurface` carries `overflow-x-clip`** because the deal animation
+  enters cards at `rotate(-12deg)` and a rotated card's bounding box
+  transiently poked past 375px — the page scrolled sideways for a beat, and
+  the sweep caught it maybe one run in three on /arena (spot-dependent, looked
+  like a flake, was real). **`clip`, not `hidden`: `overflow-x: hidden`
+  computes `overflow-y` to auto** and quietly turns the surface into a scroll
+  container. The sweep's containment check now accepts `clip` alongside
+  `hidden`.
+- **A `.marquee` is a scroll region below `sm`** (`overflow-x: auto` snap
+  carousel), so it needs `tabIndex={0}` + `role="region"` + a label — axe
+  `scrollable-region-focusable`, serious. Both marquees (landing
+  testimonials, paywall proof band) carry it now; on desktop the same tab
+  stop lets a keyboard user pause the marquee, since `:focus-within` matches
+  the container's own focus.
+- **The squeeze-scenario buttons on /ranges wrap now** (`h-auto min-h-11
+  whitespace-normal` overriding the Button base's `whitespace-nowrap
+  shrink-0`) — "vs middle position open + cutoff call" was wider than a phone
+  and scrolled the whole page sideways.
+- ✅ **`npm run screenshots` + `npm run optimize:assets` re-run** after the
+  folded-seat change, per the standing rule. 319KB AVIF total.
 
 **What the onboarding shortening left you (Aug 2026).**
 

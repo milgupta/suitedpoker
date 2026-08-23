@@ -8,15 +8,15 @@
     },
     {
       "name": "drill",
-      "png": 219167,
-      "webp": 61326,
-      "avif": 35287
+      "png": 178214,
+      "webp": 45636,
+      "avif": 26476
     },
     {
       "name": "feedback-frequency-bar",
-      "png": 150721,
-      "webp": 40486,
-      "avif": 22137
+      "png": 169060,
+      "webp": 40558,
+      "avif": 23471
     },
     {
       "name": "lesson",
@@ -26,20 +26,20 @@
     },
     {
       "name": "range-grid",
-      "png": 151626,
-      "webp": 47902,
-      "avif": 26131
+      "png": 150277,
+      "webp": 45408,
+      "avif": 24789
     },
     {
       "name": "table-sim",
-      "png": 147085,
-      "webp": 31074,
-      "avif": 18550
+      "png": 146731,
+      "webp": 31646,
+      "avif": 18777
     }
   ],
   "total": {
-    "png": 2452568,
-    "webp": 614314,
-    "avif": 334933
+    "png": 2428251,
+    "webp": 596774,
+    "avif": 326341
   }
 }

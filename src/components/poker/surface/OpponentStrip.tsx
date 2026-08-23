@@ -86,23 +86,34 @@ function OpponentSeatColumn({
       data-folded={folded ? "true" : "false"}
       data-acting={acting ? "true" : "false"}
       data-winner={seat.isWinner === true ? "true" : "false"}
-      style={{ opacity: folded ? 0.4 : 1 }}
-      animate={acting && !reduced ? { opacity: [1, 0.55, 1] } : undefined}
-      transition={
-        acting && !reduced ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" } : undefined
-      }
     >
-      <span className="relative">
+      {/* Folded dims the AVATAR (a graphic) and the pulse breathes the avatar,
+          never the whole column: an opacity on the column takes the position
+          and stack text below WCAG AA — text-tertiary at 40% is 1.6:1, an axe
+          `serious`. Folded TEXT steps down one token instead, which is the
+          quietest treatment that still clears 4.5:1. */}
+      <motion.span
+        className="relative"
+        animate={acting && !reduced ? { opacity: [1, 0.55, 1] } : undefined}
+        transition={
+          acting && !reduced ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" } : undefined
+        }
+      >
         <SeatAvatar
           seed={seat.name === undefined ? seat.position : `${seat.position}:${seat.name}`}
           folded={folded}
         />
         {seat.isDealer === true && <DealerBadge />}
-      </span>
+      </motion.span>
 
       <span className="flex w-full min-w-0 flex-col items-center">
         {seat.name !== undefined && (
-          <span className="text-text-secondary text-caption w-full truncate text-center font-medium">
+          <span
+            className={cn(
+              "text-caption w-full truncate text-center font-medium",
+              folded ? "text-text-tertiary" : "text-text-secondary",
+            )}
+          >
             {seat.name}
           </span>
         )}
@@ -110,7 +121,12 @@ function OpponentSeatColumn({
           <span className="text-text-tertiary text-overline font-mono uppercase">
             {seat.position}
           </span>
-          <span className="text-text-secondary text-caption font-mono font-semibold tabular-nums">
+          <span
+            className={cn(
+              "text-caption font-mono font-semibold tabular-nums",
+              folded ? "text-text-tertiary" : "text-text-secondary",
+            )}
+          >
             {formatAmount(seat.stackBb)}
           </span>
         </span>

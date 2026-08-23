@@ -142,6 +142,11 @@ export function RangesClient() {
                 key={node.nodeRef}
                 variant={node.nodeRef === selected?.nodeRef ? "secondary" : "ghost"}
                 size="sm"
+                // The squeeze scenarios ("vs middle position open + cutoff
+                // call") are wider than a phone. The Button base is
+                // `whitespace-nowrap shrink-0`, so without this override the
+                // one long label scrolls the whole page sideways at 390px.
+                className="h-auto min-h-11 max-w-full py-2 text-center whitespace-normal"
                 onClick={() => setNodeRef(node.nodeRef)}
               >
                 {describeScenario(node.actionSeq)}

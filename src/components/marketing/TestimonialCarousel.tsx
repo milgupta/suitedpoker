@@ -58,10 +58,18 @@ export function TestimonialCarousel({ className }: { className?: string }) {
        * Duration is longer than the paywall chip band: these cards have full
        * paragraphs and need time to be read as they pass.
        */}
+      {/* Below `sm` the band becomes a snap carousel (`overflow-x: auto` in
+          globals.css), which makes it a scroll region — axe requires those to
+          be keyboard-reachable (`scrollable-region-focusable`, serious). The
+          tabindex also lets a keyboard user hold the desktop marquee still:
+          `:focus-within` matches the container's own focus. */}
       <div
         className="marquee testimonial-marquee pb-20"
         data-testimonials-marquee
         style={{ ["--marquee-duration" as string]: "96s" }}
+        tabIndex={0}
+        role="region"
+        aria-label="Reviews from beta testers"
       >
         <div className="marquee-track">
           {half}

@@ -28,7 +28,16 @@ export function GameSurface({ opponents, board, hero, actions, className }: Game
     <div
       // 16px gutters full-bleed on mobile (DESIGN.md §3 containers); a
       // centred column on desktop so the bands do not stretch to a stripe.
-      className={cn("mx-auto flex h-full w-full max-w-2xl flex-col px-4", className)}
+      // overflow-x-CLIP: the deal animation enters cards at rotate(-12deg),
+      // and a rotated card's bounding box transiently pokes past the surface
+      // edge — at 375px that scrolls the whole page sideways for a beat.
+      // `clip`, not `hidden`: hidden would compute overflow-y to auto and turn
+      // the surface into a scroll container; clip clips one axis and leaves
+      // the cards' drop-in from above visible.
+      className={cn(
+        "mx-auto flex h-full w-full max-w-2xl flex-col overflow-x-clip px-4",
+        className,
+      )}
       data-game-surface
     >
       <div className="shrink-0 pt-2" data-band="opponents">

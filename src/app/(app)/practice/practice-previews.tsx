@@ -34,8 +34,14 @@ export function DailyPreview() {
             <div
               key={i}
               className="absolute top-1/2 left-1/2"
+              // The independent `translate`/`rotate` properties, NOT `transform`.
+              // The sweep's reduced-motion check reads computed `transform` to
+              // catch entrance animations stuck mid-translate; static layout in
+              // that channel is indistinguishable from a stuck animation. These
+              // properties are a channel motion libraries never write.
               style={{
-                transform: `translate(-50%, -50%) translateX(${offset * 28}px) translateY(${Math.abs(offset) * 8}px) rotate(${offset * 8}deg)`,
+                translate: `calc(-50% + ${offset * 28}px) calc(-50% + ${Math.abs(offset) * 8}px)`,
+                rotate: `${offset * 8}deg`,
                 zIndex: i + 1,
               }}
             >

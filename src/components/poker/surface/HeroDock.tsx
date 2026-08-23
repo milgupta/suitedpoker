@@ -104,13 +104,22 @@ export function HeroDock({
     >
       <FannedCards cards={cards} folded={folded} />
 
+      {/* Folded steps the TEXT down a token instead of dimming the card:
+          opacity 0.4 took every line below WCAG AA (same axe `serious` the
+          opponent seats had). The card outline and the stepped-down ink still
+          read as "out of the hand". */}
       <div
         className="border-border bg-surface-2 flex min-w-0 flex-col gap-1.5 rounded-md border px-3 py-2"
         data-strength-card
-        style={{ opacity: folded ? 0.4 : 1 }}
       >
         <div className="flex items-center justify-between gap-2">
-          <span className="text-text-primary text-body-md font-semibold" data-strength-label>
+          <span
+            className={cn(
+              "text-body-md font-semibold",
+              folded ? "text-text-tertiary" : "text-text-primary",
+            )}
+            data-strength-label
+          >
             {strengthLabel}
           </span>
           {betBb !== null && betBb !== undefined && (
@@ -134,7 +143,10 @@ export function HeroDock({
         <div className="flex items-baseline gap-1.5">
           <span className="text-text-tertiary text-overline uppercase">Stack</span>
           <span
-            className="text-text-secondary text-body-sm font-mono font-semibold tabular-nums"
+            className={cn(
+              "text-body-sm font-mono font-semibold tabular-nums",
+              folded ? "text-text-tertiary" : "text-text-secondary",
+            )}
             data-hero-stack
           >
             {formatAmount(stackBb)}

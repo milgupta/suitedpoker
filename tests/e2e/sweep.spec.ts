@@ -137,7 +137,15 @@ async function overflowingElements(page: Page): Promise<string[]> {
         let contained = false;
         for (let p = el.parentElement; p !== null; p = p.parentElement) {
           const overflow = getComputedStyle(p).overflowX;
-          if (overflow === "auto" || overflow === "scroll" || overflow === "hidden") {
+          // `clip` counts too: like `hidden` it is deliberate clipping, minus
+          // the scroll container. GameSurface uses it to swallow the deal
+          // animation's transient rotated-card overflow.
+          if (
+            overflow === "auto" ||
+            overflow === "scroll" ||
+            overflow === "hidden" ||
+            overflow === "clip"
+          ) {
             contained = true;
             break;
           }
