@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FrequencyBar } from "@/components/poker/FrequencyBar";
 import { PlayingCard } from "@/components/poker/PlayingCard";
 import {
@@ -9,7 +10,7 @@ import {
   HeroDock,
   OpponentStrip,
 } from "@/components/poker/surface";
-import { HOW, STEPS } from "@/content/landing";
+import { HOW, SECTION_CTAS, STEPS } from "@/content/landing";
 import { actionLabel } from "@/lib/action-label";
 import { featuredCombo } from "@/lib/featured-combo";
 import type { Showcase } from "@/lib/landing-showcase";
@@ -118,6 +119,16 @@ export function HowItWorks({ showcase }: { showcase: Showcase }) {
             </li>
           ))}
         </ol>
+
+        {/* The section just showed a hand being answered; the CTA is the same
+            verb. Bordered — the page's one lit button is the hero's. */}
+        <Link
+          href="/signup"
+          data-cta="how"
+          className="border-border text-text-primary hover:border-text-tertiary text-body-lg mt-12 inline-flex min-h-12 items-center justify-center rounded-full border px-7 font-medium transition"
+        >
+          {SECTION_CTAS.how}
+        </Link>
       </div>
     </section>
   );

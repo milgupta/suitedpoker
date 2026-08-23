@@ -5,7 +5,8 @@ Read this fully before touching anything.
 ## What this is
 
 A GTO poker trainer for beginners. NLHE, 6-max cash, 100bb. Web app, mobile-first,
-hard paywall at $24.99/mo or $119.99/yr.
+hard paywall at $19.99/mo or $73.99/yr (repriced 2026-08-20; `plans.ts` is the
+source of truth, never this line).
 
 It is built in numbered substages from `SUITEDPOKER_BUILD_PLAN.md` — **one substage
 per session**. Start a fresh context for each one. Do not attempt several at once;
@@ -158,6 +159,37 @@ sessions.
 
 **Every substage in `SUITEDPOKER_BUILD_PLAN.md` is now done.** Update this table
 if you add one.
+
+**What the landing-CTA funnel pass left you (Aug 2026).**
+
+- **NEW META CAMPAIGNS LAND ON `/`, NOT `/start`.** The landing page is the ad
+  destination; every CTA goes to `/signup`, and an organic signup already routes
+  to `/onboarding` → demo hand → diagnosis → paywall — so the "new" funnel is
+  the organic funnel and needed no plumbing. `/start` stays live and untouched
+  for any old ad still pointing at it; retire it only when that campaign is off.
+- **Six CTAs on the landing page, each with its own `data-cta` id** (header,
+  hero, problem, how, features, final), all practice/training verbs — never
+  "play for"/gambling-adjacent wording, same ad-review boundary as the rest of
+  `src/content/landing.ts`. Mid-page CTAs are BORDERED pills: the page's one
+  `.btn-accent` is the hero's and the white fill is the final CTA's weight.
+- **`landing_cta_clicked {cta, page}` is the placement comparison.**
+  `TrackCtaClicks` (mounted inside `SiteHeader`) is one delegated capture-phase
+  listener over `[data-cta]` — a new CTA is tracked by giving it a `data-cta`,
+  no per-link component. Any page carrying `SiteHeader` is covered.
+- **Legal pages carry the full `SiteHeader`/`SiteFooter` now**, not a bare
+  wordmark — they were dead ends mid-funnel. `SiteFooter` carries the
+  DISCLAIMER, so the standalone `ComplianceFooter` there was removed; the
+  compliance e2e still passes.
+- **Meta's `Lead` is UNCHANGED and fires at the same moment in both funnels** —
+  after signup, when the quiz answers are committed and the server derives the
+  profile (Meta matching needs an email). Expect Lead volume slightly below
+  signup volume now: a signup can bail mid-quiz, where on `/start` the quiz was
+  already done.
+- ⚠️ **`tests/e2e/sweep.spec.ts` fails 10 of 18 PRE-EXISTING** (verified by
+  stash on a clean tree): /ranges overflows sideways at phone widths, /practice
+  keeps rotation transforms under reduced motion, /daily seat labels fail
+  contrast, and the landing testimonial marquee is scrollable-but-unfocusable.
+  None are from this pass; they need their own session.
 
 **What the onboarding shortening left you (Aug 2026).**
 

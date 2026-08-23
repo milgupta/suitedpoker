@@ -35,8 +35,22 @@ export const HERO = {
   title: "Stop guessing.",
   titleAccent: "Start knowing.",
   body: "Learn the strategy behind every decision — explained in plain English, one hand at a time. Built for players who know the rules and are stuck on everything after that.",
-  cta: "Sign Up",
+  cta: "Start practicing",
   secondary: "See how it works",
+} as const;
+
+/**
+ * Mid-page CTAs, one per section, all pointing at /signup — the funnel is
+ * account first, then the onboarding quiz. Each placement carries its own
+ * `data-cta` id so `landing_cta_clicked` can say which one converts.
+ *
+ * Practice/training verbs only, never "play for" money framing — CTA wording
+ * sits on the same ad-review boundary as the rest of this file.
+ */
+export const SECTION_CTAS = {
+  problem: "Start practicing",
+  how: "Try your first hand",
+  features: "Start getting better",
 } as const;
 
 /**
@@ -207,7 +221,7 @@ export const FAQ: readonly FaqItem[] = [
 export const FINAL_CTA = {
   title: "Find out where your game leaks.",
   body: "Four questions, then one real hand you play yourself. The read you get at the end is built from what you actually did, not from what you said.",
-  cta: "Sign Up",
+  cta: "Start getting better",
 } as const;
 
 /**

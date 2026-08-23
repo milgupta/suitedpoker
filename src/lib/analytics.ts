@@ -18,6 +18,13 @@ export type Grade = "sharp" | "best" | "solid" | "inaccuracy" | "mistake" | "blu
 export interface EventMap {
   // ── Acquisition and activation ────────────────────────────────────────────
   landing_viewed: Record<string, never>;
+  /**
+   * A click on any `[data-cta]` link on a public marketing surface. `cta` is
+   * the placement id (hero, header, problem, how, features, final, …) and
+   * `page` the pathname, so placements can be compared without a second event
+   * name per section.
+   */
+  landing_cta_clicked: { cta: string; page: string };
   signup_started: { method: SignupMethod };
   signup_completed: { method: SignupMethod };
   /** `start` = paid-ads pre-account quiz; `app` = post-signup `/onboarding`. */
@@ -94,6 +101,7 @@ export type EventName = keyof EventMap;
 /** Every event name, for the test that walks the schema. */
 export const EVENT_NAMES = [
   "landing_viewed",
+  "landing_cta_clicked",
   "signup_started",
   "signup_completed",
   "onboarding_started",

@@ -7,7 +7,15 @@ import { HowItWorks } from "@/components/marketing/HowItWorks";
 import { SiteFooter } from "@/components/marketing/SiteFooter";
 import { SiteHeader } from "@/components/marketing/SiteHeader";
 import { TestimonialCarousel } from "@/components/marketing/TestimonialCarousel";
-import { FAQ, FEATURES, FINAL_CTA, HERO, HERO_PROOF, PROBLEM } from "@/content/landing";
+import {
+  FAQ,
+  FEATURES,
+  FINAL_CTA,
+  HERO,
+  HERO_PROOF,
+  PROBLEM,
+  SECTION_CTAS,
+} from "@/content/landing";
 import { landingShowcase } from "@/lib/landing-showcase-server";
 import { provenanceHeadline } from "@/lib/methodology";
 import { methodologyFacts } from "@/lib/methodology-server";
@@ -184,6 +192,16 @@ export default function Home() {
                 </div>
               ))}
             </dl>
+
+            {/* Bordered, not lit — the one `.btn-accent` on this page is the
+                hero's, and the white fill is the final CTA's weight. */}
+            <Link
+              href="/signup"
+              data-cta="problem"
+              className="border-border text-text-primary hover:border-text-tertiary text-body-lg mt-8 inline-flex min-h-12 items-center justify-center rounded-full border px-7 font-medium transition"
+            >
+              {SECTION_CTAS.problem}
+            </Link>
           </div>
         </section>
 
@@ -208,6 +226,14 @@ export default function Home() {
                 </div>
               ))}
             </dl>
+
+            <Link
+              href="/signup"
+              data-cta="features"
+              className="border-border text-text-primary hover:border-text-tertiary text-body-lg mt-8 inline-flex min-h-12 items-center justify-center rounded-full border px-7 font-medium transition"
+            >
+              {SECTION_CTAS.features}
+            </Link>
           </div>
         </section>
 
