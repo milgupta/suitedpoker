@@ -228,6 +228,15 @@ if you add one.
   and scrolled the whole page sideways.
 - ✅ **`npm run screenshots` + `npm run optimize:assets` re-run** after the
   folded-seat change, per the standing rule. 319KB AVIF total.
+- ✅ **THE AUG-20 REPRICE IS VERIFIED END TO END (2026-08-23).** Test mode
+  checked against the Stripe API: $19.99/mo + $73.99/yr, active, matching
+  `plans.ts` exactly. Live mode: the new prices exist
+  (`price_1U6kEb…ZuSaPOKx` monthly, `price_1U6kEv…fCx3mGPJ` annual, created
+  Aug 20 21:39) and Milan confirmed those exact IDs are what the Vercel
+  `STRIPE_PRICE_*` vars hold — the vars are Sensitive (write-only), so
+  confirmation is the strongest check available. ⚠️ The old $24.99/$119.99
+  LIVE prices are still active with 0 subscribers; archiving them would make
+  any future stale pointer fail loudly instead of charging the wrong amount.
 
 **What the onboarding shortening left you (Aug 2026).**
 
