@@ -732,6 +732,559 @@ prompt.
 - **Instrument the accuracy-improvement cohort stat now** (§0.3) — it is the
   legal hard number every future hook wants.
 
+## 13 · The 3×4 test matrix (12 cells, one variable per core)
+
+Each core idea freezes its body and varies exactly ONE thing across 4
+variations. Read: Core 1 answers WHO the messenger is, Core 2 answers WHICH
+HOOK pulls, Core 3 answers WHICH PAIN bites. Round 2 composites the three
+winners into one ad. All cells are 15s takes.
+
+### Core 1 — "The Fratty Guy" · varies the MESSAGE (avatar frozen)
+
+Avatar frozen across all four cells: the ad 1 peer — early 20s, backwards
+white cap, hoodie, bedroom desk with chips, monitor glow. Same still, same
+room, same delivery energy, same structure (hook → body → brand → "Start
+today"), same b-roll slot mid-ad. Only the ARGUMENT changes — each cell
+isolates one beat of the Runout message spine as a whole ad, so the winner
+names the persuasion angle that actually sells.
+
+| Cell | Angle | Script (~17s) |
+|---|---|---|
+| 1A | Invisible problem | "I lost at poker for years and couldn't tell you why. Small leaks I couldn't see — blind defense, bad three-bet calls. Suited poker grades every decision against the real solution and drills what you miss. Five minutes a day. Start getting better at poker — today." |
+| 1B | Status reframe | "The guys beating you aren't smarter than you. They just knew the spot — and you were guessing. Suited poker deals you real spots and shows you exactly what the solution does. Five minutes a day. Start getting better at poker — today." |
+| 1C | Mechanism analogy | "This app learns your poker mistakes like TikTok learns your taste. Every hand, it finds the spots you keep getting wrong and deals them back until they're fixed. Suited poker. Five minutes a day. Start getting better at poker — today." |
+| 1D | Effort collapse | "Stop watching two-hour poker videos. You don't remember them at the table anyway. Five minutes of real spots, graded against the solution, beats all of it. Suited poker. Start getting better at poker — today." |
+
+Beat timing, all cells: hook 0:00–0:03 (lean in, direct), body 0:03–0:12
+(cut to b-roll ~0:07–0:11 while audio runs), close 0:12–0:15 (the serious
+beat, hand flat on desk). Caption cards split per §10.
+
+#### Core 1 — full Seedance 2.5 prompts (1A–1D)
+
+Same avatar, same still (`@image1` = the Ad 1 peer), same room — reuse the
+Ad 1 identity reference from §2b, do not regenerate it. Each prompt below
+is fully self-contained (copy-paste ready); only the performance beats,
+caption cards, and audio direction change per cell.
+
+**Two changes from the first pass, both applied to all four cells:**
+
+1. **17 seconds, not 15** — the extra 2s buys room for a full spoken CTA
+   close, matching the pattern from Ads 2 and 3, instead of ending on a
+   bare "Start today."
+2. **A dedicated, over-emphasized pronunciation-and-spelling block**, not
+   just a passing line in the Audio paragraph. The brand name is the one
+   word Seedance has actually garbled before ("suired" — see §2), so every
+   prompt below states the rule twice: once in its own labeled block
+   immediately after the caption-overlay instructions, and again inside
+   the Audio paragraph. Note the deliberate split: the SPOKEN dialogue
+   text below writes the brand lowercase — "Suited poker" — because that
+   reads to the model as two ordinary dictionary words instead of one
+   proper noun, which is what stops the mispronunciation. Every CAPTION
+   CARD, by contrast, spells it "Suited Poker" — both words capitalized —
+   because a caption is read, not heard, and should look correct in
+   writing. Keep this split when editing; do not "fix" the lowercase
+   dialogue to match the captions.
+
+**1A — Invisible problem**
+
+```text
+A vertical 9:16 selfie-style UGC video, one continuous unbroken take, 17
+seconds, filmed as if on a propped-up phone at eye level. Maintain the
+exact facial identity from @image1 for the entire duration.
+
+Subject: a white man in his early twenties with a short patchy beard,
+realistic skin texture with visible pores across the nose and cheeks,
+slight redness and natural unevenness, absolutely no smoothing or beauty
+filter. He wears a backwards white cap, a light-blue zip hoodie half-
+zipped over a black t-shirt, and a thin silver chain. He sits at a
+cluttered bedroom desk: a monitor glowing slightly out of focus behind his
+left shoulder, four short stacks of poker chips (red, blue, green, white)
+and a face-down deck of cards in the foreground, a charging cable snaking
+across the desk, an open energy drink can at frame right with its label
+turned away from the camera. Soft warm lamp light from camera-left throws
+natural soft shadows across the right side of his face; a ceiling fan is
+faintly visible top of frame. The room reads lived-in, not staged. No
+readable text or logos anywhere in the frame.
+
+Camera: handheld-phone character throughout — subtle micro-shake as if the
+phone is leaned against something imperfect, one brief autofocus hunt
+around the 6-second mark, mild exposure pumping when he leans forward. No
+stabilization, no zoom, no cuts, no camera moves.
+
+Caption overlay, on screen for the entire video: burned-in auto-caption
+style subtitles, exactly like TikTok auto-captions. Plain white bold
+sans-serif text with a soft black drop shadow, no background box, no
+outline. Always a single line, centered horizontally, positioned at chest
+height about two-thirds of the way down the frame — below his face, above
+the desk. Only ONE caption card visible at a time; each card instantly
+replaces the previous one in the same fixed position, perfectly synced to
+the spoken words. No animation, no word-by-word pop-in, no karaoke
+highlighting, no emoji. The caption text must be spelled exactly as
+written in the card lists below, word for word — including the brand name,
+which every caption card spells "Suited Poker": two capitalized words, a
+normal space, no hyphen, no merged word, no misspelling. This spelling is
+pixel-exact and non-negotiable.
+
+CRITICAL — brand pronunciation and spelling, read this carefully and apply
+it exactly: the spoken dialogue text below deliberately writes the brand
+"Suited poker" — capital S, lowercase p — so it reads as two ordinary
+dictionary words rather than one proper noun; that is what prevents a
+mispronunciation. Spoken aloud it is TWO separate, ordinary English words:
+"Suited," pronounced exactly like the common word in "a suited hand" or
+"well suited for the job" — SOO-tid, two clean syllables, rhyming with
+"booted," "rooted" — then a brief natural half-beat gap — then "poker,"
+pronounced exactly like the card game, POH-ker, rhyming with "broker,"
+"joker." Do NOT render this as "soo-ird," "suired," "sootid," "sooted,"
+"suder," or any single word blending the two together — these are real
+failure modes seen before and must be actively avoided. This rule applies
+every single time the brand is spoken in this script.
+
+Opening (0:00–0:03): He is already looking into the lens, open and a
+little rueful, no performance yet — this is the confession, not the pitch:
+"I lost at poker for years and couldn't tell you why." A small, almost
+embarrassed shrug on "couldn't tell you why."
+Caption cards: 0:00 "I lost at poker" — 0:01.2 "for years and couldn't" —
+0:02.4 "tell you why"
+
+The leaks (0:03–0:07): Faster, more specific, counting on his fingers at
+chest height, one finger per item, a small head shake after the last one:
+"Small leaks I couldn't see — blind defense, bad three-bet calls." He
+glances briefly down-left as if picturing a hand, then back to the lens.
+Caption cards: 0:03 "small leaks I couldn't" — 0:04.2 "see — blind
+defense" — 0:05.4 "bad three-bet calls"
+
+The mechanism (0:07–0:12): Steadier, matter-of-fact, using both hands to
+frame a small box in the air on "grades every decision," then a light
+double-tap on the desk on "solution": "Suited poker grades every decision
+against the real solution — and drills what you miss."
+Caption cards: 0:07 "Suited Poker grades every" — 0:08.2 "decision
+against the" — 0:09.4 "real solution and" — 0:10.6 "drills what you miss"
+
+Close (0:12–0:17): He relaxes back an inch, one hand flat on the desk.
+First, plain and steady: "Five minutes a day." A short breath, then he
+leans a few inches back toward the lens for the close, more direct and a
+touch more energized than the rest of the video: "Start getting better at
+poker — today." Holds eye contact with the lens for a full beat after the
+last word, the take ends.
+Caption cards: 0:12 "five minutes a day" — 0:13.5 "start getting better" —
+0:15 "at poker" — 0:16 "today"
+
+Audio: his voice only, warm conversational American male in his early
+twenties, intimate like talking to a friend, natural hesitations and
+breaths exactly where written, no script-read cadence. He pronounces
+"Suited" exactly like the ordinary English word — as in "a suited hand" —
+SOO-tid, rhymes with "booted", never "soo-ird" or "suired" — and "poker"
+exactly like the card game, POH-ker, rhyming with "broker" — spoken as two
+distinct words with a small natural gap between them, never blended into
+one. Quiet room tone underneath, a faint chip-stack clink when his hand
+brushes the desk at 0:09. No background music, no logos, no watermarks, no
+color grade, no cinematic look, no beauty retouching, no plastic skin. No
+text on screen other than the caption cards specified above — no emoji, no
+titles, no watermark text.
+```
+
+**1B — Status reframe**
+
+```text
+A vertical 9:16 selfie-style UGC video, one continuous unbroken take, 17
+seconds, filmed as if on a propped-up phone at eye level. Maintain the
+exact facial identity from @image1 for the entire duration.
+
+Subject: a white man in his early twenties with a short patchy beard,
+realistic skin texture with visible pores across the nose and cheeks,
+slight redness and natural unevenness, absolutely no smoothing or beauty
+filter. He wears a backwards white cap, a light-blue zip hoodie half-
+zipped over a black t-shirt, and a thin silver chain. He sits at a
+cluttered bedroom desk: a monitor glowing slightly out of focus behind his
+left shoulder, four short stacks of poker chips (red, blue, green, white)
+and a face-down deck of cards in the foreground, a charging cable snaking
+across the desk, an open energy drink can at frame right with its label
+turned away from the camera. Soft warm lamp light from camera-left throws
+natural soft shadows across the right side of his face; a ceiling fan is
+faintly visible top of frame. The room reads lived-in, not staged. No
+readable text or logos anywhere in the frame.
+
+Camera: handheld-phone character throughout — subtle micro-shake as if the
+phone is leaned against something imperfect, one brief autofocus hunt
+around the 6-second mark, mild exposure pumping when he leans forward. No
+stabilization, no zoom, no cuts, no camera moves.
+
+Caption overlay, on screen for the entire video: burned-in auto-caption
+style subtitles, exactly like TikTok auto-captions. Plain white bold
+sans-serif text with a soft black drop shadow, no background box, no
+outline. Always a single line, centered horizontally, positioned at chest
+height about two-thirds of the way down the frame — below his face, above
+the desk. Only ONE caption card visible at a time; each card instantly
+replaces the previous one in the same fixed position, perfectly synced to
+the spoken words. No animation, no word-by-word pop-in, no karaoke
+highlighting, no emoji. The caption text must be spelled exactly as
+written in the card lists below, word for word — including the brand name,
+which every caption card spells "Suited Poker": two capitalized words, a
+normal space, no hyphen, no merged word, no misspelling. This spelling is
+pixel-exact and non-negotiable.
+
+CRITICAL — brand pronunciation and spelling, read this carefully and apply
+it exactly: the spoken dialogue text below deliberately writes the brand
+"Suited poker" — capital S, lowercase p — so it reads as two ordinary
+dictionary words rather than one proper noun; that is what prevents a
+mispronunciation. Spoken aloud it is TWO separate, ordinary English words:
+"Suited," pronounced exactly like the common word in "a suited hand" or
+"well suited for the job" — SOO-tid, two clean syllables, rhyming with
+"booted," "rooted" — then a brief natural half-beat gap — then "poker,"
+pronounced exactly like the card game, POH-ker, rhyming with "broker,"
+"joker." Do NOT render this as "soo-ird," "suired," "sootid," "sooted,"
+"suder," or any single word blending the two together — these are real
+failure modes seen before and must be actively avoided. This rule applies
+every single time the brand is spoken in this script.
+
+Opening (0:00–0:03.5): Direct, a little confrontational, leaning in a few
+inches, no smile yet: "The guys beating you aren't smarter than you." A
+small dismissive shake of the head on "smarter than you," like he's
+personally offended on the viewer's behalf.
+Caption cards: 0:00 "the guys beating you" — 0:01.4 "aren't smarter" —
+0:02.4 "than you"
+
+The reveal (0:03.5–0:07): Knowing, a little smug, eyebrow raised: "They
+just knew the spot — and you were guessing." A decisive single nod on
+"knew the spot," then a slight smirk on "you were guessing."
+Caption cards: 0:03.5 "they just knew" — 0:04.6 "the spot" — 0:05.5 "and
+you were guessing"
+
+The mechanism (0:07–0:12): Leaning back slightly, more explanatory, one
+open palm turned up as if presenting something obvious: "Suited poker
+deals you real spots and shows you exactly what the solution does." A
+light point at the lens on "exactly."
+Caption cards: 0:07 "Suited Poker deals you" — 0:08.2 "real spots and" —
+0:09.4 "shows you exactly" — 0:10.6 "what the solution does"
+
+Close (0:12–0:17): He relaxes back an inch, one hand flat on the desk.
+First, plain and steady: "Five minutes a day." A short breath, then he
+leans a few inches back toward the lens for the close, more direct and a
+touch more energized than the rest of the video: "Start getting better at
+poker — today." Holds eye contact for a full beat after the last word, the
+take ends.
+Caption cards: 0:12 "five minutes a day" — 0:13.5 "start getting better" —
+0:15 "at poker" — 0:16 "today"
+
+Audio: his voice only, warm conversational American male in his early
+twenties, a little more assertive and knowing than a typical confession —
+this is him letting the viewer in on something, not admitting a mistake.
+Natural hesitations and breaths exactly where written, no script-read
+cadence. He pronounces "Suited" exactly like the ordinary English word —
+as in "a suited hand" — SOO-tid, rhymes with "booted", never "soo-ird" or
+"suired" — and "poker" exactly like the card game, POH-ker, rhyming with
+"broker" — spoken as two distinct words with a small natural gap between
+them, never blended into one. Quiet room tone underneath, a faint
+chip-stack clink when his hand brushes the desk at 0:09. No background
+music, no logos, no watermarks, no color grade, no cinematic look, no
+beauty retouching, no plastic skin. No text on screen other than the
+caption cards specified above — no emoji, no titles, no watermark text.
+```
+
+**1C — Mechanism analogy**
+
+```text
+A vertical 9:16 selfie-style UGC video, one continuous unbroken take, 17
+seconds, filmed as if on a propped-up phone at eye level. Maintain the
+exact facial identity from @image1 for the entire duration.
+
+Subject: a white man in his early twenties with a short patchy beard,
+realistic skin texture with visible pores across the nose and cheeks,
+slight redness and natural unevenness, absolutely no smoothing or beauty
+filter. He wears a backwards white cap, a light-blue zip hoodie half-
+zipped over a black t-shirt, and a thin silver chain. He sits at a
+cluttered bedroom desk: a monitor glowing slightly out of focus behind his
+left shoulder, four short stacks of poker chips (red, blue, green, white)
+and a face-down deck of cards in the foreground, a charging cable snaking
+across the desk, an open energy drink can at frame right with its label
+turned away from the camera. Soft warm lamp light from camera-left throws
+natural soft shadows across the right side of his face; a ceiling fan is
+faintly visible top of frame. The room reads lived-in, not staged. No
+readable text or logos anywhere in the frame.
+
+Camera: handheld-phone character throughout — subtle micro-shake as if the
+phone is leaned against something imperfect, one brief autofocus hunt
+around the 6-second mark, mild exposure pumping when he leans forward. No
+stabilization, no zoom, no cuts, no camera moves.
+
+Caption overlay, on screen for the entire video: burned-in auto-caption
+style subtitles, exactly like TikTok auto-captions. Plain white bold
+sans-serif text with a soft black drop shadow, no background box, no
+outline. Always a single line, centered horizontally, positioned at chest
+height about two-thirds of the way down the frame — below his face, above
+the desk. Only ONE caption card visible at a time; each card instantly
+replaces the previous one in the same fixed position, perfectly synced to
+the spoken words. No animation, no word-by-word pop-in, no karaoke
+highlighting, no emoji. The caption text must be spelled exactly as
+written in the card lists below, word for word — including the brand name,
+which every caption card spells "Suited Poker": two capitalized words, a
+normal space, no hyphen, no merged word, no misspelling. This spelling is
+pixel-exact and non-negotiable.
+
+CRITICAL — brand pronunciation and spelling, read this carefully and apply
+it exactly: the spoken dialogue text below deliberately writes the brand
+"Suited poker" — capital S, lowercase p — so it reads as two ordinary
+dictionary words rather than one proper noun; that is what prevents a
+mispronunciation. Spoken aloud it is TWO separate, ordinary English words:
+"Suited," pronounced exactly like the common word in "a suited hand" or
+"well suited for the job" — SOO-tid, two clean syllables, rhyming with
+"booted," "rooted" — then a brief natural half-beat gap — then "poker,"
+pronounced exactly like the card game, POH-ker, rhyming with "broker,"
+"joker." Do NOT render this as "soo-ird," "suired," "sootid," "sooted,"
+"suder," or any single word blending the two together — these are real
+failure modes seen before and must be actively avoided. This rule applies
+every single time the brand is spoken in this script.
+
+Opening (0:00–0:03): More animated and playful than the other cells,
+almost like he's proud of the comparison he's about to make, a small
+half-grin: "This app learns your poker mistakes like TikTok learns your
+taste." On "TikTok" his right thumb makes one quick small upward flick in
+the air near the desk, miming a scroll, then drops the gesture immediately
+— not cartoonish, just a flash of it.
+Caption cards: 0:00 "this app learns" — 0:01 "your poker mistakes" —
+0:02 "like TikTok learns" — 0:02.8 "your taste"
+
+The mechanism, part one (0:03–0:07): Leaning in slightly, more explanatory
+now, counting the idea out with one open hand turning over: "Every hand,
+it finds the spots you keep getting wrong—"
+Caption cards: 0:03 "every hand, it finds" — 0:04.3 "the spots you keep" —
+0:05.6 "getting wrong"
+
+The mechanism, part two (0:07–0:12): Continuing the same thought without a
+breath break, a small nod landing on "fixed," then relaxing slightly on
+the brand name: "—and deals them back until they're fixed. Suited poker."
+Caption cards: 0:07 "and deals them back" — 0:08.2 "until they're fixed" —
+0:09.4 "Suited Poker"
+
+Close (0:12–0:17): He relaxes back an inch, one hand flat on the desk, the
+grin mostly gone. First, plain and steady: "Five minutes a day." A short
+breath, then a small return of the earlier playful energy for the close:
+"Start getting better at poker — today." Holds eye contact for a full beat
+after the last word, the take ends.
+Caption cards: 0:12 "five minutes a day" — 0:13.5 "start getting better" —
+0:15 "at poker" — 0:16 "today"
+
+Audio: his voice only, warm conversational American male in his early
+twenties, upbeat and a little pleased with himself on the analogy,
+settling into plain sincerity through the mechanism beats, with a small
+lift of energy back on the CTA. Natural hesitations and breaths exactly
+where written, no script-read cadence. He pronounces "Suited" exactly like
+the ordinary English word — as in "a suited hand" — SOO-tid, rhymes with
+"booted", never "soo-ird" or "suired" — and "poker" exactly like the card
+game, POH-ker, rhyming with "broker" — spoken as two distinct words with a
+small natural gap between them, never blended into one. Quiet room tone
+underneath, a faint chip-stack clink when his hand brushes the desk at
+0:08. No background music, no logos, no watermarks, no color grade, no
+cinematic look, no beauty retouching, no plastic skin. No text on screen
+other than the caption cards specified above — no emoji, no titles, no
+watermark text.
+```
+
+**1D — Effort collapse**
+
+```text
+A vertical 9:16 selfie-style UGC video, one continuous unbroken take, 17
+seconds, filmed as if on a propped-up phone at eye level. Maintain the
+exact facial identity from @image1 for the entire duration.
+
+Subject: a white man in his early twenties with a short patchy beard,
+realistic skin texture with visible pores across the nose and cheeks,
+slight redness and natural unevenness, absolutely no smoothing or beauty
+filter. He wears a backwards white cap, a light-blue zip hoodie half-
+zipped over a black t-shirt, and a thin silver chain. He sits at a
+cluttered bedroom desk: a monitor glowing slightly out of focus behind his
+left shoulder, four short stacks of poker chips (red, blue, green, white)
+and a face-down deck of cards in the foreground, a charging cable snaking
+across the desk, an open energy drink can at frame right with its label
+turned away from the camera. Soft warm lamp light from camera-left throws
+natural soft shadows across the right side of his face; a ceiling fan is
+faintly visible top of frame. The room reads lived-in, not staged. No
+readable text or logos anywhere in the frame.
+
+Camera: handheld-phone character throughout — subtle micro-shake as if the
+phone is leaned against something imperfect, one brief autofocus hunt
+around the 6-second mark, mild exposure pumping when he leans forward. No
+stabilization, no zoom, no cuts, no camera moves.
+
+Caption overlay, on screen for the entire video: burned-in auto-caption
+style subtitles, exactly like TikTok auto-captions. Plain white bold
+sans-serif text with a soft black drop shadow, no background box, no
+outline. Always a single line, centered horizontally, positioned at chest
+height about two-thirds of the way down the frame — below his face, above
+the desk. Only ONE caption card visible at a time; each card instantly
+replaces the previous one in the same fixed position, perfectly synced to
+the spoken words. No animation, no word-by-word pop-in, no karaoke
+highlighting, no emoji. The caption text must be spelled exactly as
+written in the card lists below, word for word — including the brand name,
+which every caption card spells "Suited Poker": two capitalized words, a
+normal space, no hyphen, no merged word, no misspelling. This spelling is
+pixel-exact and non-negotiable.
+
+CRITICAL — brand pronunciation and spelling, read this carefully and apply
+it exactly: the spoken dialogue text below deliberately writes the brand
+"Suited poker" — capital S, lowercase p — so it reads as two ordinary
+dictionary words rather than one proper noun; that is what prevents a
+mispronunciation. Spoken aloud it is TWO separate, ordinary English words:
+"Suited," pronounced exactly like the common word in "a suited hand" or
+"well suited for the job" — SOO-tid, two clean syllables, rhyming with
+"booted," "rooted" — then a brief natural half-beat gap — then "poker,"
+pronounced exactly like the card game, POH-ker, rhyming with "broker,"
+"joker." Do NOT render this as "soo-ird," "suired," "sootid," "sooted,"
+"suder," or any single word blending the two together — these are real
+failure modes seen before and must be actively avoided. This rule applies
+every single time the brand is spoken in this script.
+
+Opening (0:00–0:03): Flat, a little dismissive, almost bored — this is the
+most low-energy of the four cells on purpose: "Stop watching two-hour
+poker videos." A single flat palm-out "stop" gesture at chest height,
+dropped immediately, no follow-through flourish.
+Caption cards: 0:00 "stop watching" — 0:01 "two-hour poker videos"
+
+The dismissal (0:03–0:07): A small eye-roll, shoulders loose, talking like
+this is obvious: "You don't remember them at the table anyway." A short
+exhale through the nose on "anyway," almost a laugh.
+Caption cards: 0:03 "you don't remember" — 0:04.2 "them at the table" —
+0:05.4 "anyway"
+
+The mechanism (0:07–0:12): Slightly more energy returning, matter-of-fact
+rather than salesy, one loose open hand gesturing outward on "beats all of
+it": "Five minutes of real spots, graded against the solution, beats all
+of it. Suited poker."
+Caption cards: 0:07 "five minutes of real" — 0:08.2 "spots, graded
+against" — 0:09.4 "the solution, beats" — 0:10.6 "all of it. Suited
+Poker"
+
+Close (0:12–0:17): He settles back, plain and unhurried, one hand resting
+flat on the desk. Still dry, still low-energy — the delivery does NOT
+brighten for the CTA, that flatness is the point of this cell: "Start
+getting better at poker — today." Holds eye contact for a full beat after
+the last word, the take ends.
+Caption cards: 0:12 "start getting" — 0:13.5 "better at poker" —
+0:15.5 "today"
+
+Audio: his voice only, warm conversational American male in his early
+twenties, dry and a little dismissive throughout, never raising energy to
+sell — the persuasion is in the shrug, not the enthusiasm, all the way
+through the CTA. Natural hesitations and breaths exactly where written, no
+script-read cadence. He pronounces "Suited" exactly like the ordinary
+English word — as in "a suited hand" — SOO-tid, rhymes with "booted",
+never "soo-ird" or "suired" — and "poker" exactly like the card game,
+POH-ker, rhyming with "broker" — spoken as two distinct words with a small
+natural gap between them, never blended into one. Quiet room tone
+underneath, a faint chip-stack clink when his hand brushes the desk at
+0:12. No background music, no logos, no watermarks, no color grade, no
+cinematic look, no beauty retouching, no plastic skin. No text on screen
+other than the caption cards specified above — no emoji, no titles, no
+watermark text.
+```
+
+**CapCut edit map — identical shape for all four cells:**
+
+| Time | Picture |
+|------|---------|
+| 0:00–0:07 | Seedance take (face) — hook + development |
+| 0:07–0:11 | b-roll full-bleed (`drill-correct` → `leak-report`), CapCut captions matching the mechanism beat's words (baked caption is discarded with the picture here) |
+| 0:11–0:17 | back to face for the mechanism tail-out, the "five minutes a day" line, and the spoken CTA close |
+
+### Core 2 — "The Quiz" · varies HOOK (avatar + body frozen)
+
+Avatar: the deadpan quiz kid (ad 3 still). Body after the hook is identical
+— spot, silent hold, reveal, brand, CTA (use the ad 3 15s-adapted beats):
+"Big blind. The small blind opens. Fold, call, or raise? [hold] If you felt
+sure — that's the leak. The solution mixes. Suited poker — real spots,
+graded instantly. Start today."
+
+| Cell | Hook (0:00–0:02.5) |
+|---|---|
+| 2A | "Quick quiz. What's your play here?" (baseline) |
+| 2B | "Bet you get this one wrong." (challenge) |
+| 2C | "This spot has no right answer." (paradox — pays off the mix reveal hardest) |
+| 2D | "One hand. Prove you're not guessing." (identity dare) |
+
+### Core 3 — "The Enemy" · varies the NAMED PAIN (avatar + body frozen)
+
+Avatar: the veteran. Body after the hook is identical: "And I still
+couldn't tell you if that river call last Tuesday was right. Suited poker
+caught a mistake I'd been making for twenty years. Start getting better at
+poker — today."
+
+| Cell | Enemy hook (0:00–0:04, said with dry contempt) |
+|---|---|
+| 3A | "I've done the three-hundred-dollar coaching." |
+| 3B | "I've watched the six-hour YouTube breakdowns." |
+| 3C | "I bought the solver. Barely opened it." |
+| 3D | "Twenty years at the table. Every book, every video." |
+
+### Running it
+
+- Generation cost: Core 2 and 3 share avatars with the launch ads, so 12
+  cells ≈ 5 identity stills total and 12×15–17s takes. Cores 2 and 3 only
+  regenerate ~4s of new opening against a reusable body if the tool's
+  region/extend features cooperate — otherwise 12 full takes.
+- Same b-roll, caption spec (§10), degradation pass (§10b), and baked-
+  caption overlay blocks as the launch ads. Same compliance rules (§0).
+- Read after ~$50–100 spend per core on Purchase (not CTR — a hook can win
+  attention and lose buyers). Then composite: winning avatar × winning
+  hook × winning pain = the round-2 ad.
+
+### Ad set / ad naming — one ad set PER CORE
+
+Each Core is a different type of copywriting — Core 1 tests which
+*argument* sells, Core 2 tests which *hook* pulls, Core 3 tests which
+*named pain* lands. Splitting them into three ad sets, rather than one ad
+set holding all 12 ads, is what makes the read trustworthy: inside a
+single ad set Meta's delivery algorithm will chase whichever ad converts
+first and starve the rest within days — often before a 4-way test inside
+one dimension has enough data, and always before you can tell whether an
+early leader won because of its ARGUMENT or because it happened to also
+have the better AVATAR or HOOK. Separate ad sets isolate the variable.
+
+**Campaign** (one, unchanged from §11): Advantage+ Sales, optimized for
+Purchase.
+
+**Ad sets (3) — same targeting/placements in all three, budget type is
+the one setting that matters:**
+
+| Ad set | Tests | Ads inside |
+|---|---|---|
+| `as1-core1-message-angle` | Which ARGUMENT sells (avatar frozen: fratty guy) | 1A–1D |
+| `as2-core2-hook` | Which HOOK pulls (avatar frozen: quiz kid) | 2A–2D |
+| `as3-core3-enemy` | Which named PAIN lands (avatar frozen: veteran) | 3A–3D |
+
+Use **ad set budget optimization (ABO)**, not campaign budget
+optimization, for the duration of this test — set roughly equal daily
+budgets across the three ad sets. CBO will happily starve two of the three
+cores to feed whichever one gets an early lucky conversion, which answers
+"which core is winning today" but never lets any single core finish its
+own internal 4-way read. Switch back to CBO once you're scaling a chosen
+winner, not while you're still testing.
+
+**Ads (4 per ad set, 12 total)** — name the CELL CODE first so Ads
+Manager's alphabetical sort groups each ad set's four variations together,
+then a short mnemonic for what's actually being varied, then the avatar
+tag, length, and version:
+
+`{cell}-{mnemonic}-{avatar}-{length}s-v1`
+
+| Ad set `as1-core1-message-angle` | Ad set `as2-core2-hook` | Ad set `as3-core3-enemy` |
+|---|---|---|
+| `1a-invisible-problem-fratty-17s-v1` | `2a-quiz-baseline-quizkid-15s-v1` | `3a-enemy-coaching-veteran-15s-v1` |
+| `1b-status-reframe-fratty-17s-v1` | `2b-quiz-challenge-quizkid-15s-v1` | `3b-enemy-youtube-veteran-15s-v1` |
+| `1c-mechanism-analogy-fratty-17s-v1` | `2c-quiz-noanswer-quizkid-15s-v1` | `3c-enemy-solver-veteran-15s-v1` |
+| `1d-effort-collapse-fratty-17s-v1` | `2d-quiz-dare-quizkid-15s-v1` | `3d-enemy-experience-veteran-15s-v1` |
+
+**Freeze primary text to A (§1) for this test.** Don't cross this creative
+test with the copy A/B test — that's a second variable, and it turns 12
+clean reads into 24 muddy ones with no added signal for the question this
+round is actually asking. Run primary text A vs B on the winning ad from
+each core AFTER this round, one at a time.
+
+**Bump the version suffix, not the cell code, on any regeneration** — a
+re-rolled take for `1b` because of a garbled brand word becomes
+`1b-status-reframe-fratty-17s-v2`, so Ads Manager's delivery history
+stays attached to the right creative lineage instead of starting over
+under a new name.
+
 ## 12 · What Runout leaves on the table (our free wins)
 
 1. **Hook-only variants** — §11, we run them weekly.
